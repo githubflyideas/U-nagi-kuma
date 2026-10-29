@@ -24,6 +24,7 @@ import (
 	"github.com/githubflyideas/unagikuma/internal/notify"
 	"github.com/githubflyideas/unagikuma/internal/oncall"
 	"github.com/githubflyideas/unagikuma/internal/probe"
+	"github.com/githubflyideas/unagikuma/internal/tunables"
 )
 
 // engineOpts are monitor options interpreted by the engine, not the probe.
@@ -128,6 +129,27 @@ func contains(list []string, s string) bool {
 	return false
 }
 
+// certDefaults gives TLS checks the default certificate expiry thresholds
+// (probe.cert-warn-days, probe.cert-critical-days) unless the monitor sets
+// its own; 0 written on the monitor turns a threshold off.
+func certDefaults(spec *probe.Spec, ts tunables.Set) {
+	on := func(v string) bool { v = strings.ToLower(v); return v == "yes" || v == "true" || v == "on" || v == "1" }
+	tls := spec.Type == "HTTP" && strings.HasPrefix(strings.ToLower(spec.Target), "https://") || spec.Type == "TCP" && on(spec.Opts["tls"])
+	if !tls {
+		return
+	}
+	if spec.Opts == nil {
+		spec.Opts = map[string]string{}
+	}
+	for key, tun := range map[string]string{"cert-days": "probe.cert-warn-days", "cert-critical-days": "probe.cert-critical-days"} {
+		if _, set := spec.Opts[key]; !set {
+			if n := ts.Int(tun); n > 0 {
+				spec.Opts[key] = strconv.Itoa(n)
+			}
+		}
+	}
+}
+
 // validators are the config.Options hooks.
 func (a *App) validators() config.Options {
 	return config.Options{
@@ -173,6 +195,7 @@ func (a *App) engineConfig(cfg *config.Config) engine.Config {
 	selfProbes, probers := clusterNodes(cfg, &ec)
 	for _, m := range cfg.Monitors {
 		spec, err := ProbeSpec(m, resolve)
+		certDefaults(&spec, cfg.Tunables)
 		depth := string(probe.DepthOf(spec))
 		weak := depth == string(keywords.L1) || (m.UDP != nil && m.UDP.Entry != nil && m.UDP.Entry.Stateful)
 		ms := engine.MonitorSpec{
@@ -190,7 +213,8 @@ func (a *App) engineConfig(cfg *config.Config) engine.Config {
 			ms.PartialEscalate = m.PartialEscalate
 			// A node with a wrong clock cannot judge a time server or how
 			// close a certificate is to expiry.
-			ms.TimeSensitive = m.CertDays > 0 || m.CertCritical > 0 || (m.UDP != nil && m.UDP.Keyword == "ntp")
+			ms.TimeSensitive = spec.Opts["cert-days"] != "" && spec.Opts["cert-days"] != "0" ||
+				spec.Opts["cert-critical-days"] != "" && spec.Opts["cert-critical-days"] != "0" || (m.UDP != nil && m.UDP.Keyword == "ntp")
 		}
 		if m.Scope == "lan" || m.Scope == "wan" {
 			ms.Scope = netscope.Scope(m.Scope)
