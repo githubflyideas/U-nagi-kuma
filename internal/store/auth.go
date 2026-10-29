@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -436,17 +437,43 @@ func (s *Store) DeleteToken(id int64) error {
 // Only the hash is stored; the plaintext is derived from a per-install
 // secret (and a rotation counter) so the UI can show the URL again.
 func (s *Store) PushToken(monitor string) (string, error) {
+	if plain, _ := s.Setting("push_plain:" + monitor); plain != "" {
+		// Brought over from another tool: kept as it was.
+		return plain, s.storePushToken(monitor, plain)
+	}
 	key, err := s.instanceKey()
 	if err != nil {
 		return "", err
 	}
 	gen, _ := s.Setting("push_gen:" + monitor)
 	plain := "p" + sha(key + "|push|" + monitor + "|" + gen)[:31]
+	return plain, s.storePushToken(monitor, plain)
+}
+
+func (s *Store) storePushToken(monitor, plain string) error {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
-	_, err = s.core.Exec(`INSERT INTO push_tokens(hash,monitor,created_at) VALUES(?,?,?) ON CONFLICT(monitor) DO UPDATE SET hash=excluded.hash`,
+	_, err := s.core.Exec(`INSERT INTO push_tokens(hash,monitor,created_at) VALUES(?,?,?) ON CONFLICT(monitor) DO UPDATE SET hash=excluded.hash`,
 		sha(plain), monitor, ms(s.now()))
-	return plain, err
+	return err
+}
+
+var pushTokenRe = regexp.MustCompile(`^[A-Za-z0-9_-]{6,128}$`)
+
+// SetPushToken gives a monitor a push token chosen elsewhere: the one it
+// had in Uptime Kuma, so senders keep working. A token used by another
+// monitor is refused.
+func (s *Store) SetPushToken(monitor, plain string) error {
+	if !pushTokenRe.MatchString(plain) {
+		return errors.New("a push token is 6 to 128 letters, digits, - or _")
+	}
+	if m, err := s.MonitorByPushToken(plain); err == nil && m != monitor {
+		return fmt.Errorf("the push token is already used by %s", m)
+	}
+	if err := s.SetSetting("push_plain:"+monitor, plain); err != nil {
+		return err
+	}
+	return s.storePushToken(monitor, plain)
 }
 
 // MonitorByPushToken resolves a push token.
@@ -461,6 +488,9 @@ func (s *Store) MonitorByPushToken(plain string) (string, error) {
 
 // RotatePushToken invalidates a monitor's push URL and returns the new token.
 func (s *Store) RotatePushToken(monitor string) (string, error) {
+	if err := s.DeleteSetting("push_plain:" + monitor); err != nil {
+		return "", err
+	}
 	gen, _ := s.Setting("push_gen:" + monitor)
 	n, _ := strconv.Atoi(gen)
 	if err := s.SetSetting("push_gen:"+monitor, strconv.Itoa(n+1)); err != nil {

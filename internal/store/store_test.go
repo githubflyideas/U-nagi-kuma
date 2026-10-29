@@ -324,6 +324,40 @@ func TestPushTokens(t *testing.T) {
 	}
 }
 
+// An imported push token (from Uptime Kuma) keeps the old push URL.
+func TestSetPushToken(t *testing.T) {
+	s, _, _ := open(t)
+	if err := s.SetPushToken("cron", "FAKEkumaToken1"); err != nil {
+		t.Fatal(err)
+	}
+	if tok, _ := s.PushToken("cron"); tok != "FAKEkumaToken1" {
+		t.Fatalf("token %q", tok)
+	}
+	if m, _ := s.MonitorByPushToken("FAKEkumaToken1"); m != "cron" {
+		t.Fatalf("monitor %q", m)
+	}
+	if err := s.SetPushToken("other", "FAKEkumaToken1"); err == nil {
+		t.Fatal("a token used by another monitor was accepted")
+	}
+	if err := s.SetPushToken("other", "bad token!"); err == nil {
+		t.Fatal("an invalid token was accepted")
+	}
+	// Renaming keeps it; rotating replaces it.
+	if err := s.RenameMonitor("cron", "cron-job"); err != nil {
+		t.Fatal(err)
+	}
+	if tok, _ := s.PushToken("cron-job"); tok != "FAKEkumaToken1" {
+		t.Fatalf("after rename %q", tok)
+	}
+	r, _ := s.RotatePushToken("cron-job")
+	if tok, _ := s.PushToken("cron-job"); tok != r || r == "FAKEkumaToken1" {
+		t.Fatal("rotation must replace the imported token")
+	}
+	if _, err := s.MonitorByPushToken("FAKEkumaToken1"); err != ErrNotFound {
+		t.Fatal("old token still valid")
+	}
+}
+
 func TestSecrets(t *testing.T) {
 	s, _, dir := open(t)
 	t.Setenv("UNAGIKUMA_SECRET_KEY", "")

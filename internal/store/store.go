@@ -164,6 +164,14 @@ func (s *Store) SetSetting(key, value string) error {
 	return err
 }
 
+// DeleteSetting removes a settings key.
+func (s *Store) DeleteSetting(key string) error {
+	s.wmu.Lock()
+	defer s.wmu.Unlock()
+	_, err := s.core.Exec(`DELETE FROM settings WHERE key=?`, key)
+	return err
+}
+
 // Backup writes a consistent copy of core.db (VACUUM INTO) to w.
 func (s *Store) Backup(ctx context.Context, w io.Writer) error { return s.BackupDB(ctx, "core", w) }
 

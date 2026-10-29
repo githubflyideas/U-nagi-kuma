@@ -228,6 +228,15 @@ func (s *Store) RenameMonitor(oldName, newName string) error {
 			return err
 		}
 	}
+	// The push URL stays the same.
+	for _, k := range []string{"push_plain:", "push_gen:"} {
+		if _, err := tx.Exec(`DELETE FROM settings WHERE key=?`, k+newName); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(`UPDATE settings SET key=? WHERE key=?`, k+newName, k+oldName); err != nil {
+			return err
+		}
+	}
 	if _, err := tx.Exec(`DELETE FROM monitor_state WHERE name=?`, newName); err != nil {
 		return err
 	}
