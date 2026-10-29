@@ -106,11 +106,17 @@ func TestHTTP(t *testing.T) {
 // shortCertServer is a TLS server whose self-signed certificate expires
 // in 10 days.
 func shortCertServer(t *testing.T) *httptest.Server {
+	return certServer(t, time.Now().Add(10*24*time.Hour))
+}
+
+// certServer is a TLS server with a self-signed certificate valid until
+// notAfter (made at run time: no key material in the repository).
+func certServer(t *testing.T, notAfter time.Time) *httptest.Server {
 	t.Helper()
 	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	tmpl := &x509.Certificate{
 		SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "127.0.0.1"},
-		NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(10 * 24 * time.Hour),
+		NotBefore: notAfter.Add(-30 * 24 * time.Hour), NotAfter: notAfter,
 		IPAddresses: []net.IP{net.ParseIP("127.0.0.1")},
 	}
 	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
@@ -140,6 +146,17 @@ func TestHTTPTLSAndCert(t *testing.T) {
 		t.Fatalf("cert-days: %+v", r)
 	}
 	want(t, run(t, Spec{Type: "HTTP", Target: srv.URL, Opts: map[string]string{"insecure": "yes", "cert-critical-days": fmt.Sprint(int(days) + 10)}}), VoteFail, ReasonTLS)
+}
+
+// Skipping verification (insecure=yes) must not hide an expired
+// certificate: it fails whatever the thresholds.
+func TestExpiredCertFailsEvenInsecure(t *testing.T) {
+	srv := certServer(t, time.Now().Add(-48*time.Hour))
+	r := run(t, Spec{Type: "HTTP", Target: srv.URL, Opts: map[string]string{"insecure": "yes"}})
+	want(t, r, VoteFail, ReasonTLS)
+	if !strings.Contains(r.Detail, "expired") {
+		t.Fatalf("detail %q", r.Detail)
+	}
 }
 
 func TestHTTPErrors(t *testing.T) {

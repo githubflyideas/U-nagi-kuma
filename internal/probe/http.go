@@ -241,6 +241,11 @@ func httpError(err error, o opts) Result {
 func certDays(r Result, o opts, leaf *x509.Certificate, now time.Time) (Result, bool) {
 	days := leaf.NotAfter.Sub(now).Hours() / 24
 	r.Metrics["cert.days"] = days
+	if days < 0 {
+		// Only reachable with insecure=yes (verification would refuse it):
+		// skipping verification must not hide an expired certificate.
+		return failKeep(r, ReasonTLS, "certificate expired %.0f days ago", -days), true
+	}
 	if crit, _ := o.intOpt("cert-critical-days", 0, 0, 3650); crit > 0 && days < float64(crit) {
 		return failKeep(r, ReasonTLS, "certificate expires in %.0f days (critical below %d)", days, crit), true
 	}
