@@ -91,6 +91,8 @@ var defs = []Def{
 	{Key: "localnet.exit-ratio", Kind: Float, Default: "0.5", Min: "0.1", Max: "1", Desc: "share of wan targets (healthy before the outage) that must recover to exit", DescZH: "退出判定：断网前正常的外网目标中恢复的占比"},
 	{Key: "localnet.exit-windows", Kind: Int, Default: "2", Min: "1", Max: "20", Desc: "consecutive healthy windows required to exit", DescZH: "退出判定需要连续满足的窗口数"},
 	{Key: "localnet.backdate", Kind: Duration, Default: "2m", Min: "0s", Max: "15m", Desc: "failures that began this long before a local outage was recognised, and that nobody was told about yet, are attributed to it", DescZH: "本机断网被识别前多长时间内开始、且尚未通知任何人的故障，归入这次断网"},
+	{Key: "localnet.max-hold", Kind: Duration, Default: "15m", Min: "0s", Max: "24h", Desc: "a local outage longer than this stops holding monitors back, in case the judgement is wrong (0 = never)", DescZH: "本机断网超过此时长后不再压住监控告警（以防误判），0 表示不限"},
+	{Key: "localnet.recheck-spread", Kind: Duration, Default: "10s", Min: "0s", Max: "5m", Desc: "after a local outage, the re-checks of the monitors it hid are spread over this time", DescZH: "断网恢复后，对被压住的监控的复检分散在这段时间内进行"},
 	{Key: "localnet.notify-after", Kind: Duration, Default: "5m", Min: "0s", Max: "24h", Desc: "outages shorter than this are recorded but not notified", DescZH: "短于此时长的断网只记事件、不发通知"},
 	{Key: "localnet.anchor-interval", Kind: Duration, Default: "15s", Min: "5s", Max: "5m", Desc: "anchor (gateway) check interval", DescZH: "锚点（路由器）检查间隔"},
 	{Key: "localnet.anchor-fails", Kind: Int, Default: "3", Min: "1", Max: "20", Desc: "consecutive anchor failures before the path is considered down", DescZH: "锚点连续失败几次才判定该路径中断"},

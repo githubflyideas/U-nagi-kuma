@@ -1254,5 +1254,7 @@
 "sys.title.storage": "Não é possível gravar os dados de monitoramento",
 "sys.resolved.storage": "Os dados de monitoramento voltaram a ser gravados",
 "sys.storage_failing": "A gravação no diretório de dados falha desde {time} ({error}); resultados e eventos ficam na memória e são repetidos, {lost} foram perdidos. Libere espaço ou repare o sistema de arquivos.",
-"ui.storage_failing": "Desde {since} resultados e eventos não podem ser gravados no disco (disco cheio?). Ficam na memória e são repetidos; {lost} foram perdidos."
+"ui.storage_failing": "Desde {since} resultados e eventos não podem ser gravados no disco (disco cheio?). Ficam na memória e são repetidos; {lost} foram perdidos.",
+"sys.hold_released": "A rede deste host parece fora do ar desde {time} ({duration}). Por segurança, o Unagikuma deixou de segurar os alertas dos {n} monitores pausados: eles voltam a ser verificados e notificados normalmente. Se a rede estiver mesmo fora, esses alertas podem estar errados.",
+"sys.hold_note": "Observação: a rede deste host parece fora do ar desde {time}; este alerta foi liberado após o tempo máximo de espera e pode estar errado."
 }

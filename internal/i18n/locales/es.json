@@ -1254,5 +1254,7 @@
 "sys.title.storage": "No se pueden escribir los datos de monitorización",
 "sys.resolved.storage": "Los datos de monitorización vuelven a escribirse",
 "sys.storage_failing": "La escritura en el directorio de datos falla desde {time} ({error}); resultados y eventos se guardan en memoria y se reintentan, se perdieron {lost}. Libera espacio o repara el sistema de archivos.",
-"ui.storage_failing": "Desde {since} no se pueden escribir resultados y eventos en disco (¿disco lleno?). Se guardan en memoria y se reintentan; se perdieron {lost}."
+"ui.storage_failing": "Desde {since} no se pueden escribir resultados y eventos en disco (¿disco lleno?). Se guardan en memoria y se reintentan; se perdieron {lost}.",
+"sys.hold_released": "La red de este equipo parece caída desde las {time} ({duration}). Por seguridad, Unagikuma ya no retiene las alertas de los {n} monitores en pausa: vuelven a comprobarse y notificarse con normalidad. Si la red está realmente caída, estas alertas pueden ser erróneas.",
+"sys.hold_note": "Nota: la red de este equipo parece caída desde las {time}; esta alerta se liberó tras el tiempo máximo de retención y puede ser errónea."
 }

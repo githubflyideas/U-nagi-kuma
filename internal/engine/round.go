@@ -97,7 +97,7 @@ func (e *Engine) dispatchDue(ctx context.Context, wg *sync.WaitGroup) {
 		gateN := e.cfg.Tunables.Int("localnet.gate-hosts")
 		var targets []string
 		var fallback string
-		if hardIfFail && e.localnet.cfg.Enabled && scope != netscope.LAN {
+		if hardIfFail && e.localnet.cfg.Enabled && !e.localnet.Released() && scope != netscope.LAN {
 			targets = e.localnet.GateTargets(famOr(fam), domain, gateN, now)
 			fallback = exitGateTarget(e.cfg.Tunables.Raw("localnet.exit-target"), famOr(fam))
 		}

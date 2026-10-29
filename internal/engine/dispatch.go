@@ -200,20 +200,16 @@ func (e *Engine) finishIntent(in *Intent, now time.Time) {
 // digest queues one summary notice standing for the incidents ids; chain
 // replaces the policy's channels (all of them notified) when set.
 func (e *Engine) digest(pol string, chain []string, title, body string, ids []int64, now time.Time) {
-	d := &Intent{Kind: "DIGEST", Policy: pol, CreatedAt: now, DueAt: now, Chain: chain,
+	d := &Intent{Kind: "DIGEST", Policy: pol, CreatedAt: now, DueAt: now, Chain: chain, Covers: ids,
 		Message: notify.Message{Kind: "DIGEST", Priority: "high", Title: title, Body: body, Time: now, Instance: e.cfg.Instance, Lang: e.cfg.Lang}}
 	e.enqueue(d)
-	if len(ids) > 0 {
-		e.digestCovers[d.ID] = ids
-	}
 }
 
 // credit books a delivered problem notice on its incident (or on every
 // incident a digest stood for), so a recovery is owed only to people who
 // actually heard about the problem.
 func (e *Engine) credit(in *Intent) {
-	ids := e.digestCovers[in.ID]
-	delete(e.digestCovers, in.ID)
+	ids := append([]int64(nil), in.Covers...)
 	switch NoticeKind(in.Kind) {
 	case NoticeProblem, NoticeRepeat, NoticeReopen, NoticeEscalate:
 		ids = append(ids, in.IncidentID)

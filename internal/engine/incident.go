@@ -283,6 +283,11 @@ func (e *Engine) message(inc *Incident, n PlannedNotice, now time.Time) notify.M
 			msg.Body = e.text("recovered_after_flaps", n.Flaps)
 		}
 	}
+	if e.localnet.Released() && inc.Kind != IncidentSystem && n.Kind != NoticeRecovery {
+		if act := e.localnet.Active(); len(act) > 0 {
+			msg.Body = strings.TrimSpace(msg.Body + "\n" + e.text("hold_note", act[0].Since))
+		}
+	}
 	if inc.Kind == IncidentSystem {
 		msg.Kind = "SYSTEM"
 		msg.Body = inc.Detail

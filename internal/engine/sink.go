@@ -128,6 +128,9 @@ type Intent struct {
 	Attempts []notify.Attempt
 	// Chain replaces the policy's chain when set (escalations).
 	Chain []string `json:"-"`
+	// Covers: the incidents a digest stands for; its delivery counts as
+	// telling each of them.
+	Covers []int64 `json:"-"`
 }
 
 // DeliveryRecord is one row of the notification log.

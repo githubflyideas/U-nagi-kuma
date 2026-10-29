@@ -1246,5 +1246,7 @@
 "sys.title.storage": "监控数据无法写入",
 "sys.resolved.storage": "监控数据已恢复写入",
 "sys.storage_failing": "自 {time} 起写入数据目录失败（{error}）；检查结果和事件暂存内存并重试，已丢失 {lost} 条。请清理磁盘空间或修复文件系统。",
-"ui.storage_failing": "自 {since} 起检查结果和事件无法写入磁盘（磁盘满了？）。数据暂存内存并会重试，已丢失 {lost} 条。"
+"ui.storage_failing": "自 {since} 起检查结果和事件无法写入磁盘（磁盘满了？）。数据暂存内存并会重试，已丢失 {lost} 条。",
+"sys.hold_released": "监控主机的网络自 {time} 起一直显示中断（{duration}）。为安全起见，Unagikuma 不再压住被暂停的 {n} 个监控的告警，恢复正常检测和告警。如果网络确实中断，这些告警可能不准确。",
+"sys.hold_note": "注意：监控主机的网络自 {time} 起显示中断；此告警是在超过最长压住时间后放行的，可能不准确。"
 }

@@ -1254,5 +1254,7 @@
 "sys.title.storage": "Impossible d'écrire les données de surveillance",
 "sys.resolved.storage": "Les données de surveillance sont à nouveau écrites",
 "sys.storage_failing": "L'écriture dans le répertoire de données échoue depuis {time} ({error}) ; résultats et événements sont gardés en mémoire et réessayés, {lost} ont été perdus. Libérez de l'espace ou réparez le système de fichiers.",
-"ui.storage_failing": "Résultats et événements ne peuvent plus être écrits sur le disque depuis {since} (disque plein ?). Gardés en mémoire et réessayés ; {lost} ont été perdus."
+"ui.storage_failing": "Résultats et événements ne peuvent plus être écrits sur le disque depuis {since} (disque plein ?). Gardés en mémoire et réessayés ; {lost} ont été perdus.",
+"sys.hold_released": "Le réseau de cet hôte semble coupé depuis {time} ({duration}). Par sécurité, Unagikuma ne retient plus les alertes des {n} moniteurs mis en attente : ils sont à nouveau vérifiés et signalés normalement. Si le réseau est vraiment coupé, ces alertes peuvent être fausses.",
+"sys.hold_note": "Remarque : le réseau de cet hôte semble coupé depuis {time} ; cette alerte a été libérée après le délai de rétention maximal et peut être fausse."
 }

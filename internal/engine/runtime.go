@@ -219,8 +219,6 @@ type Engine struct {
 	cmds     chan func()
 
 	gate gateCache
-	// digestCovers maps a queued digest to the incidents it stands for.
-	digestCovers map[string][]int64
 	// outage is the local outage that just ended, until the monitors it
 	// hid have been re-checked and its summary is sent.
 	outage *outageEnd
@@ -293,32 +291,31 @@ func New(d Deps) *Engine {
 	now := d.Clock()
 	ts := tunables.Set{}
 	e := &Engine{
-		deps:         d,
-		log:          d.Log,
-		self:         NodeName,
-		monitors:     map[string]*MonitorSpec{},
-		states:       map[string]*monRuntime{},
-		sched:        NewScheduler(),
-		localnet:     NewLocalNet(LocalNetConfigFrom(ts), now),
-		watchdog:     NewWatchdog(SuspendConfigFrom(ts)),
-		incidents:    map[int64]*Incident{},
-		byMonitor:    map[string]*Incident{},
-		lowByMon:     map[string]*Incident{},
-		system:       map[string]*Incident{},
-		regional:     map[string]*Incident{},
-		digestCovers: map[string][]int64{},
-		rounds:       map[string]*pendingRound{},
-		nodes:        map[string]*nodeRuntime{},
-		agentRT:      map[string]*monRuntime{},
-		votes:        make(chan RemoteVote, 1024),
-		intents:      map[string]*Intent{},
-		chanRate:     map[string]*ratelimit.Bucket{},
-		results:      make(chan roundResult, 256),
-		attempts:     make(chan attemptResult, 64),
-		handling:     map[string]bool{},
-		cmds:         make(chan func(), 64),
-		booted:       now,
-		stopped:      make(chan struct{}),
+		deps:      d,
+		log:       d.Log,
+		self:      NodeName,
+		monitors:  map[string]*MonitorSpec{},
+		states:    map[string]*monRuntime{},
+		sched:     NewScheduler(),
+		localnet:  NewLocalNet(LocalNetConfigFrom(ts), now),
+		watchdog:  NewWatchdog(SuspendConfigFrom(ts)),
+		incidents: map[int64]*Incident{},
+		byMonitor: map[string]*Incident{},
+		lowByMon:  map[string]*Incident{},
+		system:    map[string]*Incident{},
+		regional:  map[string]*Incident{},
+		rounds:    map[string]*pendingRound{},
+		nodes:     map[string]*nodeRuntime{},
+		agentRT:   map[string]*monRuntime{},
+		votes:     make(chan RemoteVote, 1024),
+		intents:   map[string]*Intent{},
+		chanRate:  map[string]*ratelimit.Bucket{},
+		results:   make(chan roundResult, 256),
+		attempts:  make(chan attemptResult, 64),
+		handling:  map[string]bool{},
+		cmds:      make(chan func(), 64),
+		booted:    now,
+		stopped:   make(chan struct{}),
 	}
 	e.applyTunables(ts)
 	return e
@@ -452,6 +449,9 @@ func (e *Engine) onTick() {
 	}
 	for _, ev := range e.localnet.Evaluate(now) {
 		e.onLocalNet(ev, now)
+	}
+	if since, ok := e.localnet.Release(now); ok {
+		e.releaseHold(since, now)
 	}
 	if ev := e.watchdog.EvaluateOverload(now); ev != nil {
 		e.onOverload(*ev, now)

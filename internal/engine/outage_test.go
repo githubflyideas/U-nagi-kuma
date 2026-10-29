@@ -44,7 +44,7 @@ func localOutage(t *testing.T, notifyAfter string, wantSystem int, downAtStart b
 	var got, tried []string
 	e := New(Deps{
 		Probe: func(_ context.Context, s probe.Spec) probe.Result {
-			if down.Load() && !(lastStanding && strings.HasPrefix(s.Target, "198.51.108.") && time.Since(downAt) < 3*time.Second) {
+			if down.Load() && !(lastStanding && strings.HasPrefix(s.Target, "198.51.108.") && time.Since(downAt) < 8*time.Second) {
 				return probe.Result{Vote: probe.VoteFail, Reason: downReason, Detail: "connect: network is unreachable"}
 			}
 			return probe.Result{Vote: probe.VoteOK, Reason: probe.ReasonOK, Evidence: &probe.Evidence{Peer: s.Target}}
@@ -96,7 +96,7 @@ func localOutage(t *testing.T, notifyAfter string, wantSystem int, downAtStart b
 		// One target still answers for a moment: the self-check rightly
 		// finds the network working, and the others turn CRITICAL before
 		// the outage can be recognised.
-		waitCond(t, "a monitor to fail before the outage is recognised", 5*time.Second, func() bool {
+		waitCond(t, "a monitor to fail before the outage is recognised", 10*time.Second, func() bool {
 			r, _ := e.Row("site0")
 			return r.Status == StatusCritical
 		})
@@ -168,4 +168,86 @@ func (s *traceSink) SaveIntent(in *Intent) error {
 	s.trace = append(s.trace, fmt.Sprintf("%s/%s/%s/%d", in.Kind, in.Message.Title, in.State, len(in.Delivery.Steps)))
 	s.tmu.Unlock()
 	return nil
+}
+
+// The uplink stays down past localnet.max-hold: the monitors are judged
+// again (fail open) and their problem notices carry the "may be wrong"
+// note; one system notice says the hold was released.
+func TestMaxHoldReleasesStuckHold(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs through a real outage window")
+	}
+	var down atomic.Bool
+	sink := &traceSink{memSink: newMemSink()}
+	var mu sync.Mutex
+	var tried []string
+	e := New(Deps{
+		Probe: func(_ context.Context, s probe.Spec) probe.Result {
+			if down.Load() {
+				return probe.Result{Vote: probe.VoteFail, Reason: downReason, Detail: "connect: network is unreachable"}
+			}
+			return probe.Result{Vote: probe.VoteOK, Reason: probe.ReasonOK, Evidence: &probe.Evidence{Peer: s.Target}}
+		},
+		Send: func(_ context.Context, ch notify.Channel, m *notify.Message) notify.Attempt {
+			mu.Lock()
+			tried = append(tried, m.Kind+" "+m.Title+" | "+m.Body)
+			mu.Unlock()
+			if down.Load() {
+				return notify.Attempt{Error: "network is unreachable"}
+			}
+			return notify.Attempt{OK: true}
+		},
+		Sink:      sink,
+		HostClock: func() (hostclock.Reading, bool) { return hostclock.Reading{}, false },
+		Gateways:  func() ([]netscope.Gateway, error) { return nil, nil },
+	})
+	ts, err := tunables.New(map[string]string{"engine.first-round-delay": "0s", "suspend.recheck-spread": "0s", "suspend.tick": "200ms",
+		"engine.round-grace": "0s", "localnet.window": "10s", "notify.retry-backoff": "200ms", "localnet.notify-after": "0s",
+		"localnet.exit-target": "", "localnet.max-hold": "4s", "localnet.recheck-spread": "0s"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var mons []MonitorSpec
+	for i := range 5 {
+		n := fmt.Sprintf("site%d", i)
+		mons = append(mons, MonitorSpec{Name: n, Title: n, Interval: 200 * time.Millisecond, Attempts: 1, RecoverAttempts: 1, DefHash: n,
+			Probe: probe.Spec{Name: n, Type: "TCP", Target: fmt.Sprintf("198.51.%d.10:443", 100+i), Timeout: 50 * time.Millisecond}})
+	}
+	hook := ChannelSpec{Channel: notify.Channel{Name: "hook", Kind: "webhook"}, Scope: netscope.WAN, Family: FamilyV4}
+	e.Apply(Config{Tunables: ts, Monitors: mons, LocalDetect: true, Location: time.UTC,
+		Channels: map[string]ChannelSpec{"hook": hook},
+		Policies: map[string]PolicySpec{"default": {Name: "default", Chain: []string{"hook"}, Mode: DeliverFallback, Notify: DefaultNotifyPolicy(ts)}}})
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() { e.Run(ctx); close(done) }()
+	t.Cleanup(func() { cancel(); <-done })
+
+	time.Sleep(time.Second)
+	down.Store(true)
+	waitCond(t, "the outage to be recognised", 20*time.Second, func() bool { return e.Overview().Health.Uplink == "wan_down" })
+	waitCond(t, "the hold to be released and a monitor to fail", 20*time.Second, func() bool {
+		r, _ := e.Row("site0")
+		return r.Status == StatusCritical
+	})
+	waitCond(t, "a problem notice with the note", 10*time.Second, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		for _, m := range tried {
+			if strings.HasPrefix(m, "PROBLEM") && strings.Contains(m, "may be wrong") {
+				return true
+			}
+		}
+		return false
+	})
+	sink.mu.Lock()
+	released := 0
+	for _, ev := range sink.events {
+		if ev.Data["msg"] == "hold_released" {
+			released++
+		}
+	}
+	sink.mu.Unlock()
+	if released != 1 {
+		t.Fatalf("want one hold_released event, got %d", released)
+	}
 }

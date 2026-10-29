@@ -108,8 +108,14 @@ func (e *Engine) onLocalNet(ev LocalNetEvent, now time.Time) {
 			continue
 		}
 		names = append(names, name)
+	}
+	// The re-checks are spread so a link that just came back is not hit by
+	// every monitor at once (more monitors, a wider spread, capped).
+	spread := min(e.cfg.Tunables.Duration("localnet.recheck-spread"), time.Duration(len(names))*100*time.Millisecond)
+	for _, name := range names {
+		rt := e.states[name]
 		if m := e.monitors[name]; m != nil && !m.Paused && !m.Push && !rt.Running {
-			e.schedule(name, now.Add(delay))
+			e.schedule(name, now.Add(delay+Spread(name, spread)))
 			timeout = max(timeout, m.Probe.Timeout)
 		}
 	}
@@ -124,8 +130,36 @@ func (e *Engine) onLocalNet(ev LocalNetEvent, now time.Time) {
 		// "The network is down", still queued, would arrive after it is back.
 		e.expireNotices(inc, now)
 	}
-	wait := delay + timeout + e.cfg.Tunables.Duration("engine.round-grace") + 2*time.Second
+	// "Every channel failed" because nothing could get out is not a broken
+	// channel either, when nobody was told about it.
+	if inc := e.system[SystemAllFailed]; inc != nil && inc.State.Open() && !inc.State.OpenedAt.Before(since) && !inc.State.told() {
+		e.closeSystemQuietly(SystemAllFailed, now, "")
+	}
+	wait := delay + spread + timeout + e.cfg.Tunables.Duration("engine.round-grace") + 2*time.Second
 	e.outage = &outageEnd{since: since, end: now, names: names, deadline: now.Add(wait), dropped: dropped}
+}
+
+// releaseHold fails open: a local outage has lasted longer than
+// localnet.max-hold, so the monitors it holds back are judged normally
+// again, in case it is not our network after all. One system notice says
+// so; problem notices sent while it lasts carry a "may be wrong" note.
+func (e *Engine) releaseHold(since, now time.Time) {
+	held := 0
+	spread := e.cfg.Tunables.Duration("localnet.recheck-spread")
+	for _, name := range e.sortedMonitorNames() {
+		rt := e.states[name]
+		if rt == nil || !(rt.State.Held || rt.State.Avail == StatusUnknown && rt.State.UnknownReason == UnknownLocalNetwork) {
+			continue
+		}
+		held++
+		if m := e.monitors[name]; m != nil && !m.Paused && !m.Push && !rt.Running {
+			e.schedule(name, now.Add(Spread(name, max(spread, time.Second))))
+		}
+	}
+	body := e.text("hold_released", since, now.Sub(since), held)
+	e.event(Event{Type: EventSystem, Severity: "warning", Message: body,
+		Data: map[string]any{"msg": "hold_released", "since": since, "held": held}})
+	e.systemNotice(now, body)
 }
 
 // outageEnd is a local outage that ended: its summary waits until the
@@ -228,7 +262,6 @@ func (e *Engine) dropQueued(from, now time.Time) int {
 		in.State, in.UpdatedAt = IntentDropped, now
 		_ = e.deps.Sink.SaveIntent(in)
 		delete(e.intents, id)
-		delete(e.digestCovers, id)
 		n++
 	}
 	return n

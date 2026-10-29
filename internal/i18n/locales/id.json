@@ -1246,5 +1246,7 @@
 "sys.title.storage": "Data pemantauan tidak dapat ditulis",
 "sys.resolved.storage": "Data pemantauan kembali ditulis",
 "sys.storage_failing": "Penulisan ke direktori data gagal sejak {time} ({error}); hasil dan peristiwa disimpan di memori dan dicoba ulang, {lost} hilang. Kosongkan ruang disk atau perbaiki sistem berkas.",
-"ui.storage_failing": "Sejak {since} hasil dan peristiwa tidak dapat ditulis ke disk (disk penuh?). Disimpan di memori dan dicoba ulang; {lost} hilang."
+"ui.storage_failing": "Sejak {since} hasil dan peristiwa tidak dapat ditulis ke disk (disk penuh?). Disimpan di memori dan dicoba ulang; {lost} hilang.",
+"sys.hold_released": "Jaringan host ini tampak terputus sejak {time} ({duration}). Demi aman, Unagikuma tidak lagi menahan peringatan dari {n} monitor yang dijeda: semuanya kembali diperiksa dan diberitahukan seperti biasa. Jika jaringan memang terputus, peringatan ini mungkin keliru.",
+"sys.hold_note": "Catatan: jaringan host ini tampak terputus sejak {time}; peringatan ini dilepas setelah batas waktu tahan maksimum dan mungkin keliru."
 }

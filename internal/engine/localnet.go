@@ -70,6 +70,9 @@ type LocalNetConfig struct {
 	// Backdate: a target that answered this recently before an episode is
 	// not "already dead" — it is the episode's first victim.
 	Backdate time.Duration
+	// MaxHold: a local outage that lasts longer than this stops holding
+	// the monitors back (fail open), in case the judgement is wrong. 0 = never.
+	MaxHold time.Duration
 }
 
 // LocalNetConfigFrom reads the tunables.
@@ -81,6 +84,7 @@ func LocalNetConfigFrom(t tunables.Set) LocalNetConfig {
 		DNSMinNames:    t.Int("localnet.dns-min-names"),
 		Window:         t.Duration("localnet.window"),
 		Backdate:       t.Duration("localnet.backdate"),
+		MaxHold:        t.Duration("localnet.max-hold"),
 		ExitRatio:      t.Float("localnet.exit-ratio"),
 		ExitWindows:    t.Int("localnet.exit-windows"),
 		AnchorFails:    t.Int("localnet.anchor-fails"),
@@ -195,6 +199,9 @@ type LocalNet struct {
 	dns     *Anomaly
 	dnsFail map[string]time.Time // name failure domain → last resolver failure
 	dnsOK   time.Time            // last successful resolution
+	// released: the running outage outlasted MaxHold; votes are no longer
+	// excluded until every anomaly has ended.
+	released bool
 }
 
 // NewLocalNet creates a detector; start is the process start time.
@@ -427,8 +434,31 @@ func (d *LocalNet) Evaluate(now time.Time) []LocalNetEvent {
 		evs = append(evs, d.evalGateway(fam, s, now)...)
 		evs = append(evs, d.evalUplink(fam, s, now)...)
 	}
-	return append(evs, d.evalDNS(now)...)
+	evs = append(evs, d.evalDNS(now)...)
+	if len(d.Active()) == 0 {
+		d.released = false
+	}
+	return evs
 }
+
+// Release reports, once, that the running local outage has lasted longer
+// than MaxHold: from then on the monitors are judged normally again (fail
+// open), so a wrong "it is our network" judgement can never hide a real
+// incident for good. since is when the oldest active anomaly began.
+func (d *LocalNet) Release(now time.Time) (since time.Time, ok bool) {
+	if d.released || d.cfg.MaxHold <= 0 {
+		return time.Time{}, false
+	}
+	act := d.Active()
+	if len(act) == 0 || now.Sub(act[0].Since) < d.cfg.MaxHold {
+		return time.Time{}, false
+	}
+	d.released = true
+	return act[0].Since, true
+}
+
+// Released reports whether the running outage outlasted MaxHold.
+func (d *LocalNet) Released() bool { return d.released }
 
 func (d *LocalNet) families() []Family {
 	fams := make([]Family, 0, len(d.fam))
@@ -575,13 +605,14 @@ func (d *LocalNet) clearAll(now time.Time) []LocalNetEvent {
 		evs = append(evs, LocalNetEvent{Anomaly: *d.dns, At: now})
 		d.dns = nil
 	}
+	d.released = false
 	return evs
 }
 
 // Affects tells whether a vote of a monitor must be excluded right now and
 // with which abstain reason.
 func (d *LocalNet) Affects(scope netscope.Scope, fam Family, onLink, byName bool) (excluded bool, reason string) {
-	if !d.cfg.Enabled {
+	if !d.cfg.Enabled || d.released {
 		return false, ""
 	}
 	fams := []Family{fam}
@@ -611,7 +642,7 @@ func (d *LocalNet) Affects(scope netscope.Scope, fam Family, onLink, byName bool
 // fails at once, before enough evidence has come in. Any reply ends it;
 // a target that is really down alerts after one window at most.
 func (d *LocalNet) Pending(scope netscope.Scope, fam Family, now time.Time) bool {
-	if !d.cfg.Enabled || scope != netscope.WAN {
+	if !d.cfg.Enabled || d.released || scope != netscope.WAN {
 		return false
 	}
 	fams := []Family{fam}

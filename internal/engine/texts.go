@@ -94,6 +94,10 @@ func (e *Engine) text(id string, args ...any) string {
 			names += ", …"
 		}
 		return i18n.T(lang, "sys.outage_summary_failing", "from", hm(0), "to", hm(1), "duration", dur(to.Sub(from)), "paused", args[2], "failing", len(failing), "names", names)
+	case id == "hold_released":
+		return i18n.T(lang, "sys.hold_released", "time", hm(0), "duration", dur(args[1].(time.Duration)), "n", args[2])
+	case id == "hold_note":
+		return i18n.T(lang, "sys.hold_note", "time", hm(0))
 	case strings.HasPrefix(id, "interrupted_"):
 		return i18n.T(lang, "sys.interrupted."+strings.TrimPrefix(id, "interrupted_"), "duration", dur(args[0].(time.Duration)))
 	case id == "system_notice_title":

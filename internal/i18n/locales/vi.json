@@ -1246,5 +1246,7 @@
 "sys.title.storage": "Không ghi được dữ liệu giám sát",
 "sys.resolved.storage": "Đã ghi được dữ liệu giám sát trở lại",
 "sys.storage_failing": "Ghi vào thư mục dữ liệu thất bại từ {time} ({error}); kết quả và sự kiện được giữ trong bộ nhớ và thử lại, đã mất {lost}. Hãy giải phóng dung lượng hoặc sửa hệ thống tệp.",
-"ui.storage_failing": "Từ {since} không ghi được kết quả và sự kiện xuống đĩa (đầy đĩa?). Đang giữ trong bộ nhớ và thử lại; đã mất {lost}."
+"ui.storage_failing": "Từ {since} không ghi được kết quả và sự kiện xuống đĩa (đầy đĩa?). Đang giữ trong bộ nhớ và thử lại; đã mất {lost}.",
+"sys.hold_released": "Mạng của máy này có vẻ đã mất từ {time} ({duration}). Để an toàn, Unagikuma không giữ lại cảnh báo của {n} giám sát đang tạm dừng nữa: chúng được kiểm tra và báo như bình thường. Nếu mạng thật sự mất, các cảnh báo này có thể sai.",
+"sys.hold_note": "Lưu ý: mạng của máy này có vẻ đã mất từ {time}; cảnh báo này được gửi sau thời gian giữ tối đa và có thể sai."
 }

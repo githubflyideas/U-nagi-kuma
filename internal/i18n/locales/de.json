@@ -1254,5 +1254,7 @@
 "sys.title.storage": "Überwachungsdaten können nicht geschrieben werden",
 "sys.resolved.storage": "Überwachungsdaten werden wieder geschrieben",
 "sys.storage_failing": "Schreiben ins Datenverzeichnis scheitert seit {time} ({error}); Ergebnisse und Ereignisse werden im Speicher gehalten und erneut versucht, {lost} gingen verloren. Platz schaffen oder Dateisystem reparieren.",
-"ui.storage_failing": "Ergebnisse und Ereignisse können seit {since} nicht auf die Platte geschrieben werden (Platte voll?). Sie werden im Speicher gehalten und erneut versucht; {lost} gingen verloren."
+"ui.storage_failing": "Ergebnisse und Ereignisse können seit {since} nicht auf die Platte geschrieben werden (Platte voll?). Sie werden im Speicher gehalten und erneut versucht; {lost} gingen verloren.",
+"sys.hold_released": "Das Netzwerk dieses Hosts scheint seit {time} ausgefallen zu sein ({duration}). Sicherheitshalber hält Unagikuma die Alarme der {n} angehaltenen Monitore nicht mehr zurück: Sie werden wieder normal geprüft und gemeldet. Ist das Netzwerk wirklich ausgefallen, können diese Alarme falsch sein.",
+"sys.hold_note": "Hinweis: Das Netzwerk dieses Hosts scheint seit {time} ausgefallen; dieser Alarm wurde nach der maximalen Haltezeit freigegeben und kann falsch sein."
 }
