@@ -1246,5 +1246,9 @@
 "sys.digest_segment": "{n} sondes de {segment} échouent en même temps au niveau réseau : le segment, son commutateur ou son lien est la cause probable ; les services vont peut-être bien.",
 "sys.digest_dns": "{n} sondes n'arrivent plus à résoudre leurs noms en même temps : le DNS est la cause probable ; les services vont peut-être bien.",
 "ui.pol.network": "Équipe réseau",
-"ui.pol.network_hint": "Facultatif : canaux qui reçoivent les résumés imputant le réseau (segment, DNS) au lieu de la chaîne, p. ex. netadmin."
+"ui.pol.network_hint": "Facultatif : canaux qui reçoivent les résumés imputant le réseau (segment, DNS) au lieu de la chaîne, p. ex. netadmin.",
+"sys.resolved": "Résolu : {title}",
+"sys.resolved.local_network": "Le réseau de cet hôte est rétabli",
+"sys.resolved.overload": "La charge de l'hôte est revenue à la normale",
+"sys.resolved.all_failed": "Les canaux de notification fonctionnent à nouveau"
 }

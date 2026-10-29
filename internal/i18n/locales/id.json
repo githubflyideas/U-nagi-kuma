@@ -1238,5 +1238,9 @@
 "sys.digest_segment": "{n} monitor di {segment} gagal bersamaan di lapisan jaringan: kemungkinan penyebabnya segmen, switch, atau uplink-nya; layanannya mungkin baik-baik saja.",
 "sys.digest_dns": "{n} monitor gagal me-resolve nama bersamaan: kemungkinan penyebabnya DNS; layanannya mungkin baik-baik saja.",
 "ui.pol.network": "Tim jaringan",
-"ui.pol.network_hint": "Opsional: kanal yang menerima ringkasan penyebab jaringan (segmen, DNS) alih-alih rantai, mis. netadmin."
+"ui.pol.network_hint": "Opsional: kanal yang menerima ringkasan penyebab jaringan (segmen, DNS) alih-alih rantai, mis. netadmin.",
+"sys.resolved": "Teratasi: {title}",
+"sys.resolved.local_network": "Jaringan host ini sudah pulih",
+"sys.resolved.overload": "Beban host kembali normal",
+"sys.resolved.all_failed": "Kanal notifikasi berfungsi lagi"
 }

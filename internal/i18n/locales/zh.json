@@ -1238,5 +1238,9 @@
 "sys.digest_segment": "{segment} 网段内 {n} 个监控同时出现网络层故障：很可能是该网段、交换机或上联的问题，业务本身可能正常。",
 "sys.digest_dns": "{n} 个监控同时无法解析域名：很可能是 DNS 的问题，业务本身可能正常。",
 "ui.pol.network": "网管",
-"ui.pol.network_hint": "可选：网络类汇总（网段、DNS 故障）改发给这些通道，而不是上面的链，例如 netadmin。"
+"ui.pol.network_hint": "可选：网络类汇总（网段、DNS 故障）改发给这些通道，而不是上面的链，例如 netadmin。",
+"sys.resolved": "已恢复：{title}",
+"sys.resolved.local_network": "本机网络已恢复",
+"sys.resolved.overload": "主机负载已恢复正常",
+"sys.resolved.all_failed": "通知通道已恢复正常"
 }

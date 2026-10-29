@@ -63,6 +63,10 @@ func (e *Engine) text(id string, args ...any) string {
 		return i18n.T(lang, "sys.maint_end", "title", args[0])
 	case id == "node_back":
 		return i18n.T(lang, "sys.node_back", "node", args[0])
+	case id == "system_resolved":
+		return i18n.T(lang, "sys.resolved", "title", args[0])
+	case strings.HasPrefix(id, "system_resolved_"):
+		return i18n.T(lang, "sys.resolved."+strings.TrimPrefix(id, "system_resolved_"))
 	case strings.HasPrefix(id, "system_title_"):
 		return i18n.T(lang, "sys.title."+strings.TrimPrefix(id, "system_title_"))
 	case id == "anomaly_"+AnomalyUplink:

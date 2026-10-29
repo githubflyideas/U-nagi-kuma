@@ -1246,5 +1246,9 @@
 "sys.digest_segment": "{n} Monitore in {segment} scheitern gleichzeitig auf Netzwerkebene: wahrscheinlich das Segment, sein Switch oder seine Anbindung; die Dienste selbst laufen vielleicht.",
 "sys.digest_dns": "{n} Monitore können ihre Namen gleichzeitig nicht auflösen: wahrscheinlich DNS; die Dienste selbst laufen vielleicht.",
 "ui.pol.network": "Netzwerkteam",
-"ui.pol.network_hint": "Optional: Kanäle, die Zusammenfassungen mit Netzwerkursache (Segment, DNS) statt der Kette erhalten, z. B. netadmin."
+"ui.pol.network_hint": "Optional: Kanäle, die Zusammenfassungen mit Netzwerkursache (Segment, DNS) statt der Kette erhalten, z. B. netadmin.",
+"sys.resolved": "Behoben: {title}",
+"sys.resolved.local_network": "Das Netzwerk dieses Hosts ist wieder da",
+"sys.resolved.overload": "Last des Hosts wieder normal",
+"sys.resolved.all_failed": "Benachrichtigungskanäle funktionieren wieder"
 }
