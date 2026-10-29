@@ -113,6 +113,9 @@ type PolicySpec struct {
 	Chain  []string
 	Mode   string // fallback | all
 	Notify NotifyPolicy
+	// Network receives the summaries of network-class failures (all at
+	// once); empty: they go to Chain with the rest.
+	Network []string
 	// Escalate notifies more channels while an incident stays open and
 	// unacknowledged.
 	Escalate []EscalationStep

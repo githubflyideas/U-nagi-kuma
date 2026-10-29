@@ -248,6 +248,7 @@ func (a *App) engineConfig(cfg *config.Config) engine.Config {
 			AckClearOnChange: p.AckClearOnChange, RecoveryAfterAck: p.RecoveryAfterAck,
 		}}
 		ps := ec.Policies[p.Name]
+		ps.Network = p.Network
 		for _, x := range p.Escalate {
 			ps.Escalate = append(ps.Escalate, engine.EscalationStep{After: x.After, Channels: x.Channels})
 		}

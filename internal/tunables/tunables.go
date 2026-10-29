@@ -57,6 +57,7 @@ var defs = []Def{
 	{Key: "notify.retry-backoff", Kind: Duration, Default: "2s", Min: "0s", Max: "5m", Desc: "wait before retrying a failed channel", DescZH: "通道失败后重试前的等待时间"},
 	{Key: "notify.channel-rate", Kind: Rate, Default: "20/m", Desc: "per-channel send rate limit", DescZH: "单个通道的发送速率上限", Override: "CHANNEL rate="},
 	{Key: "notify.coalesce-queue", Kind: Int, Default: "10", Min: "1", Max: "1000", Desc: "queued messages per channel before the rest is merged into one digest", DescZH: "通道排队超过多少条后，其余合并为一条摘要"},
+	{Key: "notify.group-min", Kind: Int, Default: "3", Min: "2", Max: "1000", Desc: "monitors of one IP segment (or failing to resolve names) that must fail together before a summary blames the network instead of the services", DescZH: "同一网段（或同时域名解析失败）的监控至少多少个一起故障，汇总才判定为网络问题而非业务问题"},
 	{Key: "notify.coalesce-wait", Kind: Duration, Default: "2m", Min: "10s", Max: "1h", Desc: "max queue wait before the rest is merged into one digest", DescZH: "排队超过多长时间后，其余合并为一条摘要"},
 	{Key: "notify.intent-late", Kind: Duration, Default: "5m", Min: "0s", Max: "24h", Desc: "deliveries later than this are tagged [delayed]", DescZH: "晚于此时长补发的通知加 [延迟] 标记"},
 	{Key: "notify.daily-reminder", Kind: Bool, Default: "on", Desc: "daily reminder of still-open incidents", DescZH: "每日提醒仍未解决的故障"},

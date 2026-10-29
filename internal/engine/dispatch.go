@@ -197,6 +197,17 @@ func (e *Engine) finishIntent(in *Intent, now time.Time) {
 	}
 }
 
+// digest queues one summary notice standing for the incidents ids; chain
+// replaces the policy's channels (all of them notified) when set.
+func (e *Engine) digest(pol string, chain []string, title, body string, ids []int64, now time.Time) {
+	d := &Intent{Kind: "DIGEST", Policy: pol, CreatedAt: now, DueAt: now, Chain: chain,
+		Message: notify.Message{Kind: "DIGEST", Priority: "high", Title: title, Body: body, Time: now, Instance: e.cfg.Instance, Lang: e.cfg.Lang}}
+	e.enqueue(d)
+	if len(ids) > 0 {
+		e.digestCovers[d.ID] = ids
+	}
+}
+
 // credit books a delivered problem notice on its incident (or on every
 // incident a digest stood for), so a recovery is owed only to people who
 // actually heard about the problem.
@@ -236,23 +247,34 @@ func (e *Engine) coalesce(now time.Time) {
 		if len(q) <= maxQ && now.Sub(q[0].CreatedAt) <= maxWait {
 			continue
 		}
-		titles := make([]string, 0, len(q))
-		var covers []int64
 		for _, in := range q {
-			titles = append(titles, in.Kind+" "+in.Message.Title)
-			if in.IncidentID != 0 && NoticeKind(in.Kind) != NoticeRecovery {
-				covers = append(covers, in.IncidentID)
-			}
 			in.State, in.UpdatedAt = IntentMerged, now
 			_ = e.deps.Sink.SaveIntent(in)
 			delete(e.intents, in.ID)
 		}
 		e.deps.Sink.Counter(CounterOutageMerged, len(q))
-		d := &Intent{Kind: "DIGEST", Policy: pol, CreatedAt: now, DueAt: now,
-			Message: notify.Message{Kind: "DIGEST", Priority: "high", Title: e.text("digest_title", len(q)), Body: e.text("digest_body", titles, e.cfg.BaseURL), Time: now, Instance: e.cfg.Instance, Lang: e.cfg.Lang}}
-		e.enqueue(d)
-		if len(covers) > 0 {
-			e.digestCovers[d.ID] = covers
+		// Services first and urgent; network causes said as such, to the
+		// network team when the policy names one (network=).
+		service, network := e.classify(q)
+		var netIDs []int64
+		for _, p := range network {
+			netIDs = append(netIDs, p.ids...)
+		}
+		netTitle, netBody := e.text("digest_network_title", partsLen(network)), e.networkBody(network)
+		svcTitle := e.text("digest_service_title", len(service.lines))
+		svcBody := e.text("digest_body", service.lines, e.cfg.BaseURL)
+		switch {
+		case len(network) == 0:
+			e.digest(pol, nil, svcTitle, svcBody, service.ids, now)
+		case len(e.policy(pol).Network) > 0:
+			if len(service.lines) > 0 {
+				e.digest(pol, nil, svcTitle, svcBody, service.ids, now)
+			}
+			e.digest(pol, e.policy(pol).Network, netTitle, netBody, netIDs, now)
+		case len(service.lines) > 0:
+			e.digest(pol, nil, svcTitle, svcBody+"\n\n"+netBody, append(service.ids, netIDs...), now)
+		default:
+			e.digest(pol, nil, netTitle, netBody, netIDs, now)
 		}
 	}
 }

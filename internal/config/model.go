@@ -211,8 +211,11 @@ type Channel struct {
 // Policy is a notification policy. Unset numbers are filled from the
 // tunables; the raw strings are kept for display.
 type Policy struct {
-	Name             string
-	Chain            []string
+	Name  string
+	Chain []string
+	// Network receives the summaries of failures that point at the
+	// network (a segment, DNS) rather than the services: the network team.
+	Network          []string
 	Mode             string // fallback | all
 	Repeat           time.Duration
 	Max              int

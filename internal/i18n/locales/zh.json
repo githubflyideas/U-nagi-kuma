@@ -1232,5 +1232,11 @@
 "sys.outage_summary_failing": "监控主机网络中断 {from}–{to}（{duration}），期间无法检测（{paused} 个监控暂停判定）。恢复后已重新检测：{failing} 个仍异常——{names}",
 "ev.outage_summary": "本机断网结束（{duration_s} 秒）：{affected} 个监控受影响，重新检测后 {failing} 个仍异常，丢弃 {dropped} 条过时通知",
 "ev.outage_backdated": "{monitors} 个故障始于本机断网，已撤回",
-"ev.closed_local_network": "故障已撤回：它始于本机断网"
+"ev.closed_local_network": "故障已撤回：它始于本机断网",
+"sys.digest_service_title": "业务异常 {n} 项——请尽快处理",
+"sys.digest_network_title": "网络故障：影响 {n} 个监控——请联系网管查看",
+"sys.digest_segment": "{segment} 网段内 {n} 个监控同时出现网络层故障：很可能是该网段、交换机或上联的问题，业务本身可能正常。",
+"sys.digest_dns": "{n} 个监控同时无法解析域名：很可能是 DNS 的问题，业务本身可能正常。",
+"ui.pol.network": "网管",
+"ui.pol.network_hint": "可选：网络类汇总（网段、DNS 故障）改发给这些通道，而不是上面的链，例如 netadmin。"
 }

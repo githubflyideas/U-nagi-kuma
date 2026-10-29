@@ -1232,5 +1232,11 @@
 "sys.outage_summary_failing": "Host ini kehilangan jaringan {from}–{to} ({duration}) dan tidak bisa memeriksa apa pun selama itu ({paused} monitor menunggu). Diperiksa ulang: {failing} masih gagal — {names}",
 "ev.outage_summary": "Gangguan lokal selesai ({duration_s} dtk): {affected} monitor terdampak, {failing} masih gagal setelah diperiksa ulang, {dropped} notifikasi usang dibuang",
 "ev.outage_backdated": "{monitors} insiden bermula dari gangguan lokal dan ditarik kembali",
-"ev.closed_local_network": "Insiden ditarik: bermula dari gangguan jaringan host ini"
+"ev.closed_local_network": "Insiden ditarik: bermula dari gangguan jaringan host ini",
+"sys.digest_service_title": "Layanan gagal: {n} — segera tangani",
+"sys.digest_network_title": "Gangguan jaringan: {n} monitor terdampak — hubungi tim jaringan",
+"sys.digest_segment": "{n} monitor di {segment} gagal bersamaan di lapisan jaringan: kemungkinan penyebabnya segmen, switch, atau uplink-nya; layanannya mungkin baik-baik saja.",
+"sys.digest_dns": "{n} monitor gagal me-resolve nama bersamaan: kemungkinan penyebabnya DNS; layanannya mungkin baik-baik saja.",
+"ui.pol.network": "Tim jaringan",
+"ui.pol.network_hint": "Opsional: kanal yang menerima ringkasan penyebab jaringan (segmen, DNS) alih-alih rantai, mis. netadmin."
 }

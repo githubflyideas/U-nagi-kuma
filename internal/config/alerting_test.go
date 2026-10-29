@@ -53,6 +53,7 @@ web    IN TCP 10.0.0.1:80 policy=pager handler="/bin/true $SERVICESTATE$"
 		"a IN CHANNEL log\np IN POLICY chain=a escalate=2h:a,30m:a\n":                    "increase",
 		"a IN CHANNEL log\np IN POLICY chain=a escalate=30m:zz\n":                        "zz",
 		"a IN CHANNEL log\np IN POLICY chain=a escalate=soon\n":                          "DELAY",
+		"a IN CHANNEL log\np IN POLICY chain=a network=zz\n":                             "network channel",
 		"a IN CHANNEL log\ng IN CHANNEL group members=a rotate=monthly\n":                "rotate must be",
 		"a IN CHANNEL log\ng IN CHANNEL group members=a handoff=09:00\n":                 "needs rotate=",
 		"a IN CHANNEL log\ng IN CHANNEL group members=a rotate=daily x=1\n":              "option x",

@@ -1232,5 +1232,11 @@
 "sys.outage_summary_failing": "監視ホストのネットワークが {from}–{to}（{duration}）切断され、その間は確認できませんでした（{paused} 件の監視が保留）。復旧後に再確認：{failing} 件がまだ異常——{names}",
 "ev.outage_summary": "ローカル障害終了（{duration_s} 秒）：{affected} 件の監視が影響、再確認後も {failing} 件が異常、古い通知 {dropped} 件を破棄",
 "ev.outage_backdated": "{monitors} 件の障害はローカル障害が原因のため取り消しました",
-"ev.closed_local_network": "障害を取り消し：このホストのネットワーク障害で始まったもの"
+"ev.closed_local_network": "障害を取り消し：このホストのネットワーク障害で始まったもの",
+"sys.digest_service_title": "サービス異常 {n} 件——至急対応してください",
+"sys.digest_network_title": "ネットワーク障害：{n} 件の監視に影響——ネットワーク担当に連絡してください",
+"sys.digest_segment": "{segment} 内の {n} 件の監視が同時にネットワーク層で失敗：セグメント、スイッチ、上位回線が原因の可能性が高く、サービス自体は正常かもしれません。",
+"sys.digest_dns": "{n} 件の監視が同時に名前解決に失敗：DNS が原因の可能性が高く、サービス自体は正常かもしれません。",
+"ui.pol.network": "ネットワーク担当",
+"ui.pol.network_hint": "任意：ネットワーク起因（セグメント、DNS）のまとめ通知をチェーンではなくこれらのチャネルへ。例：netadmin。"
 }

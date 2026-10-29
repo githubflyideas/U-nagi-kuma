@@ -191,6 +191,7 @@ func (s *Server) policies(w http.ResponseWriter, r *http.Request) (any, error) {
 		Degraded      bool     `json:"notify_degraded"`
 		AckExpireS    int      `json:"ack_expire_s"`
 		Escalate      string   `json:"escalate"`
+		Network       string   `json:"network"`
 		Implicit      bool     `json:"implicit"`
 		UsedByCount   int      `json:"used_by_count"`
 		ETag          string   `json:"etag,omitempty"` // empty for implicit policies
@@ -214,7 +215,7 @@ func (s *Server) policies(w http.ResponseWriter, r *http.Request) (any, error) {
 			chain = []string{}
 		}
 		out = append(out, polJSON{p.Name, chain, p.Mode, int(p.Repeat.Seconds()), p.Max, int(p.Delay.Seconds()), int(p.ReopenWindow.Seconds()),
-			p.Recovery, p.NotifyDegraded, int(p.AckExpire.Seconds()), config.EscalateText(p.Escalate), p.Implicit, n, s.recordETags()[p.Name], chainIssues(cfg, p.Chain, issues)})
+			p.Recovery, p.NotifyDegraded, int(p.AckExpire.Seconds()), config.EscalateText(p.Escalate), strings.Join(p.Network, ","), p.Implicit, n, s.recordETags()[p.Name], chainIssues(cfg, p.Chain, issues)})
 	}
 	return out, nil
 }

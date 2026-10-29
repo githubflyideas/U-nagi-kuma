@@ -1240,5 +1240,11 @@
 "sys.outage_summary_failing": "Cet hôte a perdu le réseau de {from} à {to} ({duration}) et n'a rien pu vérifier entre-temps ({paused} sondes en attente). Revérifié depuis : {failing} toujours en échec — {names}",
 "ev.outage_summary": "Panne locale terminée ({duration_s} s) : {affected} sondes concernées, {failing} toujours en échec après revérification, {dropped} notifications périmées abandonnées",
 "ev.outage_backdated": "{monitors} incidents ont commencé avec la panne locale et ont été retirés",
-"ev.closed_local_network": "Incident retiré : il a commencé avec la panne réseau de cet hôte"
+"ev.closed_local_network": "Incident retiré : il a commencé avec la panne réseau de cet hôte",
+"sys.digest_service_title": "Services en échec : {n} — à traiter maintenant",
+"sys.digest_network_title": "Panne réseau : {n} sondes concernées — contactez l'équipe réseau",
+"sys.digest_segment": "{n} sondes de {segment} échouent en même temps au niveau réseau : le segment, son commutateur ou son lien est la cause probable ; les services vont peut-être bien.",
+"sys.digest_dns": "{n} sondes n'arrivent plus à résoudre leurs noms en même temps : le DNS est la cause probable ; les services vont peut-être bien.",
+"ui.pol.network": "Équipe réseau",
+"ui.pol.network_hint": "Facultatif : canaux qui reçoivent les résumés imputant le réseau (segment, DNS) au lieu de la chaîne, p. ex. netadmin."
 }
