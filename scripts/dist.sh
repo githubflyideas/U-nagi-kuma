@@ -22,7 +22,7 @@ for p in $platforms; do
 	mkdir -p "$dir"
 	CGO_ENABLED=0 GOOS=$os GOARCH=$arch GOARM=7 go build -trimpath \
 		-ldflags "-s -w -X main.version=$version" -o "$dir/$exe" ./cmd/unagikuma
-	cp LICENSE README.md README.zh-CN.md dist/THIRD_PARTY_LICENSES.txt "$dir/"
+	cp LICENSE README*.md dist/THIRD_PARTY_LICENSES.txt "$dir/"
 	mkdir -p "$dir/docs/spec" && cp docs/manual.md docs/manual.zh-CN.md "$dir/docs/" && cp docs/spec/monitors-bind.md "$dir/docs/spec/"
 	if [ "$os" = windows ]; then
 		(cd dist/stage && zip -qr "../$name.zip" "$name")

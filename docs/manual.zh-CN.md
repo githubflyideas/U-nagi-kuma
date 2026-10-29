@@ -1,6 +1,6 @@
 # Unagikuma 用户手册
 
-安装、配置和使用 Unagikuma。简要介绍见 [README](../README.zh-CN.md)。
+安装、配置和使用 Unagikuma。简要介绍见 [README](../README.zh.md)。
 **目录**
 
 - [快速开始](#快速开始)
