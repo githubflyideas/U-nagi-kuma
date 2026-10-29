@@ -198,13 +198,15 @@ func (r *nagReader) main(p string) error {
 
 // locate finds a path named in nagios.cfg: as written, relative to the
 // main file, or, for an absolute path from another machine, its last
-// parts below the main file's directory or one of its parents.
+// parts below the main file's directory or one of its parents. A path
+// starting with / counts as absolute on Windows too: the configuration
+// usually comes from a Linux machine.
 func locate(base, p string, dir bool) string {
 	ok := func(x string) bool {
 		fi, err := os.Stat(x)
 		return err == nil && fi.IsDir() == dir
 	}
-	if !filepath.IsAbs(p) {
+	if !filepath.IsAbs(p) && !strings.HasPrefix(p, "/") {
 		if x := filepath.Join(base, p); ok(x) {
 			return x
 		}
