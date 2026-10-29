@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+**New**
+- Moving from Uptime Kuma or Nagios is no longer a preview. `unagikuma import kuma|nagios` prints a clear report (imported / needs a look / not imported, each with what to do) and saves it as text and Markdown in `<data>/import-reports/`. `--dry-run` checks everything without changing anything; running it again adds only what is new.
+- Uptime Kuma: 1.23 and 2.x databases (also while it runs), nested groups, maintenance windows, status pages, push URLs that keep working, ntfy, Gotify, Pushover, Teams, PagerDuty and more notification types, passwords and tokens stored as secrets. On a new installation the first Uptime Kuma account becomes the administrator.
+- Nagios: point it at `nagios.cfg` and the files it names and `resource.cfg` are read; quoted Debian plugin arguments, passive checks (push monitors), DNS, NTP and SNMP checks are understood; plugins come over paused until they are in the check-scripts directory.
+- The imported records go in one tidy block at the end of `monitors.bind`, in sections headed by where they came from, aligned like `unagikuma fmt`.
+- `unagikuma reset-password` asks for the new password twice without showing it, lists the users when the name is wrong, and `--generate` makes a random one.
+
+**Fixed**
+- `unagikuma check` now finds channel settings the server would refuse.
+- A monitor added to a group from the web UI is aligned like that group's records.
+
 ## v1.5.1 — 2026-10-29
 
 **Upgrading from v1.0.0**

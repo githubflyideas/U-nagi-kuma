@@ -254,11 +254,37 @@ unagikuma agent --server https://master.example.com:8077 --node bj \
 
 ## 从 Uptime Kuma 或 Nagios 迁移
 
-> 实验性功能：如有内容没能迁移过来，欢迎反馈。
+导入会加入 Unagikuma 能运行的内容，其余的逐条列出原因和替代做法。已有的监控项不会被修改或删除，所以重复运行是安全的。请先用 `--dry-run` 预览。
 
-停止 Uptime Kuma 后，在 **配置 › 导入** 中导入它的 `kuma.db`（或 1.x 版本导出的 JSON 备份），或执行 `unagikuma import kuma --area region:north kuma.db`（加 `--dry-run` 先预览）。导入时只需选择监控项放入的段落，以及（可选）负责该段落的现有账号；Uptime Kuma 的账号会以所选角色加入（限定在该段落），原密码继续有效。HTTP、关键字、JSON 查询、TCP 端口、ping、DNS 和推送监控会连同间隔、重试、分组和标签一起导入；飞书、钉钉、企业微信、Telegram、Slack、Discord、Webhook 和 SMTP 通知会变成通道，凭据存为密钥。已存在的监控项会跳过，无法导入的内容会逐条列出。
+**从 Uptime Kuma 迁移**（1.23 和 2.x）。先停止 Uptime Kuma，然后：
 
-从 Nagios（或 Icinga 1、Naemon）迁移：执行 `unagikuma import nagios /etc/nagios/objects`，或在 **配置 › 导入** 中上传 `.cfg` 文件。模板会被展开；主机变成 ping 检查，其服务以 `parent=` 依赖主机，主机的父子关系保留；`check_http`、`check_tcp`、`check_ssh`、`check_dns`、`check_mysql`、`check_pgsql` 等常用插件变成内置检查，其他插件变成运行同一命令的 EXEC 检查（把插件复制到 check-scripts 目录即可）。有邮箱的联系人变成经本机邮件服务器发送的邮件通道，联系人组变成联系组，时间段变成 `PERIOD` 记录，事件处理脚本也会保留。
+```sh
+unagikuma import kuma --dry-run /path/to/uptime-kuma/data/kuma.db
+unagikuma import kuma /path/to/uptime-kuma/data/kuma.db
+```
+
+也可以导入 Uptime Kuma 1.x 导出的 JSON 备份，但其中没有账号、维护窗口和状态页。会迁移过来的有：HTTP、关键字、JSON 查询、TCP 端口、ping、DNS、推送（推送地址继续有效，只需换服务器地址）、Docker、gRPC、Redis、PostgreSQL 和 MySQL 监控，连同间隔、重试、分组（嵌套分组写成 `父组 / 子组`）、标签和暂停状态；通知（飞书、钉钉、企业微信、Telegram、Slack、Discord、Webhook、SMTP、ntfy、Gotify、Pushover、Teams、PagerDuty、Matrix、Mattermost、Google Chat、Bark、Server酱、PushPlus、Opsgenie）变成通道，凭据存为密钥；每周、每月、cron 和一次性的维护窗口；状态页；以及账号和原密码（新安装时第一个账号成为管理员）。Unagikuma 无法运行的监控（MQTT、MongoDB、SQL Server、RADIUS、游戏服务器、反向模式等）会列出并给出替代建议。
+
+**从 Nagios 迁移**（也适用于 Icinga 1、Naemon）。指向 `nagios.cfg`，它引用的文件（`cfg_file=`、`cfg_dir=`、`resource_file=`）会像 Nagios 一样读取：
+
+```sh
+unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
+unagikuma import nagios /etc/nagios4/nagios.cfg
+```
+
+也可以指定目录或单个 `.cfg` 文件。模板会被展开；主机变成 ping 检查，其服务以 `parent=` 依赖主机；`check_http`、`check_tcp`、`check_ssh`、`check_dns`、`check_dig`、`check_ntp`、`check_snmp`（运行时间）、`check_mysql`、`check_pgsql` 等插件变成内置检查；其他插件变成脚本检查，先处于暂停状态，把插件复制到 check-scripts 目录后再恢复。`resource.cfg` 中的 `$USERn$` 值存为密钥，只接收被动结果的服务变成推送监控，有邮箱的联系人变成邮件通道，联系人组变成组通道，时间段变成 `PERIOD` 记录。
+
+**迁移报告。** 两种导入都会打印摘要（已导入 / 需要查看 / 未导入）、已导入内容的表格，以及每个需要查看或未导入项目的原因和处理方法。同样的报告以文本和 Markdown 格式保存在 `<data>/import-reports/`。新记录写在 `monitors.bind` 末尾的一个块中，按来源分节并加注释；`title=` 保留原名。网页界面 **配置 › 导入** 的效果相同。选项：`--area 段落` 把监控放入某个段落，`--role` 设置导入账号的角色，`--report 目录` 指定报告保存位置。退出码：0 完成（或没有新内容），1 失败（未做任何更改），2 用法错误。
+
+## 忘记密码？
+
+在运行 Unagikuma 的机器上执行（服务可以不停）：
+
+```sh
+unagikuma reset-password --data /path/to/data admin
+```
+
+输入两次新密码（不会显示），或用 `--generate` 生成一个随机密码并只显示一次。该用户的所有登录会话都会退出。如果用户名写错，命令会列出现有用户。
 
 ## 命令行
 
@@ -274,7 +300,7 @@ unagikuma keywords [方言]          列出 UDP 关键字
 unagikuma backup [--passphrase-file 文件] [--history]
                                   生成备份归档
 unagikuma restore 归档             恢复备份
-unagikuma reset-password [用户]    重设密码
+unagikuma reset-password [用户]    重设密码（--generate 自动生成）
 unagikuma version
 ```
 

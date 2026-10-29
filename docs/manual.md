@@ -271,11 +271,37 @@ A licence may limit the number of nodes (the master included) and of accounts. W
 
 ## Moving from Uptime Kuma or Nagios
 
-> Experimental: tried on Uptime Kuma 1.23 and 2.0 databases; tell us what did not come over.
+The import adds what Unagikuma can run and lists everything else with the reason and what to do instead. It never changes or deletes monitors that are already here, so running it twice is safe. Always look first with `--dry-run`.
 
-Stop Uptime Kuma and import its `kuma.db` (or a version 1 JSON backup) under **Configuration › Import**, or with `unagikuma import kuma --area region:north kuma.db` (`--dry-run` to look first). Choose the section the monitors go to and, optionally, an existing account that manages it; Uptime Kuma's accounts are added with the role you pick (limited to that section) and keep their passwords. HTTP, keyword, JSON query, TCP port, ping, DNS and push monitors come over with their intervals, retries, groups and tags; Feishu, DingTalk, WeCom, Telegram, Slack, Discord, webhook and SMTP notifications become channels, with their credentials stored as secrets. Monitors that exist already are skipped, and everything that could not be carried over is listed.
+**From Uptime Kuma** (1.23 and 2.x). Stop Uptime Kuma, then:
 
-From Nagios (or Icinga 1, Naemon), import the object configuration with `unagikuma import nagios /etc/nagios/objects` or upload the `.cfg` files under **Configuration › Import**. Templates are resolved; hosts become ping checks that their services depend on (`parent=`), with host parents kept; `check_http`, `check_tcp`, `check_ssh`, `check_dns`, `check_mysql`, `check_pgsql` and the other common plugins become native checks, and any other plugin an EXEC check running the same command (copy the plugin into the check-scripts directory). Contacts with an e-mail address become e-mail channels through the local mail server, contact groups become contact groups, time periods become `PERIOD` records, and event handlers are kept.
+```sh
+unagikuma import kuma --dry-run /path/to/uptime-kuma/data/kuma.db
+unagikuma import kuma /path/to/uptime-kuma/data/kuma.db
+```
+
+A JSON backup from Uptime Kuma 1.x works too, but has no accounts, maintenance windows or status pages. What comes over: HTTP, keyword, JSON query, TCP port, ping, DNS, push (the push URLs keep working: only the server address changes), Docker, gRPC, Redis, PostgreSQL and MySQL monitors with their intervals, retries, groups (nested groups become `Parent / Child`), tags and paused state; notifications (Feishu, DingTalk, WeCom, Telegram, Slack, Discord, webhook, SMTP, ntfy, Gotify, Pushover, Teams, PagerDuty, Matrix, Mattermost, Google Chat, Bark, ServerChan, PushPlus, Opsgenie) as channels with their credentials stored as secrets; weekly, monthly, cron and one-time maintenance windows; status pages; and accounts with their passwords (on a new installation the first one becomes the administrator). Monitors Unagikuma cannot run (MQTT, MongoDB, SQL Server, RADIUS, game servers, upside-down mode, …) are listed with a suggested replacement.
+
+**From Nagios** (and Icinga 1, Naemon). Point it at `nagios.cfg`, so the files it names (`cfg_file=`, `cfg_dir=`, `resource_file=`) are read the way Nagios reads them:
+
+```sh
+unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
+unagikuma import nagios /etc/nagios4/nagios.cfg
+```
+
+A folder or single `.cfg` files work too. Templates are resolved; hosts become ping checks that their services depend on (`parent=`); `check_http`, `check_tcp`, `check_ssh`, `check_dns`, `check_dig`, `check_ntp`, `check_snmp` (uptime), `check_mysql`, `check_pgsql` and similar plugins become built-in checks; other plugins become script checks that start paused until you copy the plugin into the check-scripts directory. `$USERn$` values from `resource.cfg` become secrets, passive-only services become push monitors, contacts with an e-mail address become e-mail channels, contact groups become group channels, and time periods become `PERIOD` records.
+
+**The report.** Both print a summary (imported / needs a look / not imported), a table of what was imported, and for each item that needs a look or was not imported the reason and what to do. The same report is saved as text and Markdown in `<data>/import-reports/`. The new records go in one block at the end of `monitors.bind`, in sections headed by where they came from; `title=` keeps the original names. The web UI does the same under **Configuration › Import**. Options: `--area SECTION` puts the monitors in a section, `--role` sets the role of imported accounts, `--report DIR` saves the report elsewhere. Exit status: 0 done (or nothing new), 1 failed (nothing changed), 2 wrong usage.
+
+## Forgot your password?
+
+On the machine where Unagikuma runs (it may keep running):
+
+```sh
+unagikuma reset-password --data /path/to/data admin
+```
+
+Type the new password twice (it is not shown), or use `--generate` to get a random one printed once. Everyone signed in as that user is signed out. If the user name is wrong, the command lists the existing users.
 
 ## Command line
 
@@ -291,7 +317,7 @@ unagikuma keywords [dialect]     list the UDP keywords
 unagikuma backup [--passphrase-file F] [--history]
                                 write a backup archive
 unagikuma restore ARCHIVE        restore a backup
-unagikuma reset-password [user]  set a new password
+unagikuma reset-password [user]  set a new password (--generate makes one)
 unagikuma version
 ```
 
