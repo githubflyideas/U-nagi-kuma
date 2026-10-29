@@ -144,6 +144,12 @@ default   IN POLICY chain=team,night-sms mode=all repeat=30m max=3 escalate=30m:
 
   **值班** 页面显示当前谁在值班和之后的班次，可以新建值班表、安排代班：有人临时顶班，告警先发给他，原有排班顺序不变。页面还统计最近 `oncall.stats-window`（30 天）的 MTTA 和 MTTR，每起故障算在它发生时的值班人名下。
 - **升级。** 策略上的 `escalate=时长:通道[+通道],…` 在故障持续未确认时追加通知：30 分钟后通知主管，2 小时后再加上值班电话。确认后即停止。
+- **汇总会说明是哪类问题。** 短时间内积压很多通知时（`notify.coalesce-queue`、`notify.coalesce-wait`），会合并成汇总，汇总区分业务和网络：
+  - 各自独立出错的业务排在最前面，写明"请尽快处理"，给业务负责人；
+  - 同一 IP 网段内 `notify.group-min`（3）个以上监控同时出现网络层故障，判定为该网段、交换机或上联的问题；多个监控同时无法解析域名，判定为 DNS 问题——写明"请联系网管"。
+
+  在策略上写 `network=netadmin`，网络类的部分会单独发给这些通道（网管），业务部分仍走原来的链。
+- **监控主机自己断网时**，它无法通知任何人：断网期间不发送，期间积压的消息事后也不补发。在识别出断网之前不久（`localnet.backdate`）开始、且还没通知到任何人的故障会被撤回。网络恢复后会立即重新检测所有监控，只发一条消息，说明断了多久、现在还有哪些异常；短于 `localnet.notify-after`（5 分钟）的断网只记录、不通知。只有真正送达过故障通知的问题，才会再发恢复通知。若要在断网*期间*就收到通知，请配置外部心跳（`--heartbeat-url`）或增加第二个节点。
 - **短信和语音电话。** 通道类型 `aliyun-sms`、`aliyun-voice`、`tencent-sms`、`tencent-voice`、`twilio-sms`、`twilio-voice`。模板参数默认是监控名和状态，可用 `params="{{.Monitor}}|{{.StatusText}}"` 修改。在网页中保存时密钥会存为加密密钥。
 - **事件处理脚本。** 监控项上的 `handler="restart-web $SERVICESTATE$ $SERVICESTATETYPE$"` 会在每次状态变化时运行 check-scripts 目录中的脚本（Nagios 风格），环境变量含 `UNAGIKUMA_MONITOR`、`UNAGIKUMA_STATE`、`UNAGIKUMA_STATE_TYPE`、`UNAGIKUMA_ATTEMPT`、`UNAGIKUMA_ADDRESS`、`UNAGIKUMA_REASON`。脚本在主节点上运行，每个监控项同时只运行一个，最长 `engine.handler-timeout`；结果写入事件日志。只有管理员可以设置。
 - **联系人。** **告警 › 联系人** 列出所有可能接收告警的人及其邮箱和手机号，通知通道会对照它检查：

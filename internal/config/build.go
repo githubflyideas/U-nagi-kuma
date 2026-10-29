@@ -1082,6 +1082,12 @@ func (b *builder) policyRec(r Record) {
 					p.Chain = append(p.Chain, c)
 				}
 			}
+		case "network":
+			for _, c := range strings.Split(o.Value, ",") {
+				if c = strings.TrimSpace(c); c != "" {
+					p.Network = append(p.Network, c)
+				}
+			}
 		case "mode":
 			v := strings.ToLower(o.Value)
 			if v != "fallback" && v != "all" {
@@ -1230,6 +1236,11 @@ func (b *builder) crossRefs() {
 		for _, c := range p.Chain {
 			if b.cfg.FindChannel(c) == nil {
 				b.errf(p.Pos, "unknown_channel", "policy %s: channel %q is not defined", p.Name, c)
+			}
+		}
+		for _, c := range p.Network {
+			if b.cfg.FindChannel(c) == nil {
+				b.errf(p.Pos, "unknown_channel", "policy %s: network channel %q is not defined", p.Name, c)
 			}
 		}
 		for _, e := range p.Escalate {

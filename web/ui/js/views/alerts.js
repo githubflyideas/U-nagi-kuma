@@ -152,7 +152,7 @@ function PolicyForm({ initial, channels, onClose, onSaved }) {
   const [f, setF] = useState({
     name: p.name || '', chain: p.chain || [], mode: p.mode || 'fallback', repeat: secs(p.repeat_s), max: p.max != null ? String(p.max) : '',
     delay: secs(p.delay_s), reopen: secs(p.reopen_window_s), ackexp: secs(p.ack_expire_s), recovery: p.recovery !== false, degraded: !!p.notify_degraded,
-    escalate: p.escalate || '',
+    escalate: p.escalate || '', network: p.network || '',
   });
   const [err, setErr] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -163,7 +163,7 @@ function PolicyForm({ initial, channels, onClose, onSaved }) {
     e.preventDefault();
     setBusy(true);
     setErr(null);
-    const opts = { mode: f.mode, repeat: f.repeat, max: f.max, delay: f.delay, 'reopen-window': f.reopen, 'ack-expire': f.ackexp, escalate: f.escalate,
+    const opts = { mode: f.mode, repeat: f.repeat, max: f.max, delay: f.delay, 'reopen-window': f.reopen, 'ack-expire': f.ackexp, escalate: f.escalate, network: f.network,
       recovery: f.recovery ? '' : 'no', 'notify-degraded': f.degraded ? 'yes' : '' };
     try {
       await post('/policies', { name: f.name, chain: f.chain, opts }, ifMatch(p.etag));
@@ -193,6 +193,7 @@ function PolicyForm({ initial, channels, onClose, onSaved }) {
         <${Field} label=${t('ui.pol.ack_expire')} hint=${t('ui.pol.ack_expire_hint')}><input type="text" class="ltr" value=${f.ackexp} onInput=${set('ackexp')} placeholder="0s" /><//>
       </div>
       <${Field} label=${t('ui.pol.escalate')} hint=${t('ui.pol.escalate_hint')}><input type="text" class="ltr" value=${f.escalate} onInput=${set('escalate')} placeholder="30m:oncall, 2h:manager+sms" /><//>
+      <${Field} label=${t('ui.pol.network')} hint=${t('ui.pol.network_hint')}><input type="text" class="ltr" value=${f.network} onInput=${set('network')} placeholder="netadmin" /><//>
       <label class="switch"><input type="checkbox" checked=${f.recovery} onChange=${set('recovery')} /> ${t('ui.pol.recovery')}</label>
       <label class="switch"><input type="checkbox" checked=${f.degraded} onChange=${set('degraded')} /> ${t('ui.pol.degraded')}</label>
       ${err && html`<div class="banner error">${errText(err)}</div>`}

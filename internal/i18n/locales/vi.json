@@ -1232,5 +1232,11 @@
 "sys.outage_summary_failing": "Máy giám sát mất mạng {from}–{to} ({duration}) và không thể kiểm tra gì trong lúc đó ({paused} giám sát tạm chờ). Đã kiểm tra lại: {failing} vẫn lỗi — {names}",
 "ev.outage_summary": "Sự cố mạng cục bộ kết thúc ({duration_s} giây): {affected} giám sát bị ảnh hưởng, {failing} vẫn lỗi sau khi kiểm tra lại, bỏ {dropped} thông báo cũ",
 "ev.outage_backdated": "{monitors} sự cố bắt đầu do mất mạng cục bộ và đã được rút lại",
-"ev.closed_local_network": "Đã rút lại sự cố: nó bắt đầu do máy này mất mạng"
+"ev.closed_local_network": "Đã rút lại sự cố: nó bắt đầu do máy này mất mạng",
+"sys.digest_service_title": "Dịch vụ lỗi: {n} — hãy xử lý ngay",
+"sys.digest_network_title": "Sự cố mạng: {n} giám sát bị ảnh hưởng — hãy liên hệ đội mạng",
+"sys.digest_segment": "{n} giám sát trong {segment} cùng lỗi ở tầng mạng: nhiều khả năng do dải mạng, switch hoặc đường lên; bản thân dịch vụ có thể vẫn bình thường.",
+"sys.digest_dns": "{n} giám sát cùng không phân giải được tên: nhiều khả năng do DNS; bản thân dịch vụ có thể vẫn bình thường.",
+"ui.pol.network": "Đội mạng",
+"ui.pol.network_hint": "Không bắt buộc: các kênh nhận bản tóm tắt do mạng (dải mạng, DNS) thay cho chuỗi, ví dụ netadmin."
 }

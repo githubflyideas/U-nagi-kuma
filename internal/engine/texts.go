@@ -38,6 +38,14 @@ func (e *Engine) text(id string, args ...any) string {
 		return i18n.T(lang, "sys.all_failed", "policy", args[0], "title", args[1])
 	case id == "digest_title":
 		return i18n.N(lang, "sys.digest_title", args[0].(int))
+	case id == "digest_service_title":
+		return i18n.N(lang, "sys.digest_service_title", args[0].(int))
+	case id == "digest_network_title":
+		return i18n.N(lang, "sys.digest_network_title", args[0].(int))
+	case id == "digest_segment":
+		return i18n.T(lang, "sys.digest_segment", "n", args[0], "segment", args[1])
+	case id == "digest_dns":
+		return i18n.T(lang, "sys.digest_dns", "n", args[0])
 	case id == "digest_body":
 		lines, _ := args[0].([]string)
 		s := strings.Join(lines, "\n")

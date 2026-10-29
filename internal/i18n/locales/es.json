@@ -1240,5 +1240,11 @@
 "sys.outage_summary_failing": "Este host perdió la red de {from} a {to} ({duration}) y no pudo comprobar nada mientras tanto ({paused} monitores en espera). Comprobado de nuevo: {failing} siguen fallando — {names}",
 "ev.outage_summary": "Caída local terminada ({duration_s} s): {affected} monitores afectados, {failing} siguen fallando tras la nueva comprobación, {dropped} avisos obsoletos descartados",
 "ev.outage_backdated": "{monitors} fallos empezaron con la caída local y se retiraron",
-"ev.closed_local_network": "Incidente retirado: empezó con la caída de red de este host"
+"ev.closed_local_network": "Incidente retirado: empezó con la caída de red de este host",
+"sys.digest_service_title": "Servicios con fallos: {n} — actúa ya",
+"sys.digest_network_title": "Fallo de red: {n} monitores afectados — contacta con el equipo de red",
+"sys.digest_segment": "{n} monitores de {segment} fallan a la vez a nivel de red: la causa probable es el segmento, su switch o su enlace; los servicios quizá estén bien.",
+"sys.digest_dns": "{n} monitores no resuelven sus nombres a la vez: la causa probable es el DNS; los servicios quizá estén bien.",
+"ui.pol.network": "Equipo de red",
+"ui.pol.network_hint": "Opcional: canales que reciben los resúmenes con causa de red (segmento, DNS) en lugar de la cadena, p. ej. netadmin."
 }

@@ -1240,5 +1240,11 @@
 "sys.outage_summary_failing": "Dieser Host war {from}–{to} ({duration}) ohne Netzwerk und konnte nichts prüfen ({paused} Monitore warteten). Seitdem erneut geprüft: {failing} weiterhin gestört — {names}",
 "ev.outage_summary": "Lokaler Ausfall vorbei ({duration_s} s): {affected} Monitore betroffen, {failing} nach der Neuprüfung weiter gestört, {dropped} veraltete Meldungen verworfen",
 "ev.outage_backdated": "{monitors} Störungen begannen mit dem lokalen Ausfall und wurden zurückgenommen",
-"ev.closed_local_network": "Störung zurückgenommen: Sie begann mit dem Netzwerkausfall dieses Hosts"
+"ev.closed_local_network": "Störung zurückgenommen: Sie begann mit dem Netzwerkausfall dieses Hosts",
+"sys.digest_service_title": "Dienste gestört: {n} — bitte sofort handeln",
+"sys.digest_network_title": "Netzwerkstörung: {n} Monitore betroffen — bitte das Netzwerkteam verständigen",
+"sys.digest_segment": "{n} Monitore in {segment} scheitern gleichzeitig auf Netzwerkebene: wahrscheinlich das Segment, sein Switch oder seine Anbindung; die Dienste selbst laufen vielleicht.",
+"sys.digest_dns": "{n} Monitore können ihre Namen gleichzeitig nicht auflösen: wahrscheinlich DNS; die Dienste selbst laufen vielleicht.",
+"ui.pol.network": "Netzwerkteam",
+"ui.pol.network_hint": "Optional: Kanäle, die Zusammenfassungen mit Netzwerkursache (Segment, DNS) statt der Kette erhalten, z. B. netadmin."
 }
