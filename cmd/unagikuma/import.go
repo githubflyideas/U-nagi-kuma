@@ -36,6 +36,8 @@ Flags:
   --area SECTION   put the monitors in this section, e.g. region:north
   --role ROLE      role for Uptime Kuma's accounts: admin, operator, viewer
   --report DIR     where to save the report (default <data>/import-reports)
+  --config FILE    the configuration file (default <data>/monitors.bind)
+  --width N        report width (default: the terminal's)
 
 Run it with --dry-run first. Existing monitors are never changed: checks that
 are already here are skipped, so running it twice is safe.

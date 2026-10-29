@@ -777,6 +777,9 @@ func (n *nagios) serviceSpec(v, host map[string]string, it *Item) *config.Record
 	typ, target, opts, why := n.check(v["check_command"], host, v, it)
 	if typ == "" {
 		it.Status, it.Why = StatusLeftOut, why
+		if strings.Contains(why, "is not defined") && len(n.resources) == 0 && it.Todo == "" {
+			it.Todo = "Import nagios.cfg instead, so the command files it names are read too; or add the check by hand."
+		}
 		if it.Todo == "" {
 			it.Todo = "Add the check by hand."
 		}

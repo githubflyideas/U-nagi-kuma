@@ -55,7 +55,7 @@ func readKumaDB(data, wal []byte) (*kumaBackup, []KumaUser, error) {
 	defer db.Close()
 	monitors, err := rowsOf(db, "monitor")
 	if err != nil {
-		return nil, nil, errors.New("this database is not an Uptime Kuma database (it has no monitor table)")
+		return nil, nil, errors.New("this database has no Uptime Kuma monitor table: is it kuma.db, and was it copied completely?")
 	}
 	notifs, _ := rowsOf(db, "notification")
 	links, _ := rowsOf(db, "monitor_notification")
