@@ -1250,5 +1250,9 @@
 "sys.resolved": "Resolvido: {title}",
 "sys.resolved.local_network": "A rede deste host voltou",
 "sys.resolved.overload": "A carga do host voltou ao normal",
-"sys.resolved.all_failed": "Os canais de notificação voltaram a funcionar"
+"sys.resolved.all_failed": "Os canais de notificação voltaram a funcionar",
+"sys.title.storage": "Não é possível gravar os dados de monitoramento",
+"sys.resolved.storage": "Os dados de monitoramento voltaram a ser gravados",
+"sys.storage_failing": "A gravação no diretório de dados falha desde {time} ({error}); resultados e eventos ficam na memória e são repetidos, {lost} foram perdidos. Libere espaço ou repare o sistema de arquivos.",
+"ui.storage_failing": "Desde {since} resultados e eventos não podem ser gravados no disco (disco cheio?). Ficam na memória e são repetidos; {lost} foram perdidos."
 }

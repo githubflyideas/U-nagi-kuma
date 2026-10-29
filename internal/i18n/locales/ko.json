@@ -1242,5 +1242,9 @@
 "sys.resolved": "해결됨: {title}",
 "sys.resolved.local_network": "이 호스트의 네트워크가 복구되었습니다",
 "sys.resolved.overload": "호스트 부하가 정상으로 돌아왔습니다",
-"sys.resolved.all_failed": "알림 채널이 다시 동작합니다"
+"sys.resolved.all_failed": "알림 채널이 다시 동작합니다",
+"sys.title.storage": "모니터링 데이터를 쓸 수 없습니다",
+"sys.resolved.storage": "모니터링 데이터 쓰기가 재개되었습니다",
+"sys.storage_failing": "{time}부터 데이터 디렉터리 쓰기가 실패합니다({error}). 결과와 이벤트는 메모리에 보관해 재시도하며 {lost}건이 유실되었습니다. 디스크 공간을 확보하거나 파일 시스템을 복구하세요.",
+"ui.storage_failing": "{since}부터 결과와 이벤트를 디스크에 쓸 수 없습니다(디스크 가득 참?). 메모리에 보관해 재시도하며 {lost}건이 유실되었습니다."
 }

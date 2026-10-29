@@ -23,7 +23,16 @@ func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
 	if s.app.SupersededBy() != nil {
 		state = "replaced by a newer master"
 	}
-	writeJSON(w, code, map[string]any{"status": state, "version": s.app.Version(), "uptime_s": int(s.now().Sub(s.app.Started()).Seconds())})
+	out := map[string]any{"status": state, "version": s.app.Version(), "uptime_s": int(s.now().Sub(s.app.Started()).Seconds())}
+	if wh := s.app.Store().WriteHealth(); wh.Failing {
+		// Still serving (a restart would not free the disk), but not well:
+		// results and events are not being kept.
+		if code == http.StatusOK {
+			out["status"] = "degraded"
+		}
+		out["storage"] = wh
+	}
+	writeJSON(w, code, out)
 }
 
 // metrics serves the Prometheus text format. Scrapers authenticate with

@@ -1250,5 +1250,9 @@
 "sys.resolved": "Resuelto: {title}",
 "sys.resolved.local_network": "La red de este host ha vuelto",
 "sys.resolved.overload": "La carga del host vuelve a ser normal",
-"sys.resolved.all_failed": "Los canales de notificación vuelven a funcionar"
+"sys.resolved.all_failed": "Los canales de notificación vuelven a funcionar",
+"sys.title.storage": "No se pueden escribir los datos de monitorización",
+"sys.resolved.storage": "Los datos de monitorización vuelven a escribirse",
+"sys.storage_failing": "La escritura en el directorio de datos falla desde {time} ({error}); resultados y eventos se guardan en memoria y se reintentan, se perdieron {lost}. Libera espacio o repara el sistema de archivos.",
+"ui.storage_failing": "Desde {since} no se pueden escribir resultados y eventos en disco (¿disco lleno?). Se guardan en memoria y se reintentan; se perdieron {lost}."
 }

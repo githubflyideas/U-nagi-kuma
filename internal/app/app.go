@@ -286,6 +286,7 @@ func (a *App) Run(ctx context.Context) error {
 	run(func() { a.runAgentMode(ctx) })
 	run(func() { a.every(ctx, 2*time.Second, a.cfg.check) })
 	run(func() { a.every(ctx, 30*time.Second, func() { _ = a.store.Beat() }) })
+	run(func() { a.every(ctx, 15*time.Second, a.watchStorage) })
 	run(func() { a.every(ctx, time.Hour, func() { a.license.Check(a.now()) }) })
 	run(func() { a.every(ctx, 20*time.Second, a.tickChanges) })
 	run(func() {
@@ -363,6 +364,14 @@ func (a *App) Config() ConfigState { return a.cfg.current() }
 
 // ConfigPath is the path of monitors.bind.
 func (a *App) ConfigPath() string { return a.cfg.path }
+
+// watchStorage turns writes that keep failing (a full disk, a read-only
+// file system) into a system incident, so it does not go unnoticed.
+func (a *App) watchStorage() {
+	wh := a.store.WriteHealth()
+	failing := wh.Failing && a.now().Sub(wh.Since) >= a.Config().Config.Tunables.Duration("storage.write-alert")
+	a.engine.StorageFailing(failing, wh.Since, wh.Error, wh.Lost)
+}
 
 // Banner returns the configuration banner, if any.
 func (a *App) Banner() *Banner {

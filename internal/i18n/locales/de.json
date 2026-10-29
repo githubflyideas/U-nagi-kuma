@@ -1250,5 +1250,9 @@
 "sys.resolved": "Behoben: {title}",
 "sys.resolved.local_network": "Das Netzwerk dieses Hosts ist wieder da",
 "sys.resolved.overload": "Last des Hosts wieder normal",
-"sys.resolved.all_failed": "Benachrichtigungskanäle funktionieren wieder"
+"sys.resolved.all_failed": "Benachrichtigungskanäle funktionieren wieder",
+"sys.title.storage": "Überwachungsdaten können nicht geschrieben werden",
+"sys.resolved.storage": "Überwachungsdaten werden wieder geschrieben",
+"sys.storage_failing": "Schreiben ins Datenverzeichnis scheitert seit {time} ({error}); Ergebnisse und Ereignisse werden im Speicher gehalten und erneut versucht, {lost} gingen verloren. Platz schaffen oder Dateisystem reparieren.",
+"ui.storage_failing": "Ergebnisse und Ereignisse können seit {since} nicht auf die Platte geschrieben werden (Platte voll?). Sie werden im Speicher gehalten und erneut versucht; {lost} gingen verloren."
 }

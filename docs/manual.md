@@ -360,5 +360,6 @@ Everything the UI does goes through a REST API under `/api/v1`. Create a token u
 - **A monitor is down but nobody was told.** Open it and read *Notifications* in the drawer; the event log shows each delivery with its error, and **Alerting › Channels › Test** sends a test message.
 - **Ping checks say "privilege".** Allow unprivileged ping (`net.ipv4.ping_group_range`) or give the binary `CAP_NET_RAW`; see Quick start.
 - **A script check stays paused.** Enabling it lists the nodes that lack the script; **Settings › Check scripts** shows each node's copy.
+- **"Monitoring data cannot be written".** The data directory refuses writes (full disk, read-only file system) for longer than `storage.write-alert` (1 minute). Results and events are kept in memory and written once space is back; a red banner in the UI and `/healthz` (`"status": "degraded"`) say so meanwhile. Free disk space; the incident resolves itself.
 - **An edit to monitors.bind is ignored.** Increase the serial; a file with errors is never applied, and the UI shows the error with its line.
 - **The standby has no copy.** **Settings › Nodes** shows when it last fetched the master's state and the last error; it retries after `cluster.standby-retry` and on every configuration change.

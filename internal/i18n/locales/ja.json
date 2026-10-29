@@ -1242,5 +1242,9 @@
 "sys.resolved": "解消：{title}",
 "sys.resolved.local_network": "このホストのネットワークが復旧しました",
 "sys.resolved.overload": "ホストの負荷が正常に戻りました",
-"sys.resolved.all_failed": "通知チャネルが再び動作しています"
+"sys.resolved.all_failed": "通知チャネルが再び動作しています",
+"sys.title.storage": "監視データを書き込めません",
+"sys.resolved.storage": "監視データの書き込みが再開しました",
+"sys.storage_failing": "{time} からデータディレクトリへの書き込みに失敗しています（{error}）。結果とイベントはメモリに保持して再試行中、{lost} 件が失われました。ディスクを空けるかファイルシステムを修復してください。",
+"ui.storage_failing": "{since} から結果とイベントをディスクに書き込めません（ディスク容量不足？）。メモリに保持して再試行中、{lost} 件が失われました。"
 }

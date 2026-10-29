@@ -1251,5 +1251,9 @@
 "sys.resolved": "Resolved: {title}",
 "sys.resolved.local_network": "This host's network is back",
 "sys.resolved.overload": "Host load back to normal",
-"sys.resolved.all_failed": "Notification channels work again"
+"sys.resolved.all_failed": "Notification channels work again",
+"sys.title.storage": "Monitoring data cannot be written",
+"sys.resolved.storage": "Monitoring data is written again",
+"sys.storage_failing": "Writing to the data directory fails since {time} ({error}); check results and events are kept in memory and retried, {lost} were lost. Free some disk space or fix the file system.",
+"ui.storage_failing": "Results and events cannot be written to disk since {since} (full disk?). They are kept in memory and retried; {lost} were lost."
 }

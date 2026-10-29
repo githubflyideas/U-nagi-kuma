@@ -162,7 +162,7 @@ func (s *Server) overview(w http.ResponseWriter, r *http.Request) (any, error) {
 		"open_system": ov.OpenSystem, "pending_notifications": ov.PendingIntents, "banner": s.app.Banner(),
 		"alerting_configured": alerting, "nodes": nodes, "paths": paths, "tactical": s.tactical(), "script_problems": s.scriptCount(),
 		"superseded": s.app.SupersededBy(), "term": s.app.Term(), "contact_issues": len(s.app.ChannelIssues()),
-		"people": len(s.app.Directory().People()), "status_pages": len(cfg.StatusPages),
+		"people": len(s.app.Directory().People()), "status_pages": len(cfg.StatusPages), "storage": s.app.Store().WriteHealth(),
 	}, nil
 }
 

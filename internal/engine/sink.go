@@ -77,6 +77,7 @@ const (
 	SystemLocalNetwork = "local_network"
 	SystemOverload     = "overload"
 	SystemAllFailed    = "all_failed"
+	SystemStorage      = "storage" // results and events cannot be written
 )
 
 // Incident is a problem with its notification state.

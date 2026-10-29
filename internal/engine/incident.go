@@ -300,7 +300,7 @@ func (e *Engine) resolvedTitle(inc *Incident) string {
 		return e.text("node_back", node)
 	}
 	switch inc.System {
-	case SystemLocalNetwork, SystemOverload, SystemAllFailed:
+	case SystemLocalNetwork, SystemOverload, SystemAllFailed, SystemStorage:
 		return e.text("system_resolved_" + inc.System)
 	}
 	return e.text("system_resolved", inc.Title)
