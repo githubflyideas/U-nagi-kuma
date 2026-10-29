@@ -102,6 +102,7 @@ const (
 	IntentDone    = "done"
 	IntentFailed  = "failed"
 	IntentMerged  = "merged"
+	IntentDropped = "dropped" // queued during a local outage, judged stale
 )
 
 // Intent is a crash-safe notification in flight.

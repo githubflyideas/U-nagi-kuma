@@ -535,7 +535,6 @@
 "sys.anomaly.dns_down": "Der DNS-Resolver dieses Hosts ist gestört: Monitore mit Namen sind pausiert",
 "sys.anomaly_end.network": "Lokales Netzwerk wiederhergestellt",
 "sys.anomaly_end.dns": "Lokales DNS wiederhergestellt",
-"sys.outage_summary": "Ausfall des lokalen Netzwerks {from}–{to} ({duration}): {paused} Monitore pausiert; {failing} weiterhin gestört und zurück in der normalen Bewertung",
 "sys.interrupted.local_suspend": "Die Überwachung war {duration} unterbrochen (Host im Ruhezustand)",
 "sys.interrupted.local_stall": "Die Überwachung war {duration} unterbrochen (Prozess hing oder VM pausiert)",
 "sys.notice_title": "unagikuma-Systemhinweis",
@@ -1236,5 +1235,10 @@
 "ui.oc.acked": "bestätigt",
 "ui.oc.mtta": "Zeit bis zur Bestätigung",
 "ui.oc.mttr": "Zeit bis zur Behebung",
-"ui.oc.stats_hint": "Jede Störung zählt für die Person, die beim Auftreten Bereitschaft hatte. Übungen und Ausfälle dieses Hosts zählen nicht."
+"ui.oc.stats_hint": "Jede Störung zählt für die Person, die beim Auftreten Bereitschaft hatte. Übungen und Ausfälle dieses Hosts zählen nicht.",
+"sys.outage_summary_ok": "Dieser Host war {from}–{to} ({duration}) ohne Netzwerk und konnte nichts prüfen ({paused} Monitore warteten). Seitdem erneut geprüft: alles in Ordnung.",
+"sys.outage_summary_failing": "Dieser Host war {from}–{to} ({duration}) ohne Netzwerk und konnte nichts prüfen ({paused} Monitore warteten). Seitdem erneut geprüft: {failing} weiterhin gestört — {names}",
+"ev.outage_summary": "Lokaler Ausfall vorbei ({duration_s} s): {affected} Monitore betroffen, {failing} nach der Neuprüfung weiter gestört, {dropped} veraltete Meldungen verworfen",
+"ev.outage_backdated": "{monitors} Störungen begannen mit dem lokalen Ausfall und wurden zurückgenommen",
+"ev.closed_local_network": "Störung zurückgenommen: Sie begann mit dem Netzwerkausfall dieses Hosts"
 }

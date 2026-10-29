@@ -91,6 +91,9 @@ func (e *Engine) judge(m *MonitorSpec, rt *monRuntime, votes []NodeVote, results
 		OtherDegraded:    res.Degraded,
 	})
 	rt.State = t.To
+	if rt.State.UnknownReason == UnknownLocalNetwork && e.outageSeen != nil {
+		e.outageSeen[m.Name] = true
+	}
 	rt.LastCheck = end
 	rt.LastResult = res
 	rt.LastVerdict = v

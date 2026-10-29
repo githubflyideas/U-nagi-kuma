@@ -563,7 +563,6 @@
 "sys.anomaly.dns_down": "محلل DNS على هذا المضيف معطّل: أُوقفت المراقبة بالأسماء مؤقتًا",
 "sys.anomaly_end.network": "عادت الشبكة المحلية",
 "sys.anomaly_end.dns": "عاد DNS المحلي",
-"sys.outage_summary": "انقطاع الشبكة المحلية {from}–{to} ({duration}): أُوقف {paused} من المراقبات مؤقتًا؛ و{failing} ما زالت معطّلة وعادت إلى التقييم العادي",
 "sys.interrupted.local_suspend": "انقطعت المراقبة لمدة {duration} (المضيف في وضع السكون)",
 "sys.interrupted.local_stall": "انقطعت المراقبة لمدة {duration} (توقف العملية أو إيقاف الآلة الافتراضية)",
 "sys.notice_title": "إشعار نظام Unagikuma",
@@ -1268,5 +1267,10 @@
 "ui.oc.acked": "تم الإقرار",
 "ui.oc.mtta": "الوقت حتى الإقرار",
 "ui.oc.mttr": "الوقت حتى الحل",
-"ui.oc.stats_hint": "تُحسب كل حادثة على من كان مناوبًا عند وقوعها. لا تُحسب التمارين وأعطال هذا المضيف."
+"ui.oc.stats_hint": "تُحسب كل حادثة على من كان مناوبًا عند وقوعها. لا تُحسب التمارين وأعطال هذا المضيف.",
+"sys.outage_summary_ok": "فقد هذا المضيف الشبكة من {from} إلى {to} ({duration}) ولم يتمكن من الفحص خلالها ({paused} مراقبة انتظرت). أُعيد الفحص: كل شيء سليم.",
+"sys.outage_summary_failing": "فقد هذا المضيف الشبكة من {from} إلى {to} ({duration}) ولم يتمكن من الفحص خلالها ({paused} مراقبة انتظرت). أُعيد الفحص: {failing} ما زالت تفشل — {names}",
+"ev.outage_summary": "انتهى الانقطاع المحلي ({duration_s} ث): تأثرت {affected} مراقبة، و{failing} ما زالت تفشل بعد إعادة الفحص، وأُسقطت {dropped} إشعارات قديمة",
+"ev.outage_backdated": "بدأت {monitors} أعطال مع الانقطاع المحلي وسُحبت",
+"ev.closed_local_network": "سُحبت الحادثة: بدأت مع انقطاع شبكة هذا المضيف"
 }

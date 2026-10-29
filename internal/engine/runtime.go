@@ -216,6 +216,13 @@ type Engine struct {
 	cmds     chan func()
 
 	gate gateCache
+	// digestCovers maps a queued digest to the incidents it stands for.
+	digestCovers map[string][]int64
+	// outage is the local outage that just ended, until the monitors it
+	// hid have been re-checked and its summary is sent.
+	outage *outageEnd
+	// outageSeen are the monitors a running local outage has held.
+	outageSeen map[string]bool
 
 	nextReminder     time.Time
 	nextReport       time.Time
@@ -283,31 +290,32 @@ func New(d Deps) *Engine {
 	now := d.Clock()
 	ts := tunables.Set{}
 	e := &Engine{
-		deps:      d,
-		log:       d.Log,
-		self:      NodeName,
-		monitors:  map[string]*MonitorSpec{},
-		states:    map[string]*monRuntime{},
-		sched:     NewScheduler(),
-		localnet:  NewLocalNet(LocalNetConfigFrom(ts), now),
-		watchdog:  NewWatchdog(SuspendConfigFrom(ts)),
-		incidents: map[int64]*Incident{},
-		byMonitor: map[string]*Incident{},
-		lowByMon:  map[string]*Incident{},
-		system:    map[string]*Incident{},
-		regional:  map[string]*Incident{},
-		rounds:    map[string]*pendingRound{},
-		nodes:     map[string]*nodeRuntime{},
-		agentRT:   map[string]*monRuntime{},
-		votes:     make(chan RemoteVote, 1024),
-		intents:   map[string]*Intent{},
-		chanRate:  map[string]*ratelimit.Bucket{},
-		results:   make(chan roundResult, 256),
-		attempts:  make(chan attemptResult, 64),
-		handling:  map[string]bool{},
-		cmds:      make(chan func(), 64),
-		booted:    now,
-		stopped:   make(chan struct{}),
+		deps:         d,
+		log:          d.Log,
+		self:         NodeName,
+		monitors:     map[string]*MonitorSpec{},
+		states:       map[string]*monRuntime{},
+		sched:        NewScheduler(),
+		localnet:     NewLocalNet(LocalNetConfigFrom(ts), now),
+		watchdog:     NewWatchdog(SuspendConfigFrom(ts)),
+		incidents:    map[int64]*Incident{},
+		byMonitor:    map[string]*Incident{},
+		lowByMon:     map[string]*Incident{},
+		system:       map[string]*Incident{},
+		regional:     map[string]*Incident{},
+		digestCovers: map[string][]int64{},
+		rounds:       map[string]*pendingRound{},
+		nodes:        map[string]*nodeRuntime{},
+		agentRT:      map[string]*monRuntime{},
+		votes:        make(chan RemoteVote, 1024),
+		intents:      map[string]*Intent{},
+		chanRate:     map[string]*ratelimit.Bucket{},
+		results:      make(chan roundResult, 256),
+		attempts:     make(chan attemptResult, 64),
+		handling:     map[string]bool{},
+		cmds:         make(chan func(), 64),
+		booted:       now,
+		stopped:      make(chan struct{}),
 	}
 	e.applyTunables(ts)
 	return e
@@ -431,6 +439,7 @@ func (e *Engine) Run(ctx context.Context) {
 // onTick runs the periodic work: clock watchdog, local network evaluation,
 // incident timers, overload, push deadlines, daily reminder.
 func (e *Engine) onTick() {
+	e.finishOutage(e.now())
 	now := e.now()
 	hc, ok := e.deps.HostClock()
 	if in, jump := e.watchdog.Tick(ClockSample{At: now, Host: hc, HostOK: ok}); in != nil {

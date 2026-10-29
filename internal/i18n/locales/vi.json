@@ -528,7 +528,6 @@
 "sys.anomaly.dns_down": "Bộ phân giải DNS của máy này bị lỗi: tạm dừng các giám sát theo tên",
 "sys.anomaly_end.network": "Mạng cục bộ đã phục hồi",
 "sys.anomaly_end.dns": "DNS cục bộ đã phục hồi",
-"sys.outage_summary": "Mất mạng cục bộ {from}–{to} ({duration}): tạm dừng {paused} giám sát; {failing} vẫn lỗi và đã trở lại đánh giá bình thường",
 "sys.interrupted.local_suspend": "Giám sát bị gián đoạn {duration} (máy ngủ)",
 "sys.interrupted.local_stall": "Giám sát bị gián đoạn {duration} (tiến trình treo hoặc VM tạm dừng)",
 "sys.notice_title": "Thông báo hệ thống Unagikuma",
@@ -1228,5 +1227,10 @@
 "ui.oc.acked": "đã xác nhận",
 "ui.oc.mtta": "thời gian đến khi xác nhận",
 "ui.oc.mttr": "thời gian đến khi khắc phục",
-"ui.oc.stats_hint": "Mỗi sự cố tính cho người trực lúc sự cố xảy ra. Không tính diễn tập và sự cố của chính máy này."
+"ui.oc.stats_hint": "Mỗi sự cố tính cho người trực lúc sự cố xảy ra. Không tính diễn tập và sự cố của chính máy này.",
+"sys.outage_summary_ok": "Máy giám sát mất mạng {from}–{to} ({duration}) và không thể kiểm tra gì trong lúc đó ({paused} giám sát tạm chờ). Đã kiểm tra lại: tất cả bình thường.",
+"sys.outage_summary_failing": "Máy giám sát mất mạng {from}–{to} ({duration}) và không thể kiểm tra gì trong lúc đó ({paused} giám sát tạm chờ). Đã kiểm tra lại: {failing} vẫn lỗi — {names}",
+"ev.outage_summary": "Sự cố mạng cục bộ kết thúc ({duration_s} giây): {affected} giám sát bị ảnh hưởng, {failing} vẫn lỗi sau khi kiểm tra lại, bỏ {dropped} thông báo cũ",
+"ev.outage_backdated": "{monitors} sự cố bắt đầu do mất mạng cục bộ và đã được rút lại",
+"ev.closed_local_network": "Đã rút lại sự cố: nó bắt đầu do máy này mất mạng"
 }

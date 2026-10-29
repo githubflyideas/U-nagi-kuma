@@ -34,7 +34,7 @@ func TestEventMessagesTranslated(t *testing.T) {
 		}
 	}
 	// Codes built at run time.
-	for _, c := range []string{"notify_delivered", "notify_failed", "closed_redefined", "closed_deleted"} {
+	for _, c := range []string{"notify_delivered", "notify_failed", "closed_redefined", "closed_deleted", "closed_local_network"} {
 		codes[c] = true
 	}
 	for _, ev := range []string{IncidentCapped, IncidentAckExpired, IncidentAckCleared, IncidentSilenceEnded, IncidentReopened, IncidentClosed} {
