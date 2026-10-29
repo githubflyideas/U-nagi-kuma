@@ -38,6 +38,7 @@ func TestCappedSequence(t *testing.T) {
 	if !reflect.DeepEqual(ns, []PlannedNotice{{Kind: NoticeProblem, Seq: 1, Max: 3}}) {
 		t.Fatalf("first: %+v", ns)
 	}
+	s.Delivered()
 	if ns, _ := Advance(s, t0.Add(29*time.Minute), p); len(ns) != 0 {
 		t.Fatalf("early repeat: %+v", ns)
 	}
@@ -132,6 +133,7 @@ func TestFlappingWhileCapped(t *testing.T) {
 	p := defaultPolicy()
 	p.Max = 1
 	s, ns, _ := Fail(nil, t0, "", p)
+	s.Delivered()
 	if len(ns) != 1 || !s.Capped {
 		t.Fatalf("capped at once: %+v", s)
 	}
@@ -206,6 +208,7 @@ func TestAckClearedOnReasonChange(t *testing.T) {
 func TestAckedFlapsFoldIntoSummary(t *testing.T) {
 	p := defaultPolicy()
 	s, _, _ := Fail(nil, t0, "", p)
+	s.Delivered()
 	Ack(s, "alice", t0, 0, p)
 	Recover(s, t0.Add(time.Minute), p)
 	if _, ns, _ := Fail(s, t0.Add(2*time.Minute), "", p); len(ns) != 0 {
@@ -290,5 +293,28 @@ func TestNextDaily(t *testing.T) {
 	got := NextDaily(time.Date(2026, 3, 7, 12, 0, 0, 0, ny), 10, 0, ny)
 	if want := time.Date(2026, 3, 8, 10, 0, 0, 0, ny); !got.Equal(want) {
 		t.Errorf("DST: %v want %v", got, want)
+	}
+}
+
+// A problem notice that was planned but never delivered (queued during a
+// local outage, then dropped) owes nobody a recovery.
+func TestRecoveryOnlyAfterDelivery(t *testing.T) {
+	p := defaultPolicy()
+	s, ns, _ := Fail(nil, t0, "network", p)
+	if len(ns) != 1 || s.NotifyCount != 1 {
+		t.Fatalf("problem: %+v", ns)
+	}
+	if ns := Recover(s, t0.Add(time.Minute), p); len(ns) != 0 {
+		t.Fatalf("recovery for a problem nobody received: %+v", ns)
+	}
+	s, _, _ = Fail(nil, t0, "network", p)
+	s.Delivered()
+	if ns := Recover(s, t0.Add(time.Minute), p); len(ns) != 1 || ns[0].Kind != NoticeRecovery {
+		t.Fatalf("recovery after a delivered problem: %+v", ns)
+	}
+	// Incidents from before delivery was counted keep the old rule.
+	old := &IncidentState{OpenedAt: t0, HardAt: t0, NotifyCount: 1}
+	if ns := Recover(old, t0.Add(time.Minute), p); len(ns) != 1 {
+		t.Fatalf("recovery of an older incident: %+v", ns)
 	}
 }

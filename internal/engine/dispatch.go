@@ -186,6 +186,7 @@ func (e *Engine) finishIntent(in *Intent, now time.Time) {
 	e.event(Event{Type: EventNotify, Severity: sev, Monitor: in.Message.Monitor, Message: in.Kind + " notification " + map[bool]string{true: "delivered", false: "failed"}[ok],
 		Data: map[string]any{"msg": map[bool]string{true: "notify_delivered", false: "notify_failed"}[ok], "kind": in.Kind, "intent_id": in.ID, "incident_id": in.IncidentID, "fallback": in.Delivery.Fallback()}})
 	if ok {
+		e.credit(in)
 		if inc := e.system[SystemAllFailed]; inc != nil && inc.State.Open() && !in.System {
 			e.resolveSystem(SystemAllFailed, now, "")
 		}
@@ -196,10 +197,32 @@ func (e *Engine) finishIntent(in *Intent, now time.Time) {
 	}
 }
 
+// credit books a delivered problem notice on its incident (or on every
+// incident a digest stood for), so a recovery is owed only to people who
+// actually heard about the problem.
+func (e *Engine) credit(in *Intent) {
+	ids := e.digestCovers[in.ID]
+	delete(e.digestCovers, in.ID)
+	switch NoticeKind(in.Kind) {
+	case NoticeProblem, NoticeRepeat, NoticeReopen, NoticeEscalate:
+		ids = append(ids, in.IncidentID)
+	}
+	for _, id := range ids {
+		if inc := e.incidents[id]; inc != nil {
+			inc.State.Delivered()
+			e.saveIncident(inc)
+		}
+	}
+}
+
 // coalesce applies storm control: when a policy's queue of undelivered
 // notices grows past notify.coalesce-queue, or its oldest has waited longer
 // than notify.coalesce-wait, the queued notices are replaced by one digest.
 func (e *Engine) coalesce(now time.Time) {
+	if len(e.localnet.Active()) > 0 {
+		// Notices held by a local outage are judged when it ends, not merged.
+		return
+	}
 	maxQ := e.cfg.Tunables.Int("notify.coalesce-queue")
 	maxWait := e.cfg.Tunables.Duration("notify.coalesce-wait")
 	byPolicy := map[string][]*Intent{}
@@ -214,14 +237,22 @@ func (e *Engine) coalesce(now time.Time) {
 			continue
 		}
 		titles := make([]string, 0, len(q))
+		var covers []int64
 		for _, in := range q {
 			titles = append(titles, in.Kind+" "+in.Message.Title)
+			if in.IncidentID != 0 && NoticeKind(in.Kind) != NoticeRecovery {
+				covers = append(covers, in.IncidentID)
+			}
 			in.State, in.UpdatedAt = IntentMerged, now
 			_ = e.deps.Sink.SaveIntent(in)
 			delete(e.intents, in.ID)
 		}
 		e.deps.Sink.Counter(CounterOutageMerged, len(q))
-		e.enqueue(&Intent{Kind: "DIGEST", Policy: pol, CreatedAt: now, DueAt: now,
-			Message: notify.Message{Kind: "DIGEST", Priority: "high", Title: e.text("digest_title", len(q)), Body: e.text("digest_body", titles, e.cfg.BaseURL), Time: now, Instance: e.cfg.Instance, Lang: e.cfg.Lang}})
+		d := &Intent{Kind: "DIGEST", Policy: pol, CreatedAt: now, DueAt: now,
+			Message: notify.Message{Kind: "DIGEST", Priority: "high", Title: e.text("digest_title", len(q)), Body: e.text("digest_body", titles, e.cfg.BaseURL), Time: now, Instance: e.cfg.Instance, Lang: e.cfg.Lang}}
+		e.enqueue(d)
+		if len(covers) > 0 {
+			e.digestCovers[d.ID] = covers
+		}
 	}
 }

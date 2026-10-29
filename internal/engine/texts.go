@@ -71,7 +71,15 @@ func (e *Engine) text(id string, args ...any) string {
 		return i18n.T(lang, "sys.anomaly."+strings.TrimPrefix(id, "anomaly_"), "gateway", args[0])
 	case id == "outage_summary":
 		from, to := args[0].(time.Time), args[1].(time.Time)
-		return i18n.T(lang, "sys.outage_summary", "from", hm(0), "to", hm(1), "duration", dur(to.Sub(from)), "paused", args[2], "failing", args[3])
+		failing := args[3].([]string)
+		if len(failing) == 0 {
+			return i18n.T(lang, "sys.outage_summary_ok", "from", hm(0), "to", hm(1), "duration", dur(to.Sub(from)), "paused", args[2])
+		}
+		names := strings.Join(failing[:min(len(failing), 10)], ", ")
+		if len(failing) > 10 {
+			names += ", …"
+		}
+		return i18n.T(lang, "sys.outage_summary_failing", "from", hm(0), "to", hm(1), "duration", dur(to.Sub(from)), "paused", args[2], "failing", len(failing), "names", names)
 	case strings.HasPrefix(id, "interrupted_"):
 		return i18n.T(lang, "sys.interrupted."+strings.TrimPrefix(id, "interrupted_"), "duration", dur(args[0].(time.Duration)))
 	case id == "system_notice_title":

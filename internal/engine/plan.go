@@ -90,7 +90,13 @@ type IncidentState struct {
 	ResolvedAt time.Time `json:"resolved_at,omitzero"` // zero while open
 	Closed     bool      `json:"closed,omitzero"`      // reopen window passed after resolution
 
-	NotifyCount  int       `json:"notify_count"`
+	NotifyCount int `json:"notify_count"`
+	// Told counts the problem notifications actually delivered; Tracked is
+	// set on incidents opened since it is kept (older ones count planned
+	// notifications as delivered). Queued notices that never got out —
+	// during a local outage, say — do not make anyone owed a recovery.
+	Told         int       `json:"told,omitzero"`
+	Tracked      bool      `json:"tracked,omitzero"`
 	LastNotifyAt time.Time `json:"last_notify_at,omitzero"`
 	Capped       bool      `json:"capped,omitzero"`
 
@@ -113,6 +119,17 @@ type IncidentState struct {
 	Escalated int `json:"escalated,omitzero"`
 }
 
+// told reports whether anyone received a problem notification.
+func (s *IncidentState) told() bool {
+	if !s.Tracked {
+		return s.NotifyCount > 0
+	}
+	return s.Told > 0
+}
+
+// Delivered books a problem notification that reached someone.
+func (s *IncidentState) Delivered() { s.Told++ }
+
 // Open reports whether the incident is currently failing.
 func (s *IncidentState) Open() bool { return !s.Closed && s.ResolvedAt.IsZero() }
 
@@ -130,7 +147,7 @@ func (s *IncidentState) Reopenable(now time.Time, p NotifyPolicy) bool {
 // Low/Drill on new incidents before the first Advance.
 func Fail(prev *IncidentState, now time.Time, reasonClass string, p NotifyPolicy) (s *IncidentState, notices []PlannedNotice, events []string) {
 	if !prev.Reopenable(now, p) {
-		s = &IncidentState{OpenedAt: now, HardAt: now, ReasonClass: reasonClass}
+		s = &IncidentState{OpenedAt: now, HardAt: now, ReasonClass: reasonClass, Tracked: true}
 		notices, events = Advance(s, now, p)
 		return s, notices, events
 	}
@@ -225,7 +242,7 @@ func Recover(s *IncidentState, now time.Time, p NotifyPolicy) []PlannedNotice {
 	}
 	s.ResolvedAt = now
 	switch {
-	case s.Low, s.NotifyCount == 0, !p.Recovery:
+	case s.Low, !s.told(), !p.Recovery:
 		// Low-priority incidents and incidents nobody was told about end
 		// silently; a pending delayed first notification is dropped.
 		s.QuietFlaps = 0

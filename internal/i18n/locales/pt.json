@@ -535,7 +535,6 @@
 "sys.anomaly.dns_down": "O resolvedor DNS deste host está com falha: monitores por nome pausados",
 "sys.anomaly_end.network": "Rede local recuperada",
 "sys.anomaly_end.dns": "DNS local recuperado",
-"sys.outage_summary": "Queda da rede local {from}–{to} ({duration}): {paused} monitores pausados; {failing} ainda falhando e de volta à avaliação normal",
 "sys.interrupted.local_suspend": "O monitoramento foi interrompido por {duration} (host em suspensão)",
 "sys.interrupted.local_stall": "O monitoramento foi interrompido por {duration} (processo travado ou VM pausada)",
 "sys.notice_title": "Aviso do sistema Unagikuma",
@@ -1236,5 +1235,10 @@
 "ui.oc.acked": "reconhecidos",
 "ui.oc.mtta": "tempo até reconhecer",
 "ui.oc.mttr": "tempo até resolver",
-"ui.oc.stats_hint": "Cada incidente conta para quem estava de plantão quando abriu. Simulações e falhas deste host ficam de fora."
+"ui.oc.stats_hint": "Cada incidente conta para quem estava de plantão quando abriu. Simulações e falhas deste host ficam de fora.",
+"sys.outage_summary_ok": "Este host ficou sem rede de {from} a {to} ({duration}) e não pôde verificar nada nesse tempo ({paused} monitores em espera). Verificado de novo: tudo bem.",
+"sys.outage_summary_failing": "Este host ficou sem rede de {from} a {to} ({duration}) e não pôde verificar nada nesse tempo ({paused} monitores em espera). Verificado de novo: {failing} ainda com falha — {names}",
+"ev.outage_summary": "Queda local terminada ({duration_s} s): {affected} monitores afetados, {failing} ainda com falha após nova verificação, {dropped} avisos obsoletos descartados",
+"ev.outage_backdated": "{monitors} falhas começaram com a queda local e foram retiradas",
+"ev.closed_local_network": "Incidente retirado: começou com a queda de rede deste host"
 }

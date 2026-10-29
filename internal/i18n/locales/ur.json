@@ -535,7 +535,6 @@
 "sys.anomaly.dns_down": "اس ہوسٹ کا DNS ریزالور خراب ہے: نام والے مانیٹر موقوف ہیں",
 "sys.anomaly_end.network": "مقامی نیٹ ورک بحال ہو گیا",
 "sys.anomaly_end.dns": "مقامی DNS بحال ہو گیا",
-"sys.outage_summary": "مقامی نیٹ ورک کی بندش {from}–{to} ({duration}): {paused} مانیٹر موقوف؛ {failing} اب بھی ناکام ہیں اور معمول کی جانچ پر واپس آ گئے",
 "sys.interrupted.local_suspend": "نگرانی {duration} تک رکی رہی (ہوسٹ سلیپ میں تھا)",
 "sys.interrupted.local_stall": "نگرانی {duration} تک رکی رہی (پراسیس اٹکا یا VM موقوف ہوئی)",
 "sys.notice_title": "Unagikuma سسٹم اطلاع",
@@ -1236,5 +1235,10 @@
 "ui.oc.acked": "تسلیم شدہ",
 "ui.oc.mtta": "تسلیم کرنے کا وقت",
 "ui.oc.mttr": "حل کا وقت",
-"ui.oc.stats_hint": "ہر واقعہ اس وقت کے آن کال شخص کے نام گنا جاتا ہے۔ مشقیں اور اس ہوسٹ کی اپنی خرابیاں شامل نہیں۔"
+"ui.oc.stats_hint": "ہر واقعہ اس وقت کے آن کال شخص کے نام گنا جاتا ہے۔ مشقیں اور اس ہوسٹ کی اپنی خرابیاں شامل نہیں۔",
+"sys.outage_summary_ok": "اس ہوسٹ کا نیٹ ورک {from}–{to} ({duration}) بند رہا اور اس دوران کچھ جانچا نہیں جا سکا ({paused} مانیٹر رکے رہے)۔ دوبارہ جانچا گیا: سب ٹھیک ہے۔",
+"sys.outage_summary_failing": "اس ہوسٹ کا نیٹ ورک {from}–{to} ({duration}) بند رہا اور اس دوران کچھ جانچا نہیں جا سکا ({paused} مانیٹر رکے رہے)۔ دوبارہ جانچا گیا: {failing} اب بھی ناکام — {names}",
+"ev.outage_summary": "مقامی خرابی ختم ({duration_s} سیکنڈ): {affected} مانیٹر متاثر، دوبارہ جانچ کے بعد {failing} اب بھی ناکام، {dropped} پرانی اطلاعات ہٹا دی گئیں",
+"ev.outage_backdated": "{monitors} خرابیاں مقامی نیٹ ورک بندش سے شروع ہوئیں اور واپس لے لی گئیں",
+"ev.closed_local_network": "واقعہ واپس لیا گیا: یہ اس ہوسٹ کی نیٹ ورک بندش سے شروع ہوا"
 }

@@ -67,10 +67,24 @@ func (e *Engine) monitorRecovered(m *MonitorSpec, rt *monRuntime, pol PolicySpec
 		return
 	}
 	notices := Recover(&inc.State, now, pol.Notify)
+	e.expireNotices(inc, now)
 	e.saveIncident(inc)
 	e.event(Event{Type: EventIncident, Severity: "info", Monitor: m.Name, Message: "incident resolved",
 		Data: map[string]any{"msg": "incident_resolved", "incident_id": inc.ID, "duration_s": int(now.Sub(inc.State.OpenedAt).Seconds()), "notified": inc.State.NotifyCount}})
 	e.notices(inc, notices, now)
+}
+
+// expireNotices drops an incident's problem notices still waiting to be
+// sent: once it recovered they would announce a problem that is over.
+func (e *Engine) expireNotices(inc *Incident, now time.Time) {
+	for id, in := range e.intents {
+		if in.IncidentID != inc.ID || NoticeKind(in.Kind) == NoticeRecovery || in.Delivery.Pos() > 0 || in.Delivery.Steps[0].Attempts > 0 {
+			continue
+		}
+		in.State, in.UpdatedAt = IntentDropped, now
+		_ = e.deps.Sink.SaveIntent(in)
+		delete(e.intents, id)
+	}
 }
 
 // openLow opens the low-priority incident of a DEGRADED monitor.
@@ -79,7 +93,7 @@ func (e *Engine) openLow(m *MonitorSpec, rt *monRuntime, pol PolicySpec, now tim
 		return
 	}
 	inc := &Incident{Monitor: m.Name, Kind: IncidentLow, Policy: pol.Name, Title: m.Title, Reason: "slow",
-		State: IncidentState{Low: true, OpenedAt: now, HardAt: now}}
+		State: IncidentState{Low: true, OpenedAt: now, HardAt: now, Tracked: true}}
 	notices, _ := Advance(&inc.State, now, pol.Notify)
 	e.saveIncident(inc)
 	e.lowByMon[m.Name] = inc

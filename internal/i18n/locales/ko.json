@@ -528,7 +528,6 @@
 "sys.anomaly.dns_down": "이 호스트의 DNS 리졸버 고장: 이름 기반 모니터 판정을 멈췄습니다",
 "sys.anomaly_end.network": "로컬 네트워크가 복구되었습니다",
 "sys.anomaly_end.dns": "로컬 DNS가 복구되었습니다",
-"sys.outage_summary": "로컬 네트워크 장애 {from}–{to} ({duration}): 모니터 {paused}개 판정 중지, {failing}개는 아직 장애 중이며 정상 판정으로 돌아갔습니다",
 "sys.interrupted.local_suspend": "모니터링이 {duration} 동안 중단되었습니다 (호스트 절전)",
 "sys.interrupted.local_stall": "모니터링이 {duration} 동안 중단되었습니다 (프로세스 멈춤 또는 VM 일시 정지)",
 "sys.notice_title": "Unagikuma 시스템 알림",
@@ -1228,5 +1227,10 @@
 "ui.oc.acked": "확인됨",
 "ui.oc.mtta": "확인까지 평균 시간",
 "ui.oc.mttr": "복구까지 평균 시간",
-"ui.oc.stats_hint": "각 장애는 발생 당시 당직자에게 집계됩니다. 훈련과 이 호스트 자체 장애는 제외합니다."
+"ui.oc.stats_hint": "각 장애는 발생 당시 당직자에게 집계됩니다. 훈련과 이 호스트 자체 장애는 제외합니다.",
+"sys.outage_summary_ok": "모니터링 호스트의 네트워크가 {from}–{to}({duration}) 끊겨 그동안 확인할 수 없었습니다({paused}개 모니터 보류). 복구 후 재확인: 모두 정상입니다.",
+"sys.outage_summary_failing": "모니터링 호스트의 네트워크가 {from}–{to}({duration}) 끊겨 그동안 확인할 수 없었습니다({paused}개 모니터 보류). 복구 후 재확인: {failing}개가 아직 이상 — {names}",
+"ev.outage_summary": "로컬 장애 종료({duration_s}초): 모니터 {affected}개 영향, 재확인 후 {failing}개 여전히 이상, 오래된 알림 {dropped}개 폐기",
+"ev.outage_backdated": "장애 {monitors}건은 로컬 네트워크 장애로 시작되어 철회했습니다",
+"ev.closed_local_network": "장애 철회: 이 호스트의 네트워크 장애로 시작됨"
 }

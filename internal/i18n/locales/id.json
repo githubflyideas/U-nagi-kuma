@@ -528,7 +528,6 @@
 "sys.anomaly.dns_down": "Resolver DNS host ini bermasalah: monitor berbasis nama dijeda",
 "sys.anomaly_end.network": "Jaringan lokal pulih",
 "sys.anomaly_end.dns": "DNS lokal pulih",
-"sys.outage_summary": "Gangguan jaringan lokal {from}–{to} ({duration}): {paused} monitor dijeda; {failing} masih gagal dan kembali ke penilaian normal",
 "sys.interrupted.local_suspend": "Pemantauan terhenti selama {duration} (host tidur)",
 "sys.interrupted.local_stall": "Pemantauan terhenti selama {duration} (proses macet atau VM dijeda)",
 "sys.notice_title": "Pemberitahuan sistem Unagikuma",
@@ -1228,5 +1227,10 @@
 "ui.oc.acked": "dikonfirmasi",
 "ui.oc.mtta": "waktu sampai dikonfirmasi",
 "ui.oc.mttr": "waktu sampai pulih",
-"ui.oc.stats_hint": "Tiap insiden dihitung untuk yang piket saat insiden muncul. Latihan dan gangguan host ini tidak dihitung."
+"ui.oc.stats_hint": "Tiap insiden dihitung untuk yang piket saat insiden muncul. Latihan dan gangguan host ini tidak dihitung.",
+"sys.outage_summary_ok": "Host ini kehilangan jaringan {from}–{to} ({duration}) dan tidak bisa memeriksa apa pun selama itu ({paused} monitor menunggu). Diperiksa ulang: semua normal.",
+"sys.outage_summary_failing": "Host ini kehilangan jaringan {from}–{to} ({duration}) dan tidak bisa memeriksa apa pun selama itu ({paused} monitor menunggu). Diperiksa ulang: {failing} masih gagal — {names}",
+"ev.outage_summary": "Gangguan lokal selesai ({duration_s} dtk): {affected} monitor terdampak, {failing} masih gagal setelah diperiksa ulang, {dropped} notifikasi usang dibuang",
+"ev.outage_backdated": "{monitors} insiden bermula dari gangguan lokal dan ditarik kembali",
+"ev.closed_local_network": "Insiden ditarik: bermula dari gangguan jaringan host ini"
 }

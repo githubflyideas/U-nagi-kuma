@@ -67,6 +67,9 @@ type LocalNetConfig struct {
 	AnchorFails    int
 	AnchorRecovers int
 	AnchorEnable   time.Duration
+	// Backdate: a target that answered this recently before an episode is
+	// not "already dead" — it is the episode's first victim.
+	Backdate time.Duration
 }
 
 // LocalNetConfigFrom reads the tunables.
@@ -77,6 +80,7 @@ func LocalNetConfigFrom(t tunables.Set) LocalNetConfig {
 		DomainTTL:      t.Duration("localnet.domain-ttl"),
 		DNSMinNames:    t.Int("localnet.dns-min-names"),
 		Window:         t.Duration("localnet.window"),
+		Backdate:       t.Duration("localnet.backdate"),
 		ExitRatio:      t.Float("localnet.exit-ratio"),
 		ExitWindows:    t.Int("localnet.exit-windows"),
 		AnchorFails:    t.Int("localnet.anchor-fails"),
@@ -256,7 +260,7 @@ func (d *LocalNet) Observe(o Observation) {
 		ds = &domainState{}
 		s.domains[o.Domain] = ds
 	}
-	seenBefore, wasReachable := !ds.lastAt.IsZero(), ds.reachable
+	seenBefore, wasReachable, lastOK := !ds.lastAt.IsZero(), ds.reachable, ds.lastReachable
 	ds.lastAt = o.At
 	ds.reachable = o.Reachable
 	ds.networkFail = o.NetworkFail
@@ -276,14 +280,19 @@ func (d *LocalNet) Observe(o Observation) {
 	case o.NetworkFail && s.uplink == nil && s.episodeStart.IsZero():
 		s.episodeStart = o.At
 		// Targets that were already failing are not evidence of a new
-		// local outage (a host that has been dead for days stays out).
+		// local outage (a host that has been dead for days stays out) —
+		// unless they answered just before: a target that stopped a few
+		// moments ago, while another still answered, fell to the same cut.
 		s.preDead = map[string]bool{}
+		dead := func(reachable bool, last time.Time) bool {
+			return !reachable && (last.IsZero() || o.At.Sub(last) > d.cfg.Backdate)
+		}
 		for k, v := range s.domains {
-			if k != o.Domain && !v.reachable {
+			if k != o.Domain && dead(v.reachable, v.lastReachable) {
 				s.preDead[k] = true
 			}
 		}
-		if seenBefore && !wasReachable {
+		if seenBefore && dead(wasReachable, lastOK) {
 			s.preDead[o.Domain] = true
 		}
 	}
