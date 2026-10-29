@@ -1,0 +1,227 @@
+package engine
+
+import (
+	"context"
+	"sort"
+	"sync"
+	"time"
+
+	"github.com/githubflyideas/unagikuma/internal/notify"
+	"github.com/githubflyideas/unagikuma/internal/ratelimit"
+)
+
+// attemptResult is the outcome of sending one intent to one channel.
+type attemptResult struct {
+	intent string
+	step   int
+	att    notify.Attempt
+	// more are the member attempts of a group channel; att then sums
+	// them up (OK when any member got the message).
+	more []notify.Attempt
+}
+
+// pendingIntents returns undelivered intents, oldest first.
+func (e *Engine) pendingIntents() []*Intent {
+	out := make([]*Intent, 0, len(e.intents))
+	for _, in := range e.intents {
+		out = append(out, in)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if !out[i].CreatedAt.Equal(out[j].CreatedAt) {
+			return out[i].CreatedAt.Before(out[j].CreatedAt)
+		}
+		return out[i].ID < out[j].ID
+	})
+	return out
+}
+
+// dispatchIntents starts the channel attempts that are due, honouring
+// per-channel rate limits, pauses during local outages and storm control.
+func (e *Engine) dispatchIntents(ctx context.Context, wg *sync.WaitGroup) {
+	if len(e.intents) == 0 {
+		return
+	}
+	now := e.now()
+	e.coalesce(now)
+	paused := func(ch string) bool {
+		c, ok := e.cfg.Channels[ch]
+		if !ok {
+			return false
+		}
+		ex, _ := e.localnet.Affects(c.Scope, famOr(c.Family), c.OnLink, c.ByName)
+		return ex
+	}
+	timeout := e.cfg.Tunables.Duration("notify.channel-timeout")
+	late := e.cfg.Tunables.Duration("notify.intent-late")
+	for _, in := range e.pendingIntents() {
+		if now.Before(in.DueAt) {
+			continue
+		}
+		steps, st := in.Delivery.Next(now, paused)
+		switch st {
+		case DeliveryDone, DeliveryFailed:
+			e.finishIntent(in, now)
+			continue
+		}
+		for _, i := range steps {
+			name := in.Delivery.Steps[i].Channel
+			if i < in.ForceFail {
+				in.Delivery.Begin(i)
+				in.Delivery.Finish(i, false, "forced failure (drill)", now, 0, 0)
+				in.Attempts = append(in.Attempts, notify.Attempt{Channel: name, Error: "forced failure (drill)"})
+				continue
+			}
+			ch, ok := e.cfg.Channels[name]
+			if !ok {
+				// Channel removed from the configuration: count it as failed.
+				in.Delivery.Begin(i)
+				in.Delivery.Finish(i, false, "channel not configured", now, 0, 0)
+				continue
+			}
+			if ch.NoRecipients != "" {
+				in.Delivery.Begin(i)
+				in.Delivery.Finish(i, false, ch.NoRecipients, now, 0, 0)
+				in.Attempts = append(in.Attempts, notify.Attempt{Channel: name, Error: ch.NoRecipients})
+				continue
+			}
+			if !e.inPeriod(ch, now) {
+				in.Delivery.Skip(i)
+				in.Attempts = append(in.Attempts, notify.Attempt{Channel: name, Error: "outside its time period"})
+				continue
+			}
+			if !e.channelBucket(name).Allow(now) {
+				continue // rate limited: stays queued
+			}
+			in.Delivery.Begin(i)
+			in.UpdatedAt = now
+			// Durable before the attempt: a crash now resends at most once.
+			if err := e.deps.Sink.SaveIntent(in); err != nil {
+				e.log.Error("cannot persist intent", "err", err)
+			}
+			msg := in.Message
+			msg.Delayed = LateBy(in.DueAt, now, late)
+			id, step := in.ID, i
+			members := e.groupMembers(ch, now)
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				sctx, cancel := context.WithTimeout(ctx, timeout)
+				defer cancel()
+				res := attemptResult{intent: id, step: step}
+				switch {
+				case len(ch.Members) == 0:
+					res.att = e.deps.Send(sctx, ch.Channel, &msg)
+				case ch.Rotation != nil:
+					res.att, res.more = e.sendRotation(sctx, members, &msg)
+				default:
+					res.att, res.more = e.sendGroup(sctx, members, &msg)
+				}
+				res.att.Channel = ch.Name
+				select {
+				case e.attempts <- res:
+				case <-ctx.Done():
+				}
+			}()
+		}
+		if in.Delivery.Status() == DeliveryFailed || in.Delivery.Status() == DeliveryDone {
+			e.finishIntent(in, now)
+		}
+	}
+}
+
+func (e *Engine) channelBucket(name string) *ratelimit.Bucket {
+	b := e.chanRate[name]
+	if b == nil {
+		r := e.cfg.Tunables.Rate("notify.channel-rate")
+		b = ratelimit.New(r, max(1, int(r*60)))
+		e.chanRate[name] = b
+	}
+	return b
+}
+
+// onAttempt records a finished channel attempt.
+func (e *Engine) onAttempt(a attemptResult) {
+	in := e.intents[a.intent]
+	if in == nil || a.step >= len(in.Delivery.Steps) {
+		return
+	}
+	now := e.now()
+	retries := e.cfg.Tunables.Int("notify.channel-retries")
+	if ch, ok := e.cfg.Channels[in.Delivery.Steps[a.step].Channel]; ok && ch.Retries > 0 {
+		retries = ch.Retries
+	}
+	in.Delivery.Finish(a.step, a.att.OK, a.att.Error, now, retries, e.cfg.Tunables.Duration("notify.retry-backoff"))
+	in.UpdatedAt = now
+	in.Attempts = append(in.Attempts, a.more...)
+	if len(a.more) == 0 {
+		in.Attempts = append(in.Attempts, a.att)
+	}
+	_ = e.deps.Sink.SaveIntent(in)
+	if st := in.Delivery.Status(); st == DeliveryDone || st == DeliveryFailed {
+		e.finishIntent(in, now)
+	}
+}
+
+// finishIntent closes a delivered or failed intent.
+func (e *Engine) finishIntent(in *Intent, now time.Time) {
+	if _, ok := e.intents[in.ID]; !ok {
+		return
+	}
+	delete(e.intents, in.ID)
+	ok := in.Delivery.Status() == DeliveryDone
+	in.State, in.UpdatedAt = IntentFailed, now
+	if ok {
+		in.State = IntentDone
+	}
+	_ = e.deps.Sink.SaveIntent(in)
+	e.deps.Sink.Delivery(DeliveryRecord{
+		IntentID: in.ID, IncidentID: in.IncidentID, Kind: in.Kind, Seq: in.Seq, At: now,
+		Attempts: in.Attempts, OK: ok, Fallback: in.Delivery.Fallback(), Drill: in.Message.DryRun,
+		Delayed: LateBy(in.DueAt, now, e.cfg.Tunables.Duration("notify.intent-late")),
+	})
+	sev := "info"
+	if !ok {
+		sev = "critical"
+	}
+	e.event(Event{Type: EventNotify, Severity: sev, Monitor: in.Message.Monitor, Message: in.Kind + " notification " + map[bool]string{true: "delivered", false: "failed"}[ok],
+		Data: map[string]any{"msg": map[bool]string{true: "notify_delivered", false: "notify_failed"}[ok], "kind": in.Kind, "intent_id": in.ID, "incident_id": in.IncidentID, "fallback": in.Delivery.Fallback()}})
+	if ok {
+		if inc := e.system[SystemAllFailed]; inc != nil && inc.State.Open() && !in.System {
+			e.resolveSystem(SystemAllFailed, now, "")
+		}
+		return
+	}
+	if !in.System {
+		e.openSystem(SystemAllFailed, now, e.text("all_failed", in.Policy, in.Message.Title))
+	}
+}
+
+// coalesce applies storm control: when a policy's queue of undelivered
+// notices grows past notify.coalesce-queue, or its oldest has waited longer
+// than notify.coalesce-wait, the queued notices are replaced by one digest.
+func (e *Engine) coalesce(now time.Time) {
+	maxQ := e.cfg.Tunables.Int("notify.coalesce-queue")
+	maxWait := e.cfg.Tunables.Duration("notify.coalesce-wait")
+	byPolicy := map[string][]*Intent{}
+	for _, in := range e.pendingIntents() {
+		if in.System || in.Kind == "DIGEST" || in.Delivery.Pos() > 0 || in.Delivery.Steps[0].Attempts > 0 {
+			continue // only untouched, mergeable notices
+		}
+		byPolicy[in.Policy] = append(byPolicy[in.Policy], in)
+	}
+	for pol, q := range byPolicy {
+		if len(q) <= maxQ && now.Sub(q[0].CreatedAt) <= maxWait {
+			continue
+		}
+		titles := make([]string, 0, len(q))
+		for _, in := range q {
+			titles = append(titles, in.Kind+" "+in.Message.Title)
+			in.State, in.UpdatedAt = IntentMerged, now
+			_ = e.deps.Sink.SaveIntent(in)
+			delete(e.intents, in.ID)
+		}
+		e.deps.Sink.Counter(CounterOutageMerged, len(q))
+		e.enqueue(&Intent{Kind: "DIGEST", Policy: pol, CreatedAt: now, DueAt: now,
+			Message: notify.Message{Kind: "DIGEST", Priority: "high", Title: e.text("digest_title", len(q)), Body: e.text("digest_body", titles, e.cfg.BaseURL), Time: now, Instance: e.cfg.Instance, Lang: e.cfg.Lang}})
+	}
+}

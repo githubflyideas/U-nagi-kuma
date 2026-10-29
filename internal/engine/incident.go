@@ -1,0 +1,339 @@
+package engine
+
+import (
+	"context"
+	"log/slog"
+	"net/url"
+	"sort"
+	"strings"
+	"time"
+
+	"github.com/githubflyideas/unagikuma/internal/notify"
+)
+
+// policy resolves a policy name: undefined "system" inherits "default";
+// an undefined "default" has an empty chain (the UI shows the "alerts not
+// configured" banner).
+func (e *Engine) policy(name string) PolicySpec {
+	if name == "" {
+		name = "default"
+	}
+	if p, ok := e.cfg.Policies[name]; ok {
+		return p
+	}
+	if name == "system" {
+		if p, ok := e.cfg.Policies["default"]; ok {
+			p.Name = "system"
+			return p
+		}
+	}
+	return PolicySpec{Name: name, Mode: DeliverFallback, Notify: DefaultNotifyPolicy(e.cfg.Tunables)}
+}
+
+// monitorFailed handles a monitor entering HARD CRITICAL.
+func (e *Engine) monitorFailed(m *MonitorSpec, rt *monRuntime, pol PolicySpec, now time.Time) {
+	prev := e.byMonitor[m.Name]
+	var prevState *IncidentState
+	if prev != nil {
+		prevState = &prev.State
+	}
+	st, notices, events := Fail(prevState, now, reasonClass(rt.LastReason), pol.Notify)
+	inc := prev
+	if prev == nil || st != &prev.State {
+		inc = &Incident{Monitor: m.Name, Kind: IncidentNormal, Policy: pol.Name, State: *st, Title: m.Title}
+		if prev != nil {
+			e.retireIncident(prev)
+		}
+	}
+	inc.Reason, inc.Detail = rt.LastReason, rt.LastDetail
+	e.saveIncident(inc)
+	e.byMonitor[m.Name] = inc
+	e.incidents[inc.ID] = inc
+	for _, ev := range events {
+		e.incidentEvent(inc, ev)
+	}
+	if prev == inc {
+		e.incidentEvent(inc, "")
+	} else {
+		e.event(Event{Type: EventIncident, Severity: "critical", Monitor: m.Name, Message: "incident opened", Data: map[string]any{"msg": "incident_opened", "incident_id": inc.ID, "reason": inc.Reason}})
+	}
+	e.notices(inc, notices, now)
+}
+
+// monitorRecovered handles a HARD CRITICAL monitor recovering.
+func (e *Engine) monitorRecovered(m *MonitorSpec, rt *monRuntime, pol PolicySpec, now time.Time) {
+	inc := e.byMonitor[m.Name]
+	if inc == nil || !inc.State.Open() {
+		return
+	}
+	notices := Recover(&inc.State, now, pol.Notify)
+	e.saveIncident(inc)
+	e.event(Event{Type: EventIncident, Severity: "info", Monitor: m.Name, Message: "incident resolved",
+		Data: map[string]any{"msg": "incident_resolved", "incident_id": inc.ID, "duration_s": int(now.Sub(inc.State.OpenedAt).Seconds()), "notified": inc.State.NotifyCount}})
+	e.notices(inc, notices, now)
+}
+
+// openLow opens the low-priority incident of a DEGRADED monitor.
+func (e *Engine) openLow(m *MonitorSpec, rt *monRuntime, pol PolicySpec, now time.Time) {
+	if inc := e.lowByMon[m.Name]; inc != nil && inc.State.Open() {
+		return
+	}
+	inc := &Incident{Monitor: m.Name, Kind: IncidentLow, Policy: pol.Name, Title: m.Title, Reason: "slow",
+		State: IncidentState{Low: true, OpenedAt: now, HardAt: now}}
+	notices, _ := Advance(&inc.State, now, pol.Notify)
+	e.saveIncident(inc)
+	e.lowByMon[m.Name] = inc
+	e.incidents[inc.ID] = inc
+	e.notices(inc, notices, now)
+}
+
+// hasOpenIncident reports whether the monitor has an incident of any kind.
+func (e *Engine) hasOpenIncident(name string) bool {
+	return e.byMonitor[name] != nil || e.lowByMon[name] != nil || e.regional[name] != nil
+}
+
+// closeMonitorIncidents ends a monitor's incidents without notification
+// (monitor deleted or redefined).
+func (e *Engine) closeMonitorIncidents(name, why string) {
+	now := e.now()
+	for _, mm := range []map[string]*Incident{e.byMonitor, e.lowByMon, e.regional} {
+		inc := mm[name]
+		if inc == nil {
+			continue
+		}
+		if inc.State.ResolvedAt.IsZero() {
+			inc.State.ResolvedAt = now
+		}
+		inc.State.Closed = true
+		inc.Detail = why
+		e.saveIncident(inc)
+		e.retireIncident(inc)
+		delete(mm, name)
+		e.event(Event{Type: EventIncident, Severity: "info", Monitor: name, Message: "incident closed: monitor " + why, Data: map[string]any{"msg": "closed_" + why, "incident_id": inc.ID}})
+	}
+}
+
+// retireIncident forgets an incident and drops its undelivered notices.
+func (e *Engine) retireIncident(inc *Incident) {
+	delete(e.incidents, inc.ID)
+	for id, in := range e.intents {
+		if in.IncidentID == inc.ID && in.Kind != string(NoticeRecovery) {
+			in.State, in.UpdatedAt = IntentMerged, e.now()
+			_ = e.deps.Sink.SaveIntent(in)
+			delete(e.intents, id)
+		}
+	}
+}
+
+// advanceIncidents applies time to every incident: delayed first notices,
+// repeats, ACK and silence expiry, summaries, closing.
+func (e *Engine) advanceIncidents(now time.Time) {
+	ids := make([]int64, 0, len(e.incidents))
+	for id := range e.incidents {
+		ids = append(ids, id)
+	}
+	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+	for _, id := range ids {
+		inc := e.incidents[id]
+		if inc == nil {
+			continue
+		}
+		// Repeats pause while the monitor is held by UNKNOWN (our own
+		// outage): telling people again would be noise.
+		if inc.Kind == IncidentNormal && inc.State.Open() {
+			if rt := e.states[inc.Monitor]; rt != nil && rt.State.Held {
+				continue
+			}
+		}
+		// Repeats wait while the monitor is in maintenance.
+		if inc.State.Open() && e.maintenanceIncident(inc) {
+			continue
+		}
+		pol := e.policy(inc.Policy)
+		before := inc.State
+		notices, events := Advance(&inc.State, now, e.effectivePolicy(inc, pol))
+		if len(notices) == 0 && len(events) == 0 && before == inc.State {
+			continue
+		}
+		for _, ev := range events {
+			e.incidentEvent(inc, ev)
+		}
+		e.saveIncident(inc)
+		e.notices(inc, notices, now)
+		if inc.State.Closed {
+			e.retireClosed(inc)
+		}
+	}
+}
+
+// effectivePolicy adjusts the notification discipline for system incidents:
+// a local outage shorter than localnet.notify-after is never notified.
+func (e *Engine) effectivePolicy(inc *Incident, pol PolicySpec) NotifyPolicy {
+	p := pol.Notify
+	if inc.Kind == IncidentSystem && inc.System == SystemLocalNetwork {
+		p.Delay = max(p.Delay, e.cfg.Tunables.Duration("localnet.notify-after"))
+	}
+	return p
+}
+
+func (e *Engine) retireClosed(inc *Incident) {
+	delete(e.incidents, inc.ID)
+	for _, mm := range []map[string]*Incident{e.byMonitor, e.lowByMon, e.system} {
+		for k, v := range mm {
+			if v == inc {
+				delete(mm, k)
+			}
+		}
+	}
+}
+
+func (e *Engine) incidentEvent(inc *Incident, ev string) {
+	switch ev {
+	case "":
+		return
+	case IncidentCapped:
+		e.deps.Sink.Counter(CounterCapSaved, 1)
+	}
+	e.event(Event{Type: EventIncident, Severity: "info", Monitor: inc.Monitor, Message: "incident " + strings.ReplaceAll(ev, "_", " "),
+		Data: map[string]any{"msg": "incident_" + ev, "incident_id": inc.ID, "event": ev, "count": inc.State.NotifyCount}})
+}
+
+// notices turns planned notices into durable intents.
+func (e *Engine) notices(inc *Incident, ns []PlannedNotice, now time.Time) {
+	if len(ns) > 0 && e.maintenanceIncident(inc) {
+		e.event(Event{Type: EventNotify, Severity: "info", Monitor: inc.Monitor, Message: "not notified: maintenance window", Data: map[string]any{"msg": "not_notified_maint"}})
+		return
+	}
+	for _, n := range ns {
+		msg := e.message(inc, n, now)
+		e.enqueue(&Intent{
+			IncidentID: inc.ID, Seq: n.Seq, Kind: string(n.Kind), Policy: inc.Policy,
+			Message: msg, CreatedAt: now, DueAt: now, System: inc.Kind == IncidentSystem,
+		})
+	}
+}
+
+// enqueue persists a new intent and queues it for delivery.
+func (e *Engine) enqueue(in *Intent) {
+	pol := e.policy(in.Policy)
+	in.ID = newID()
+	in.Message.DeliveryID = in.ID
+	chain, mode := pol.Chain, pol.Mode
+	if len(in.Chain) > 0 {
+		chain, mode = in.Chain, DeliverAll
+	}
+	in.Delivery = NewDelivery(chain, mode)
+	in.State = IntentPending
+	in.UpdatedAt = in.CreatedAt
+	if err := e.deps.Sink.SaveIntent(in); err != nil {
+		e.log.Error("cannot persist notification intent", "err", err)
+	}
+	if len(in.Delivery.Steps) == 0 {
+		in.State = IntentFailed
+		_ = e.deps.Sink.SaveIntent(in)
+		e.event(Event{Type: EventNotify, Severity: "warning", Monitor: in.Message.Monitor, Message: "not notified: policy " + pol.Name + " has no channels", Data: map[string]any{"msg": "no_channels", "policy": pol.Name}})
+		return
+	}
+	e.intents[in.ID] = in
+}
+
+// message builds the notification for an incident notice.
+func (e *Engine) message(inc *Incident, n PlannedNotice, now time.Time) notify.Message {
+	msg := notify.Message{
+		Kind: string(n.Kind), Priority: "high", Monitor: inc.Monitor, Title: inc.Title,
+		Reason: inc.Reason, Detail: inc.Detail, Count: n.Seq, Max: n.Max, IncidentID: inc.ID,
+		Duration: now.Sub(inc.State.OpenedAt), Time: now, Instance: e.cfg.Instance, Lang: e.cfg.Lang,
+	}
+	if inc.Kind == IncidentLow || inc.Kind == IncidentRegional {
+		msg.Priority = "low"
+	}
+	if m := e.monitors[inc.Monitor]; m != nil {
+		if msg.Title == "" {
+			msg.Title = m.Title
+		}
+		msg.Type, msg.Target, msg.Depth, msg.Tags = m.Probe.Type, m.Probe.Target, m.Depth, m.Tags
+		if rt := e.states[m.Name]; rt != nil {
+			msg.Status = rt.State.Display()
+			msg.Quorum = rt.LastVerdict.Summary()
+		}
+		if e.cfg.BaseURL != "" {
+			msg.DetailURL = strings.TrimRight(e.cfg.BaseURL, "/") + "/#/monitors/" + url.PathEscape(m.Name)
+		}
+	}
+	if msg.Title == "" {
+		msg.Title = inc.Monitor
+	}
+	if n.Kind == NoticeRecovery {
+		msg.Status = StatusOK
+		if n.Flaps > 0 {
+			msg.Body = e.text("recovered_after_flaps", n.Flaps)
+		}
+	}
+	if inc.Kind == IncidentSystem {
+		msg.Kind = "SYSTEM"
+		msg.Body = inc.Detail
+		if n.Kind == NoticeRecovery {
+			msg.Body = inc.Summary
+		}
+	}
+	return msg
+}
+
+func (e *Engine) saveIncident(inc *Incident) {
+	if err := e.deps.Sink.SaveIncident(inc); err != nil {
+		e.log.Error("cannot persist incident", "err", err, "monitor", inc.Monitor)
+	}
+	if inc.ID != 0 {
+		e.incidents[inc.ID] = inc
+	}
+}
+
+func (e *Engine) saveState(name string, rt *monRuntime) {
+	rec := StateRecord{Name: name, State: rt.State, Status: e.statusOf(e.monitors[name], rt), Reason: rt.LastReason, Detail: rt.LastDetail,
+		LatencyMS: ms(rt.LastResult.Latency), LastCheck: rt.LastCheck, LastChange: rt.LastChange, DefHash: rt.DefHash}
+	if inc := e.byMonitor[name]; inc != nil && inc.State.Open() {
+		rec.IncidentID = inc.ID
+	}
+	e.deps.Sink.SaveState(rec)
+}
+
+func (e *Engine) event(ev Event) {
+	if ev.At.IsZero() {
+		ev.At = e.now()
+	}
+	e.deps.Sink.Event(ev)
+	// The same story in the log, one structured line per event, for
+	// whoever reads journald or ships logs elsewhere.
+	lvl := slog.LevelInfo
+	if ev.Severity == "warning" || ev.Severity == "critical" {
+		lvl = slog.LevelWarn
+	}
+	attrs := []any{"event", ev.Type, "severity", ev.Severity}
+	if ev.Monitor != "" {
+		attrs = append(attrs, "monitor", ev.Monitor)
+	}
+	for _, k := range []string{"msg", "incident_id", "channel", "by"} {
+		if v, ok := ev.Data[k]; ok {
+			key := k
+			if k == "msg" {
+				key = "code"
+			}
+			attrs = append(attrs, key, v)
+		}
+	}
+	e.log.Log(context.Background(), lvl, ev.Message, attrs...)
+}
+
+// supersedeLow closes a monitor's low-priority incident without a
+// notification: a failure incident replaces it.
+func (e *Engine) supersedeLow(name string, inc *Incident, now time.Time) {
+	if inc.State.ResolvedAt.IsZero() {
+		inc.State.ResolvedAt = now
+	}
+	inc.State.Closed = true
+	inc.Detail = "superseded by a failure"
+	e.saveIncident(inc)
+	e.retireIncident(inc)
+	delete(e.lowByMon, name)
+	e.event(Event{Type: EventIncident, Severity: "info", Monitor: name, Message: "degraded incident closed: the monitor failed", Data: map[string]any{"msg": "degraded_superseded", "incident_id": inc.ID}})
+}

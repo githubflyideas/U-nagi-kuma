@@ -1,0 +1,424 @@
+package app
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"net"
+	"net/netip"
+	"net/url"
+	"os"
+	"regexp"
+	"slices"
+	"strconv"
+	"strings"
+
+	"github.com/githubflyideas/unagikuma/internal/cluster"
+	"github.com/githubflyideas/unagikuma/internal/config"
+	"github.com/githubflyideas/unagikuma/internal/directory"
+	"github.com/githubflyideas/unagikuma/internal/engine"
+	"github.com/githubflyideas/unagikuma/internal/keywords"
+	"github.com/githubflyideas/unagikuma/internal/netscope"
+	"github.com/githubflyideas/unagikuma/internal/notify"
+	"github.com/githubflyideas/unagikuma/internal/oncall"
+	"github.com/githubflyideas/unagikuma/internal/probe"
+)
+
+// engineOpts are monitor options interpreted by the engine, not the probe.
+var engineOpts = map[string]bool{
+	"title": true, "description": true, "tags": true, "group": true, "timeout": true, "retry": true,
+	"attempts": true, "recover-attempts": true, "nodes": true, "quorum": true, "on-insufficient": true,
+	"on-node-loss": true, "partial-escalate": true, "scope": true, "policy": true, "degraded": true,
+	"disabled": true, "period": true, "grace": true, "parent": true, "device": true, "handler": true, "was": true,
+}
+
+// ProbeSpec builds the probe spec of a monitor. resolve substitutes
+// ${secret:} / ${env:} references (nil keeps them, for validation).
+func ProbeSpec(m *config.Monitor, resolve func(string) (string, error)) (probe.Spec, error) {
+	sub := func(s string) (string, error) {
+		if resolve == nil {
+			return s, nil
+		}
+		return resolve(s)
+	}
+	o := map[string]string{}
+	for k, v := range m.Opts {
+		if engineOpts[k] {
+			continue
+		}
+		rv, err := sub(v)
+		if err != nil {
+			return probe.Spec{}, err
+		}
+		o[k] = rv
+	}
+	target, err := sub(m.Target)
+	if err != nil {
+		return probe.Spec{}, err
+	}
+	if m.UDP != nil {
+		target = net.JoinHostPort(m.UDP.Host, strconv.Itoa(m.UDP.Port))
+		if _, set := o["template"]; !set {
+			o["template"] = m.UDP.Template
+		}
+	}
+	spec := probe.Spec{Name: m.Name, Type: m.Type, Target: target, Opts: o, Timeout: m.Timeout}
+	if resolve != nil {
+		// The values ${secret:} references stand for, to scrub them from
+		// what the probe records.
+		seen := map[string]bool{}
+		for _, v := range append([]string{m.Target}, mapValues(m.Opts)...) {
+			for _, ref := range refRe.FindAllString(v, -1) {
+				if strings.HasPrefix(ref, "${secret:") && !seen[ref] {
+					seen[ref] = true
+					if val, err := resolve(ref); err == nil && val != "" {
+						spec.Secrets = append(spec.Secrets, val)
+					}
+				}
+			}
+		}
+	}
+	return spec, nil
+}
+
+func mapValues(m map[string]string) []string {
+	out := make([]string, 0, len(m))
+	for _, v := range m {
+		out = append(out, v)
+	}
+	return out
+}
+
+var refRe = regexp.MustCompile(`\$\{(secret|env):([A-Za-z0-9_.-]+)\}`)
+
+// resolver substitutes references with secret values and allowed
+// environment variables.
+func (a *App) resolver() func(string) (string, error) {
+	return func(s string) (string, error) {
+		var firstErr error
+		out := refRe.ReplaceAllStringFunc(s, func(ref string) string {
+			m := refRe.FindStringSubmatch(ref)
+			switch m[1] {
+			case "env":
+				if !strings.HasPrefix(m[2], "UNAGIKUMA_") && !contains(a.opts.AllowEnv, m[2]) {
+					firstErr = fmt.Errorf("${env:%s} is not allowed", m[2])
+					return ""
+				}
+				return os.Getenv(m[2])
+			default:
+				v, err := a.secrets.Get(m[2])
+				if err != nil && firstErr == nil {
+					firstErr = fmt.Errorf("secret %s: %v", m[2], err)
+				}
+				return v
+			}
+		})
+		return out, firstErr
+	}
+}
+
+func contains(list []string, s string) bool {
+	for _, x := range list {
+		if x == s {
+			return true
+		}
+	}
+	return false
+}
+
+// validators are the config.Options hooks.
+func (a *App) validators() config.Options {
+	return config.Options{
+		AllowEnv:    a.opts.AllowEnv,
+		Location:    a.opts.Location,
+		SecretKnown: a.secrets.Has,
+		ValidateMonitor: func(m *config.Monitor) error {
+			s, err := ProbeSpec(m, nil)
+			if err != nil {
+				return err
+			}
+			// Unresolved references cannot be validated statically.
+			for k, v := range s.Opts {
+				if strings.Contains(v, "${") {
+					delete(s.Opts, k)
+				}
+			}
+			if strings.Contains(s.Target, "${") {
+				return nil
+			}
+			if h := m.Opts["handler"]; h != "" {
+				if err := probe.ValidateHandler(h); err != nil {
+					return fmt.Errorf("handler: %v", err)
+				}
+			}
+			return probe.Validate(s)
+		},
+		ValidateChannel: func(kind string, opts map[string]string) error {
+			if kind == "webhook" {
+				if b := opts["body"]; b != "" {
+					if err := notify.ValidateTemplate(b); err != nil {
+						return err
+					}
+				}
+			}
+			return notify.ValidateChannel(kind, opts)
+		},
+	}
+}
+
+// engineConfig translates a validated configuration for the engine.
+// Monitors whose secrets cannot be resolved still run: the probe abstains
+// with secret_unavailable so the operator sees why.
+func (a *App) engineConfig(cfg *config.Config) engine.Config {
+	ec := engine.Config{
+		Serial: cfg.Serial, Instance: a.instance(), Lang: a.messageLang(), BaseURL: a.baseURL(),
+		Location: a.opts.Location, Tunables: cfg.Tunables, LocalDetect: true,
+		Policies: map[string]engine.PolicySpec{}, Channels: map[string]engine.ChannelSpec{},
+	}
+	resolve := a.resolver()
+	degradedMax := cfg.Tunables.Int("notify.degraded-max")
+	selfProbes, probers := clusterNodes(cfg, &ec)
+	for _, m := range cfg.Monitors {
+		spec, err := ProbeSpec(m, resolve)
+		depth := string(probe.DepthOf(spec))
+		weak := depth == string(keywords.L1) || (m.UDP != nil && m.UDP.Entry != nil && m.UDP.Entry.Stateful)
+		ms := engine.MonitorSpec{
+			Name: m.Name, Title: m.Title, Group: m.Group, Probe: spec, Depth: depth, Policy: m.Policy,
+			Interval: m.Interval, Retry: m.Retry, Attempts: m.Attempts, RecoverAttempts: m.RecoverAttempts,
+			SlowAfter: m.Degraded, Paused: m.Disabled, DefHash: m.DefHash, Parents: m.Parents,
+			Host: m.HostKey(), Address: m.Host(), Area: m.Area, Ping: m.Type == "PING",
+			Quorum:  engine.QuorumRule{Spec: m.Quorum, OnNodeLoss: m.OnNodeLoss, OnInsufficient: m.OnInsufficient, Weak: weak},
+			Handler: m.Opts["handler"],
+		}
+		if len(ec.Nodes) > 0 && m.Type != "PUSH" {
+			if p := participants(m.Nodes, cfg.MName, selfProbes, probers); len(p) != 1 || p[0] != cfg.MName {
+				ms.Nodes = p
+			}
+			ms.PartialEscalate = m.PartialEscalate
+			// A node with a wrong clock cannot judge a time server or how
+			// close a certificate is to expiry.
+			ms.TimeSensitive = m.CertDays > 0 || m.CertCritical > 0 || (m.UDP != nil && m.UDP.Keyword == "ntp")
+		}
+		if m.Scope == "lan" || m.Scope == "wan" {
+			ms.Scope = netscope.Scope(m.Scope)
+		}
+		for _, t := range m.Tags {
+			ms.Tags = append(ms.Tags, t.String())
+		}
+		if m.Type == "PUSH" {
+			ms.Push, ms.PushPeriod, ms.PushGrace = true, m.Period, m.Grace
+		}
+		if err != nil {
+			ms.SecretError = err.Error()
+		}
+		ec.Monitors = append(ec.Monitors, ms)
+	}
+	for _, mt := range cfg.Maints {
+		ec.Maints = append(ec.Maints, engine.MaintSpec{Name: mt.Name, Title: mt.Title, Monitors: mt.Monitors, Schedule: mt.Schedule, Notify: mt.Notify})
+	}
+	ec.Maints = append(ec.Maints, a.changeWindows(cfg)...)
+	ec.Overrides = a.currentOverrides()
+	for _, c := range cfg.Channels {
+		opts := map[string]string{}
+		for k, v := range c.Opts {
+			rv, err := resolve(v)
+			if err != nil {
+				a.log.Warn("channel reference", "channel", c.Name, "err", err)
+			}
+			opts[k] = rv
+		}
+		cs := engine.ChannelSpec{Channel: notify.Channel{Name: c.Name, Kind: c.Kind, Opts: opts}, Retries: c.Retries, Members: c.Members}
+		if c.Kind == "group" {
+			cs.Rotation, _ = oncall.Parse(c.Opts, c.Members) // validated with the file
+		}
+		if key, kind, ok := directory.AddressKey(c.Kind); ok {
+			// Recipients go through the contact directory: @handles become
+			// addresses, people who left and dead addresses are dropped.
+			send, _ := a.Directory().Resolve(kind, opts[key])
+			opts[key] = strings.Join(send, ",")
+			if len(send) == 0 {
+				cs.NoRecipients = "nobody to send to: every recipient left or keeps bouncing (see Alerting › Contacts)"
+			}
+		}
+		if c.Period != "" {
+			if p := cfg.FindPeriod(strings.TrimPrefix(c.Period, "!")); p != nil {
+				cs.Period, cs.Outside = &p.Spec, strings.HasPrefix(c.Period, "!")
+			}
+		}
+		cs.Scope, cs.Family, cs.OnLink, cs.ByName = channelReach(c.Kind, opts)
+		ec.Channels[c.Name] = cs
+	}
+	for _, p := range cfg.Policies {
+		ec.Policies[p.Name] = engine.PolicySpec{Name: p.Name, Chain: p.Chain, Mode: p.Mode, Notify: engine.NotifyPolicy{
+			Max: p.Max, Repeat: p.Repeat, Delay: p.Delay, ReopenWindow: p.ReopenWindow, Recovery: p.Recovery,
+			NotifyDegraded: p.NotifyDegraded, DegradedMax: degradedMax, AckExpire: p.AckExpire,
+			AckClearOnChange: p.AckClearOnChange, RecoveryAfterAck: p.RecoveryAfterAck,
+		}}
+		ps := ec.Policies[p.Name]
+		for _, x := range p.Escalate {
+			ps.Escalate = append(ps.Escalate, engine.EscalationStep{After: x.After, Channels: x.Channels})
+		}
+		ec.Policies[p.Name] = ps
+	}
+	for _, n := range cfg.Nodes {
+		if n.Name != cfg.MName {
+			continue
+		}
+		ec.LocalDetect = n.LocalDetect && !n.NoAnchors
+		for _, x := range n.AnchorsLAN {
+			ec.Anchors = append(ec.Anchors, engine.AnchorSpec{Kind: engine.AnchorLAN, Addr: x})
+		}
+		for _, x := range n.AnchorsWAN {
+			ec.Anchors = append(ec.Anchors, engine.AnchorSpec{Kind: engine.AnchorWAN, Addr: x})
+		}
+	}
+	return ec
+}
+
+// clusterNodes fills the engine's node list with the remote nodes and
+// reports whether this server probes and which remote nodes probe. A file
+// without remote nodes leaves ec.Nodes empty: single-machine mode.
+func clusterNodes(cfg *config.Config, ec *engine.Config) (bool, []string) {
+	selfProbes := true
+	var probers []string
+	for _, n := range cfg.Nodes {
+		if n.Name == cfg.MName {
+			selfProbes = n.Probe
+			continue
+		}
+		ec.Nodes = append(ec.Nodes, engine.NodeSpec{
+			Name: n.Name, Title: n.Description, Region: n.Region, Probe: n.Probe, Policy: n.Policy, Timeout: n.NodeTimeout,
+		})
+		if n.Probe {
+			probers = append(probers, n.Name)
+		}
+	}
+	if len(ec.Nodes) > 0 {
+		ec.Self = cfg.MName
+	}
+	return selfProbes, probers
+}
+
+// participants lists the nodes that judge a monitor: the ones it names,
+// otherwise every probing node.
+func participants(named []string, self string, selfProbes bool, probers []string) []string {
+	if len(named) > 0 {
+		return append([]string(nil), named...)
+	}
+	var out []string
+	if selfProbes {
+		out = append(out, self)
+	}
+	return append(out, probers...)
+}
+
+// agentConfigs builds what each remote node runs: only the monitors it
+// takes part in, with references already resolved, and its own anchors.
+func agentConfigs(cfg *config.Config, ec engine.Config) map[string]*cluster.AgentConfig {
+	out := map[string]*cluster.AgentConfig{}
+	for _, n := range cfg.Nodes {
+		if n.Name == cfg.MName {
+			continue
+		}
+		ac := &cluster.AgentConfig{Serial: cfg.Serial, LocalDetect: n.LocalDetect && !n.NoAnchors, Tunables: cfg.Tunables.Overrides()}
+		for _, x := range n.AnchorsLAN {
+			ac.Anchors = append(ac.Anchors, engine.AnchorSpec{Kind: engine.AnchorLAN, Addr: x})
+		}
+		for _, x := range n.AnchorsWAN {
+			ac.Anchors = append(ac.Anchors, engine.AnchorSpec{Kind: engine.AnchorWAN, Addr: x})
+		}
+		for _, m := range ec.Monitors {
+			if !m.Paused && slices.Contains(m.Nodes, n.Name) {
+				ac.Monitors = append(ac.Monitors, cluster.AgentMonitor{Name: m.Name, Probe: m.Probe, Scope: m.Scope, DefHash: m.DefHash, SecretError: m.SecretError})
+			}
+		}
+		// Where the master can be found after a handover: every standby but
+		// the node itself.
+		ac.Masters, ac.Standby = []string{}, n.Standby != ""
+		for _, o := range cfg.Nodes {
+			if o.Standby != "" && o.Name != n.Name {
+				ac.Masters = append(ac.Masters, o.Standby)
+			}
+		}
+		b, _ := json.Marshal(ac)
+		h := sha256.Sum256(b)
+		ac.Hash = hex.EncodeToString(h[:8])
+		out[n.Name] = ac
+	}
+	return out
+}
+
+// channelReach classifies where a channel's endpoint lives, so it can be
+// paused (not failed) while that path is down.
+func channelReach(kind string, opts map[string]string) (netscope.Scope, engine.Family, bool, bool) {
+	host := ""
+	switch kind {
+	case "email":
+		host = opts["host"]
+	case "log":
+		return netscope.LAN, engine.FamilyV4, true, false
+	case "telegram":
+		host = "api.telegram.org"
+		if api := opts["api"]; api != "" {
+			if u, err := url.Parse(api); err == nil {
+				host = u.Hostname()
+			}
+		}
+	default:
+		for _, k := range []string{"url", "server", "homeserver"} {
+			if u, err := url.Parse(opts[k]); err == nil && u.Hostname() != "" {
+				host = u.Hostname()
+				break
+			}
+		}
+	}
+	if a, err := netip.ParseAddr(strings.Trim(host, "[]")); err == nil {
+		return netscope.OfAddr(a), engine.FamilyOf(a), false, false
+	}
+	if s, known := netscope.OfHost(host); known {
+		return s, engine.FamilyV4, false, true
+	}
+	return netscope.WAN, engine.FamilyV4, false, true
+}
+
+func (a *App) instance() string {
+	if v, _ := a.store.Setting("instance_name"); v != "" {
+		return v
+	}
+	if a.opts.Instance != "" {
+		return a.opts.Instance
+	}
+	h, _ := os.Hostname()
+	return h
+}
+
+// MessageLang is the language notifications are written in.
+func (a *App) MessageLang() string { return a.messageLang() }
+
+func (a *App) messageLang() string {
+	if v, _ := a.store.Setting("message_lang"); v != "" {
+		return v
+	}
+	return "en"
+}
+
+func (a *App) baseURL() string {
+	if v, _ := a.store.Setting("base_url"); v != "" {
+		return v
+	}
+	return a.opts.BaseURL
+}
+
+// Resolver substitutes ${secret:} and ${env:} references.
+func (a *App) Resolver() func(string) (string, error) { return a.resolver() }
+
+// BaseURL is the address links in messages point to.
+func (a *App) BaseURL() string { return a.baseURL() }
+
+// SendDirect sends one message outside any notification policy (status
+// page subscriptions).
+func (a *App) SendDirect(ctx context.Context, ch notify.Channel, m *notify.Message) notify.Attempt {
+	return a.sender.Send(ctx, ch, m)
+}
