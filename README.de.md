@@ -19,7 +19,7 @@ Einfaches, selbst gehostetes Monitoring: Sie wissen sofort, wenn Ihre Websites o
 - **Ein Problem, keine Alarmflut.** Fällt Ihr eigenes Netzwerk aus, merkt Unagikuma das und schickt nicht für jeden einzelnen Monitor einen Alarm.
 - **Statusseiten**, damit Ihre Nutzer immer Bescheid wissen.
 - **Wächst mit.** Bei Bedarf von mehreren Standorten aus prüfen (Vorschau).
-- **Einfacher Umstieg.** Übernehmen Sie Ihre Monitore aus Uptime Kuma oder Nagios (Vorschau).
+- **Einfacher Umstieg.** Übernehmen Sie Ihre Monitore aus Uptime Kuma oder Nagios.
 - **Spricht Ihre Sprache.** Die Oberfläche gibt es in 15 Sprachen.
 
 ## Schnellstart
@@ -47,6 +47,52 @@ docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/gith
 ```
 
 Öffnen Sie dann http://localhost:8077. Das **Einrichtungstoken** finden Sie mit `docker logs unagikuma`.
+
+## Umstieg von Uptime Kuma
+
+Uptime Kuma beenden und zuerst ansehen (es wird nichts geändert):
+
+```sh
+./unagikuma import kuma --dry-run /path/to/uptime-kuma/data/kuma.db
+```
+
+Wenn alles passt, importieren:
+
+```sh
+./unagikuma import kuma /path/to/uptime-kuma/data/kuma.db
+```
+
+Der Bericht zeigt, was importiert wurde, was man prüfen sollte und was nicht importiert werden konnte, jeweils mit dem nächsten Schritt. Er wird auch in `data/import-reports/` gespeichert. Ein erneuter Aufruf fügt nur Neues hinzu.
+
+## Umstieg von Nagios
+
+Geben Sie `nagios.cfg` an und sehen Sie zuerst nach (es wird nichts geändert):
+
+```sh
+./unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
+```
+
+Wenn alles passt, importieren:
+
+```sh
+./unagikuma import nagios /etc/nagios4/nagios.cfg
+```
+
+Der Bericht zeigt, was importiert wurde, was man prüfen sollte und was nicht importiert werden konnte, jeweils mit dem nächsten Schritt. Er wird auch in `data/import-reports/` gespeichert. Ein erneuter Aufruf fügt nur Neues hinzu.
+
+## Passwort vergessen?
+
+Auf dem Rechner, auf dem Unagikuma läuft:
+
+```sh
+./unagikuma reset-password admin
+```
+
+Geben Sie das neue Passwort zweimal ein (es wird nicht angezeigt). Mit `--generate` bekommen Sie stattdessen ein zufälliges. Mit Docker:
+
+```sh
+docker exec -it unagikuma /unagikuma reset-password admin
+```
 
 ## Mehr erfahren
 

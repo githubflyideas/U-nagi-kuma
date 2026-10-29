@@ -25,7 +25,7 @@
 - **ایک مسئلہ، الرٹس کا سیلاب نہیں۔** اگر آپ کا اپنا نیٹ ورک بند ہو جائے تو Unagikuma اسے پہچان لیتا ہے اور ہر مانیٹر کے لیے الگ الرٹ نہیں بھیجتا۔
 - **اسٹیٹس پیجز** تاکہ آپ کے صارفین ہمیشہ باخبر رہیں۔
 - **آپ کے ساتھ بڑھتا ہے۔** ضرورت ہو تو کئی جگہوں سے جانچ کریں (پیش نظارہ)۔
-- **منتقل ہونا آسان۔** اپنے مانیٹرز Uptime Kuma یا Nagios سے لے آئیں (پیش نظارہ)۔
+- **منتقل ہونا آسان۔** اپنے مانیٹرز Uptime Kuma یا Nagios سے لے آئیں۔
 - **آپ کی زبان میں۔** انٹرفیس 15 زبانوں میں دستیاب ہے۔
 
 </div>
@@ -71,6 +71,84 @@ docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/gith
 پھر http://localhost:8077 کھولیں۔ **سیٹ اپ ٹوکن** آپ کو `docker logs unagikuma` سے مل جائے گا۔
 
 </div>
+
+<div dir="rtl">
+
+## Uptime Kuma سے منتقلی
+
+Uptime Kuma بند کریں، پھر پہلے دیکھ لیں (کچھ نہیں بدلتا):
+
+</div>
+
+```sh
+./unagikuma import kuma --dry-run /path/to/uptime-kuma/data/kuma.db
+```
+
+<div dir="rtl">
+
+اگر سب ٹھیک لگے تو امپورٹ کریں:
+
+</div>
+
+```sh
+./unagikuma import kuma /path/to/uptime-kuma/data/kuma.db
+```
+
+<div dir="rtl">
+
+رپورٹ بتاتی ہے کہ کیا امپورٹ ہوا، کسے دیکھنا ضروری ہے اور کیا امپورٹ نہیں ہو سکا، اور کیا کرنا ہے۔ یہ `data/import-reports/` میں بھی محفوظ ہوتی ہے۔ دوبارہ چلانے پر صرف نئی چیزیں شامل ہوتی ہیں۔
+
+</div>
+
+<div dir="rtl">
+
+## Nagios سے منتقلی
+
+اسے `nagios.cfg` دیں اور پہلے دیکھ لیں (کچھ نہیں بدلتا):
+
+</div>
+
+```sh
+./unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
+```
+
+<div dir="rtl">
+
+اگر سب ٹھیک لگے تو امپورٹ کریں:
+
+</div>
+
+```sh
+./unagikuma import nagios /etc/nagios4/nagios.cfg
+```
+
+<div dir="rtl">
+
+رپورٹ بتاتی ہے کہ کیا امپورٹ ہوا، کسے دیکھنا ضروری ہے اور کیا امپورٹ نہیں ہو سکا، اور کیا کرنا ہے۔ یہ `data/import-reports/` میں بھی محفوظ ہوتی ہے۔ دوبارہ چلانے پر صرف نئی چیزیں شامل ہوتی ہیں۔
+
+</div>
+
+<div dir="rtl">
+
+## پاس ورڈ بھول گئے؟
+
+جس مشین پر Unagikuma چل رہا ہے وہاں چلائیں:
+
+</div>
+
+```sh
+./unagikuma reset-password admin
+```
+
+<div dir="rtl">
+
+نیا پاس ورڈ دو بار لکھیں (یہ دکھائی نہیں دے گا)۔ اس کی جگہ ایک بے ترتیب پاس ورڈ کے لیے `--generate` شامل کریں۔ Docker کے ساتھ:
+
+</div>
+
+```sh
+docker exec -it unagikuma /unagikuma reset-password admin
+```
 
 <div dir="rtl">
 

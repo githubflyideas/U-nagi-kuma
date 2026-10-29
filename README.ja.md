@@ -19,7 +19,7 @@
 - **問題は 1 つ、通知の嵐にはなりません。** 自分側のネットワークが落ちたときは Unagikuma がそれに気づき、監視ごとに通知を送ることはしません。
 - **ステータスページ**で、利用者にいつでも状況を伝えられます。
 - **規模に合わせて拡張。** 必要になったら複数の拠点から監視できます(プレビュー)。
-- **乗り換えもかんたん。** Uptime Kuma や Nagios から監視設定を取り込めます(プレビュー)。
+- **乗り換えもかんたん。** Uptime Kuma や Nagios から監視設定を取り込めます。
 - **あなたの言語で。** 画面は 15 の言語に対応しています。
 
 ## クイックスタート
@@ -47,6 +47,52 @@ docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/gith
 ```
 
 そのあと http://localhost:8077 を開きます。**セットアップトークン** は `docker logs unagikuma` で確認できます。
+
+## Uptime Kuma からの移行
+
+Uptime Kuma を止めてから、まず確認します(何も変更されません):
+
+```sh
+./unagikuma import kuma --dry-run /path/to/uptime-kuma/data/kuma.db
+```
+
+問題なければ取り込みます:
+
+```sh
+./unagikuma import kuma /path/to/uptime-kuma/data/kuma.db
+```
+
+レポートには、取り込んだもの、確認が必要なもの、取り込めなかったものと、その対処方法が表示されます。`data/import-reports/` にも保存されます。もう一度実行しても新しいものだけが追加されます。
+
+## Nagios からの移行
+
+`nagios.cfg` を指定して、まず確認します(何も変更されません):
+
+```sh
+./unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
+```
+
+問題なければ取り込みます:
+
+```sh
+./unagikuma import nagios /etc/nagios4/nagios.cfg
+```
+
+レポートには、取り込んだもの、確認が必要なもの、取り込めなかったものと、その対処方法が表示されます。`data/import-reports/` にも保存されます。もう一度実行しても新しいものだけが追加されます。
+
+## パスワードを忘れたら
+
+Unagikuma が動いているマシンで実行します:
+
+```sh
+./unagikuma reset-password admin
+```
+
+新しいパスワードを 2 回入力します(画面には表示されません)。代わりにランダムなパスワードを作るには `--generate` を付けます。Docker の場合:
+
+```sh
+docker exec -it unagikuma /unagikuma reset-password admin
+```
 
 ## さらに詳しく
 

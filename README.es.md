@@ -19,7 +19,7 @@ Monitorización autoalojada y sencilla: entérate en cuanto tus webs o servidore
 - **Un problema, no una avalancha de alertas.** Si se cae tu propia red, Unagikuma se da cuenta y no te avisa por cada monitor.
 - **Páginas de estado** para mantener informados a tus usuarios.
 - **Crece contigo.** Comprueba desde varias ubicaciones cuando lo necesites (versión preliminar).
-- **Cambiarse es fácil.** Trae tus monitores desde Uptime Kuma o Nagios (versión preliminar).
+- **Cambiarse es fácil.** Trae tus monitores desde Uptime Kuma o Nagios.
 - **Habla tu idioma.** La interfaz está disponible en 15 idiomas.
 
 ## Primeros pasos
@@ -47,6 +47,52 @@ docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/gith
 ```
 
 Después abre http://localhost:8077. Encontrarás el **Token de configuración** con `docker logs unagikuma`.
+
+## Cambiar desde Uptime Kuma
+
+Detén Uptime Kuma y revisa primero (no se cambia nada):
+
+```sh
+./unagikuma import kuma --dry-run /path/to/uptime-kuma/data/kuma.db
+```
+
+Si todo se ve bien, importa:
+
+```sh
+./unagikuma import kuma /path/to/uptime-kuma/data/kuma.db
+```
+
+El informe muestra qué se importó, qué conviene revisar y qué no se pudo importar, con qué hacer en cada caso. También se guarda en `data/import-reports/`. Si lo ejecutas de nuevo, solo añade lo nuevo.
+
+## Cambiar desde Nagios
+
+Indica tu `nagios.cfg` y revisa primero (no se cambia nada):
+
+```sh
+./unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
+```
+
+Si todo se ve bien, importa:
+
+```sh
+./unagikuma import nagios /etc/nagios4/nagios.cfg
+```
+
+El informe muestra qué se importó, qué conviene revisar y qué no se pudo importar, con qué hacer en cada caso. También se guarda en `data/import-reports/`. Si lo ejecutas de nuevo, solo añade lo nuevo.
+
+## ¿Olvidaste tu contraseña?
+
+En la máquina donde se ejecuta Unagikuma:
+
+```sh
+./unagikuma reset-password admin
+```
+
+Escribe la nueva contraseña dos veces (no se muestra). Añade `--generate` para obtener una aleatoria. Con Docker:
+
+```sh
+docker exec -it unagikuma /unagikuma reset-password admin
+```
 
 ## Más información
 

@@ -25,7 +25,7 @@
 - **مشكلة واحدة، لا سيل من التنبيهات.** إذا انقطعت شبكتك أنت، يلاحظ Unagikuma ذلك ولا يرسل لك تنبيهًا عن كل مراقبة.
 - **صفحات حالة** تُبقي مستخدميك على اطلاع.
 - **ينمو معك.** راقب من عدة مواقع عندما تحتاج إلى ذلك (معاينة).
-- **الانتقال سهل.** انقل مراقباتك من Uptime Kuma أو Nagios (معاينة).
+- **الانتقال سهل.** انقل مراقباتك من Uptime Kuma أو Nagios.
 - **يتحدث لغتك.** الواجهة متاحة بـ 15 لغة.
 
 </div>
@@ -71,6 +71,84 @@ docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/gith
 ثم افتح http://localhost:8077. ستجد **رمز الإعداد** عبر الأمر `docker logs unagikuma`.
 
 </div>
+
+<div dir="rtl">
+
+## الانتقال من Uptime Kuma
+
+أوقف Uptime Kuma، ثم ألقِ نظرة أولًا (لن يتغير شيء):
+
+</div>
+
+```sh
+./unagikuma import kuma --dry-run /path/to/uptime-kuma/data/kuma.db
+```
+
+<div dir="rtl">
+
+إذا بدا كل شيء صحيحًا، استورد:
+
+</div>
+
+```sh
+./unagikuma import kuma /path/to/uptime-kuma/data/kuma.db
+```
+
+<div dir="rtl">
+
+يعرض التقرير ما تم استيراده وما يحتاج إلى مراجعة وما تعذّر استيراده، مع ما يجب فعله. ويُحفظ أيضًا في `data/import-reports/`. تشغيله مرة أخرى يضيف الجديد فقط.
+
+</div>
+
+<div dir="rtl">
+
+## الانتقال من Nagios
+
+وجّهه إلى `nagios.cfg` وألقِ نظرة أولًا (لن يتغير شيء):
+
+</div>
+
+```sh
+./unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
+```
+
+<div dir="rtl">
+
+إذا بدا كل شيء صحيحًا، استورد:
+
+</div>
+
+```sh
+./unagikuma import nagios /etc/nagios4/nagios.cfg
+```
+
+<div dir="rtl">
+
+يعرض التقرير ما تم استيراده وما يحتاج إلى مراجعة وما تعذّر استيراده، مع ما يجب فعله. ويُحفظ أيضًا في `data/import-reports/`. تشغيله مرة أخرى يضيف الجديد فقط.
+
+</div>
+
+<div dir="rtl">
+
+## نسيت كلمة المرور؟
+
+على الجهاز الذي يعمل عليه Unagikuma:
+
+</div>
+
+```sh
+./unagikuma reset-password admin
+```
+
+<div dir="rtl">
+
+اكتب كلمة المرور الجديدة مرتين (لن تظهر). أضف `--generate` للحصول على كلمة مرور عشوائية بدلًا من ذلك. مع Docker:
+
+</div>
+
+```sh
+docker exec -it unagikuma /unagikuma reset-password admin
+```
 
 <div dir="rtl">
 

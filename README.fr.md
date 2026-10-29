@@ -19,7 +19,7 @@ Une supervision auto-hébergée et simple : sachez dès qu’un site ou un serve
 - **Un problème, pas une avalanche d’alertes.** Si c’est votre propre réseau qui tombe, Unagikuma s’en rend compte et ne vous alerte pas pour chaque sonde.
 - **Des pages de statut** pour tenir vos utilisateurs informés.
 - **Grandit avec vous.** Surveillez depuis plusieurs sites quand vous en avez besoin (aperçu).
-- **Facile à adopter.** Récupérez vos sondes depuis Uptime Kuma ou Nagios (aperçu).
+- **Facile à adopter.** Récupérez vos sondes depuis Uptime Kuma ou Nagios.
 - **Parle votre langue.** L’interface existe en 15 langues.
 
 ## Démarrage rapide
@@ -47,6 +47,52 @@ docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/gith
 ```
 
 Ouvrez ensuite http://localhost:8077. Le **Jeton d’installation** s’affiche avec `docker logs unagikuma`.
+
+## Venir d'Uptime Kuma
+
+Arrêtez Uptime Kuma, puis regardez d'abord (rien n'est modifié) :
+
+```sh
+./unagikuma import kuma --dry-run /path/to/uptime-kuma/data/kuma.db
+```
+
+Si tout est bon, importez :
+
+```sh
+./unagikuma import kuma /path/to/uptime-kuma/data/kuma.db
+```
+
+Le rapport indique ce qui a été importé, ce qu'il faut vérifier et ce qui n'a pas pu l'être, avec quoi faire. Il est aussi enregistré dans `data/import-reports/`. Relancer la commande n'ajoute que ce qui est nouveau.
+
+## Venir de Nagios
+
+Indiquez votre `nagios.cfg` et regardez d'abord (rien n'est modifié) :
+
+```sh
+./unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
+```
+
+Si tout est bon, importez :
+
+```sh
+./unagikuma import nagios /etc/nagios4/nagios.cfg
+```
+
+Le rapport indique ce qui a été importé, ce qu'il faut vérifier et ce qui n'a pas pu l'être, avec quoi faire. Il est aussi enregistré dans `data/import-reports/`. Relancer la commande n'ajoute que ce qui est nouveau.
+
+## Mot de passe oublié ?
+
+Sur la machine où tourne Unagikuma :
+
+```sh
+./unagikuma reset-password admin
+```
+
+Tapez le nouveau mot de passe deux fois (il ne s'affiche pas). Ajoutez `--generate` pour en obtenir un au hasard. Avec Docker :
+
+```sh
+docker exec -it unagikuma /unagikuma reset-password admin
+```
 
 ## En savoir plus
 

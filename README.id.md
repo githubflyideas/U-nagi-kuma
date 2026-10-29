@@ -19,7 +19,7 @@ Pemantauan self-hosted yang mudah: langsung tahu saat situs atau server Anda mat
 - **Satu masalah, bukan banjir peringatan.** Jika jaringan Anda sendiri yang putus, Unagikuma menyadarinya dan tidak mengirim peringatan untuk setiap monitor.
 - **Halaman status** agar pengguna Anda selalu tahu kabar terbaru.
 - **Tumbuh bersama Anda.** Periksa dari beberapa lokasi saat dibutuhkan (pratinjau).
-- **Mudah pindah.** Bawa monitor Anda dari Uptime Kuma atau Nagios (pratinjau).
+- **Mudah pindah.** Bawa monitor Anda dari Uptime Kuma atau Nagios.
 - **Berbicara dalam bahasa Anda.** Antarmuka tersedia dalam 15 bahasa.
 
 ## Mulai cepat
@@ -47,6 +47,52 @@ docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/gith
 ```
 
 Lalu buka http://localhost:8077. **Token penyiapan** bisa dilihat dengan `docker logs unagikuma`.
+
+## Pindah dari Uptime Kuma
+
+Hentikan Uptime Kuma, lalu lihat dulu (tidak ada yang diubah):
+
+```sh
+./unagikuma import kuma --dry-run /path/to/uptime-kuma/data/kuma.db
+```
+
+Jika sudah sesuai, impor:
+
+```sh
+./unagikuma import kuma /path/to/uptime-kuma/data/kuma.db
+```
+
+Laporan menampilkan apa yang diimpor, apa yang perlu dicek, dan apa yang tidak bisa diimpor, beserta langkah yang perlu dilakukan. Laporan juga disimpan di `data/import-reports/`. Menjalankannya lagi hanya menambahkan yang baru.
+
+## Pindah dari Nagios
+
+Arahkan ke `nagios.cfg` dan lihat dulu (tidak ada yang diubah):
+
+```sh
+./unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
+```
+
+Jika sudah sesuai, impor:
+
+```sh
+./unagikuma import nagios /etc/nagios4/nagios.cfg
+```
+
+Laporan menampilkan apa yang diimpor, apa yang perlu dicek, dan apa yang tidak bisa diimpor, beserta langkah yang perlu dilakukan. Laporan juga disimpan di `data/import-reports/`. Menjalankannya lagi hanya menambahkan yang baru.
+
+## Lupa kata sandi?
+
+Di mesin tempat Unagikuma berjalan:
+
+```sh
+./unagikuma reset-password admin
+```
+
+Ketik kata sandi baru dua kali (tidak ditampilkan). Tambahkan `--generate` untuk mendapatkan kata sandi acak. Dengan Docker:
+
+```sh
+docker exec -it unagikuma /unagikuma reset-password admin
+```
 
 ## Pelajari lebih lanjut
 

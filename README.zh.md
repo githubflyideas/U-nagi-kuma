@@ -19,7 +19,7 @@
 - **一个问题,不会告警刷屏。** 如果是你自己的网络断了,Unagikuma 会察觉到,不会为每个监控项都给你发一遍告警。
 - **状态页**,让你的用户随时了解服务状态。
 - **随你一起成长。** 需要时可以从多个地点同时检测(预览功能)。
-- **轻松迁移。** 可以把 Uptime Kuma 或 Nagios 里的监控搬过来(预览功能)。
+- **轻松迁移。** 可以把 Uptime Kuma 或 Nagios 里的监控搬过来。
 - **说你的语言。** 界面支持 15 种语言。
 
 ## 快速上手
@@ -47,6 +47,52 @@ docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/gith
 ```
 
 然后打开 http://localhost:8077。**初始化令牌** 可以用 `docker logs unagikuma` 查看。
+
+## 从 Uptime Kuma 迁移
+
+先停止 Uptime Kuma，然后预览一下（不会做任何更改）：
+
+```sh
+./unagikuma import kuma --dry-run /path/to/uptime-kuma/data/kuma.db
+```
+
+确认无误后正式导入：
+
+```sh
+./unagikuma import kuma /path/to/uptime-kuma/data/kuma.db
+```
+
+报告会列出已导入的、需要查看的和无法导入的内容，并说明该怎么做。报告也会保存在 `data/import-reports/` 中。再次运行只会添加新的内容。
+
+## 从 Nagios 迁移
+
+指向 `nagios.cfg`，先预览一下（不会做任何更改）：
+
+```sh
+./unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
+```
+
+确认无误后正式导入：
+
+```sh
+./unagikuma import nagios /etc/nagios4/nagios.cfg
+```
+
+报告会列出已导入的、需要查看的和无法导入的内容，并说明该怎么做。报告也会保存在 `data/import-reports/` 中。再次运行只会添加新的内容。
+
+## 忘记密码？
+
+在运行 Unagikuma 的机器上执行：
+
+```sh
+./unagikuma reset-password admin
+```
+
+输入两次新密码（不会显示）。加上 `--generate` 可以改为自动生成一个随机密码。使用 Docker 时：
+
+```sh
+docker exec -it unagikuma /unagikuma reset-password admin
+```
 
 ## 了解更多
 

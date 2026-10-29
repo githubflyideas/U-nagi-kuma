@@ -19,7 +19,7 @@ Friendly, self-hosted monitoring: know the moment your websites and servers go d
 - **One problem, not a flood of alerts.** If your own network goes down, Unagikuma notices and doesn't page you for every single monitor.
 - **Status pages** to keep your users in the loop.
 - **Grows with you.** Check from several locations when you need to (preview).
-- **Easy to switch.** Bring your monitors over from Uptime Kuma or Nagios (preview).
+- **Easy to switch.** Bring your monitors over from Uptime Kuma or Nagios.
 - **Speaks your language.** The interface comes in 15 languages.
 
 ## Quick start
@@ -47,6 +47,52 @@ docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/gith
 ```
 
 Then open http://localhost:8077. You'll find the **Setup token** with `docker logs unagikuma`.
+
+## Moving from Uptime Kuma
+
+Stop Uptime Kuma, then look first (nothing is changed):
+
+```sh
+./unagikuma import kuma --dry-run /path/to/uptime-kuma/data/kuma.db
+```
+
+If it looks right, import:
+
+```sh
+./unagikuma import kuma /path/to/uptime-kuma/data/kuma.db
+```
+
+The report lists what was imported, what needs a look and what could not be imported, with what to do. It is also saved in `data/import-reports/`. Running it again only adds what is new.
+
+## Moving from Nagios
+
+Point it at `nagios.cfg` and look first (nothing is changed):
+
+```sh
+./unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
+```
+
+If it looks right, import:
+
+```sh
+./unagikuma import nagios /etc/nagios4/nagios.cfg
+```
+
+The report lists what was imported, what needs a look and what could not be imported, with what to do. It is also saved in `data/import-reports/`. Running it again only adds what is new.
+
+## Forgot your password?
+
+On the machine where Unagikuma runs:
+
+```sh
+./unagikuma reset-password admin
+```
+
+Type the new password twice (it is not shown). Add `--generate` to get a random one instead. With Docker:
+
+```sh
+docker exec -it unagikuma /unagikuma reset-password admin
+```
 
 ## Learn more
 

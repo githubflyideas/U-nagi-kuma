@@ -19,7 +19,7 @@
 - **문제는 하나, 알림 폭탄은 없습니다.** 내 쪽 네트워크가 끊기면 Unagikuma가 이를 알아차리고 모니터마다 알림을 보내지 않습니다.
 - **상태 페이지**로 사용자에게 언제나 상황을 알려 줍니다.
 - **함께 성장합니다.** 필요할 때 여러 위치에서 확인할 수 있습니다(미리 보기).
-- **옮겨 오기 쉽습니다.** Uptime Kuma나 Nagios의 모니터를 가져올 수 있습니다(미리 보기).
+- **옮겨 오기 쉽습니다.** Uptime Kuma나 Nagios의 모니터를 가져올 수 있습니다.
 - **내 언어로.** 화면은 15개 언어를 지원합니다.
 
 ## 빠른 시작
@@ -47,6 +47,52 @@ docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/gith
 ```
 
 그다음 http://localhost:8077 을 엽니다. **설정 토큰**은 `docker logs unagikuma`로 확인할 수 있습니다.
+
+## Uptime Kuma에서 옮겨 오기
+
+Uptime Kuma를 멈춘 뒤 먼저 확인합니다(아무것도 바뀌지 않음):
+
+```sh
+./unagikuma import kuma --dry-run /path/to/uptime-kuma/data/kuma.db
+```
+
+문제가 없으면 가져옵니다:
+
+```sh
+./unagikuma import kuma /path/to/uptime-kuma/data/kuma.db
+```
+
+보고서에는 가져온 항목, 확인이 필요한 항목, 가져오지 못한 항목과 해야 할 일이 나옵니다. `data/import-reports/`에도 저장됩니다. 다시 실행하면 새 항목만 추가됩니다.
+
+## Nagios에서 옮겨 오기
+
+`nagios.cfg`를 지정하고 먼저 확인합니다(아무것도 바뀌지 않음):
+
+```sh
+./unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
+```
+
+문제가 없으면 가져옵니다:
+
+```sh
+./unagikuma import nagios /etc/nagios4/nagios.cfg
+```
+
+보고서에는 가져온 항목, 확인이 필요한 항목, 가져오지 못한 항목과 해야 할 일이 나옵니다. `data/import-reports/`에도 저장됩니다. 다시 실행하면 새 항목만 추가됩니다.
+
+## 비밀번호를 잊으셨나요?
+
+Unagikuma가 실행 중인 컴퓨터에서:
+
+```sh
+./unagikuma reset-password admin
+```
+
+새 비밀번호를 두 번 입력합니다(화면에 표시되지 않음). 대신 무작위 비밀번호를 받으려면 `--generate`를 붙이세요. Docker에서는:
+
+```sh
+docker exec -it unagikuma /unagikuma reset-password admin
+```
 
 ## 더 알아보기
 

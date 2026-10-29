@@ -19,7 +19,7 @@ Giám sát tự lưu trữ, dễ dùng: biết ngay khi website hay máy chủ c
 - **Một sự cố, không phải một trận mưa cảnh báo.** Khi chính mạng của bạn bị mất, Unagikuma nhận ra điều đó và không gửi cảnh báo cho từng mục giám sát.
 - **Trang trạng thái** giúp người dùng của bạn luôn nắm được tình hình.
 - **Lớn lên cùng bạn.** Kiểm tra từ nhiều địa điểm khi cần (bản xem trước).
-- **Chuyển sang dễ dàng.** Mang các mục giám sát từ Uptime Kuma hoặc Nagios sang (bản xem trước).
+- **Chuyển sang dễ dàng.** Mang các mục giám sát từ Uptime Kuma hoặc Nagios sang.
 - **Nói ngôn ngữ của bạn.** Giao diện có sẵn 15 ngôn ngữ.
 
 ## Bắt đầu nhanh
@@ -47,6 +47,52 @@ docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/gith
 ```
 
 Sau đó mở http://localhost:8077. Xem **Mã thiết lập** bằng lệnh `docker logs unagikuma`.
+
+## Chuyển từ Uptime Kuma
+
+Dừng Uptime Kuma, rồi xem trước (không thay đổi gì):
+
+```sh
+./unagikuma import kuma --dry-run /path/to/uptime-kuma/data/kuma.db
+```
+
+Nếu mọi thứ ổn, nhập vào:
+
+```sh
+./unagikuma import kuma /path/to/uptime-kuma/data/kuma.db
+```
+
+Báo cáo cho biết những gì đã nhập, những gì cần xem lại và những gì không nhập được, kèm cách xử lý. Báo cáo cũng được lưu trong `data/import-reports/`. Chạy lại chỉ thêm những gì mới.
+
+## Chuyển từ Nagios
+
+Chỉ đến `nagios.cfg` và xem trước (không thay đổi gì):
+
+```sh
+./unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
+```
+
+Nếu mọi thứ ổn, nhập vào:
+
+```sh
+./unagikuma import nagios /etc/nagios4/nagios.cfg
+```
+
+Báo cáo cho biết những gì đã nhập, những gì cần xem lại và những gì không nhập được, kèm cách xử lý. Báo cáo cũng được lưu trong `data/import-reports/`. Chạy lại chỉ thêm những gì mới.
+
+## Quên mật khẩu?
+
+Trên máy đang chạy Unagikuma:
+
+```sh
+./unagikuma reset-password admin
+```
+
+Nhập mật khẩu mới hai lần (không hiển thị). Thêm `--generate` để nhận một mật khẩu ngẫu nhiên. Với Docker:
+
+```sh
+docker exec -it unagikuma /unagikuma reset-password admin
+```
 
 ## Tìm hiểu thêm
 

@@ -19,7 +19,7 @@ Monitoramento auto-hospedado e descomplicado: saiba na hora quando seus sites e 
 - **Um problema, não uma enxurrada de alertas.** Se a sua própria rede cair, o Unagikuma percebe e não dispara um alerta para cada monitor.
 - **Páginas de status** para manter seus usuários informados.
 - **Cresce com você.** Verifique a partir de vários locais quando precisar (prévia).
-- **Fácil de migrar.** Traga seus monitores do Uptime Kuma ou do Nagios (prévia).
+- **Fácil de migrar.** Traga seus monitores do Uptime Kuma ou do Nagios.
 - **Fala a sua língua.** A interface está disponível em 15 idiomas.
 
 ## Primeiros passos
@@ -47,6 +47,52 @@ docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/gith
 ```
 
 Depois abra http://localhost:8077. O **Token de instalação** aparece com `docker logs unagikuma`.
+
+## Vindo do Uptime Kuma
+
+Pare o Uptime Kuma e confira antes (nada é alterado):
+
+```sh
+./unagikuma import kuma --dry-run /path/to/uptime-kuma/data/kuma.db
+```
+
+Se estiver tudo certo, importe:
+
+```sh
+./unagikuma import kuma /path/to/uptime-kuma/data/kuma.db
+```
+
+O relatório mostra o que foi importado, o que precisa de atenção e o que não pôde ser importado, com o que fazer. Ele também é salvo em `data/import-reports/`. Rodar de novo só adiciona o que for novo.
+
+## Vindo do Nagios
+
+Aponte para o seu `nagios.cfg` e confira antes (nada é alterado):
+
+```sh
+./unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
+```
+
+Se estiver tudo certo, importe:
+
+```sh
+./unagikuma import nagios /etc/nagios4/nagios.cfg
+```
+
+O relatório mostra o que foi importado, o que precisa de atenção e o que não pôde ser importado, com o que fazer. Ele também é salvo em `data/import-reports/`. Rodar de novo só adiciona o que for novo.
+
+## Esqueceu a senha?
+
+Na máquina onde o Unagikuma roda:
+
+```sh
+./unagikuma reset-password admin
+```
+
+Digite a nova senha duas vezes (ela não aparece). Adicione `--generate` para receber uma aleatória. Com Docker:
+
+```sh
+docker exec -it unagikuma /unagikuma reset-password admin
+```
 
 ## Saiba mais
 
