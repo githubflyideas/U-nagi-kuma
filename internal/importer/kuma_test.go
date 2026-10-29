@@ -8,86 +8,141 @@ import (
 	"github.com/githubflyideas/unagikuma/internal/config"
 )
 
-func TestKumaImport(t *testing.T) {
+func TestKumaJSON(t *testing.T) {
 	data, err := os.ReadFile("testdata/kuma.json")
 	if err != nil {
 		t.Fatal(err)
 	}
-	base := "@ IN SOA m. a.b. ( 2026102801 1m 15s 5s 3 )\nweb IN PING 10.0.0.1\n"
+	base := soaLine + "web IN PING 10.0.0.1\n"
 	_, existing, _ := config.Load("t", []byte(base), config.Options{})
-	res, err := Kuma(data, existing, Options{})
+	res, err := Kuma(data, existing, Options{File: "kuma.json", Now: testNow})
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log("\n" + res.Text)
-	for _, n := range res.Notes {
-		t.Log("note: ", n)
-	}
-	if res.Monitors != 11 || res.Channels != 2 { // Mail and Pager are used by no monitor
+	noSecretsInText(t, res)
+	_, cfg := apply(t, base, res)
+	if res.Monitors != 10 || res.Channels != 2 {
 		t.Fatalf("monitors %d channels %d", res.Monitors, res.Channels)
 	}
-	// Credentials are referenced, never written.
-	if strings.Contains(res.Text, "123:ABC") || strings.Contains(res.Text, "hook/abc") || strings.Contains(res.Text, "pw") {
-		t.Fatal("a credential is in the records")
-	}
-	if len(res.Secrets) != 2 {
-		t.Fatalf("secrets: %v", res.Secrets)
-	}
-	// The result validates once the secrets exist.
-	known := func(name string) bool { _, ok := res.Secrets[name]; return ok }
-	_, cfg, diags := config.Load("t", []byte(base+res.Text), config.Options{SecretKnown: known})
-	if config.HasErrors(diags) {
-		t.Fatalf("%v\n%s", diags, res.Text)
-	}
-	site := cfg.FindMonitor("keyword") // 官网 has no ASCII name: named after its type
-	if site == nil || site.Title != "官网" || site.Group != "Core" || site.Opts["keyword"] != "Welcome" || site.Attempts != 3 || site.Retry.Seconds() != 30 || site.Opts["cert-days"] != "14" {
+	site := cfg.FindMonitor("www.example.com") // 官网 has no ASCII name: named after its host
+	if site == nil || site.Title != "官网" || site.Group != "Core" || site.Opts["keyword"] != "Welcome" || site.Attempts != 3 || site.Opts["cert-days"] != "14" {
 		t.Fatalf("keyword monitor: %+v", site)
 	}
-	if p := cfg.FindPolicy(site.Policy); p == nil || strings.Join(p.Chain, ",") != "channel,tg-ops" || p.Mode != "all" {
+	if p := cfg.FindPolicy(site.Policy); p == nil || strings.Join(p.Chain, ",") != "feishu,tg-ops" || p.Name != "notify-feishu-tg-ops" {
 		t.Fatalf("policy: %+v", p)
 	}
 	if cfg.FindMonitor("postgres").Policy != site.Policy {
 		t.Fatal("monitors with the same channels share a policy")
 	}
 	api := cfg.FindMonitor("api-health")
-	if api.Opts["json-path"] != "$.status" || api.Opts["header.x-env"] != "prod" || api.Opts["header.authorization"] != "" {
+	if api.Opts["json-path"] != "$.status" || api.Opts["header.x-env"] != "prod" || !strings.HasPrefix(api.Opts["header.authorization"], "${secret:") {
 		t.Fatalf("json monitor: %+v", api.Opts)
 	}
-	if gw := cfg.FindMonitor("gateway"); !gw.Disabled || gw.Attempts != 4 {
-		t.Fatalf("gateway: %+v", gw)
+	if cfg.FindMonitor("gateway") != nil {
+		t.Fatal("an upside-down monitor must not be imported as a normal one")
 	}
 	if dns := cfg.FindMonitor("resolver"); dns.Type != "UDP" || dns.Opts["query"] != "corp.example.com" || dns.Opts["qtype"] != "MX" {
 		t.Fatalf("dns: %+v", dns)
 	}
-	if w := cfg.FindMonitor("web-2"); w == nil || w.Title != "web" || w.Opts["method"] != "POST" || w.Opts["insecure"] != "yes" || w.Opts["no-follow"] != "yes" {
+	if w := cfg.FindMonitor("web-2"); w == nil || w.Title != "web" || w.Opts["method"] != "POST" || w.Opts["insecure"] != "yes" {
 		t.Fatalf("renamed http monitor: %+v", w)
 	}
-	notes := strings.Join(res.Notes, "\n")
-	// Service checks keep the address, user and database, not the password.
-	if r := cfg.FindMonitor("redis"); r == nil || r.Written != "REDIS" || r.Target != "10.0.0.7:6379" || r.Opts["password"] != "" {
+	if r := cfg.FindMonitor("redis"); r == nil || r.Written != "REDIS" || !strings.HasPrefix(r.Opts["password"], "${secret:") {
 		t.Fatalf("redis: %+v", r)
 	}
-	if m := cfg.FindMonitor("orders-db"); m == nil || m.Written != "MYSQL" || m.Opts["user"] != "mon" || m.Opts["database"] != "orders" {
-		t.Fatalf("mysql: %+v", m)
+	if res.PushTokens["backup-job"] != "abc" {
+		t.Fatalf("push token: %v", res.PushTokens)
 	}
-	if d := cfg.FindMonitor("nginx"); d == nil || d.Type != "DOCKER" || d.Target != "nginx" {
-		t.Fatalf("docker: %+v", d)
+	// Everything not imported as it was is in the report, with a reason.
+	for _, it := range res.Items {
+		if it.Status == StatusLeftOut && (it.Why == "" || it.Todo == "") {
+			t.Errorf("%s %s: left out without a reason or what to do", it.Kind, it.Source)
+		}
 	}
-	if g := cfg.FindMonitor("search"); g == nil || g.Written != "GRPC" || g.Opts["service"] != "search.v1" {
-		t.Fatalf("grpc: %+v", g)
-	}
-	for _, want := range []string{"mongodb", "push URL", "upside-down", "Authorization", "password was not imported", "health check"} {
+	notes := strings.Join(res.Notes, "\n")
+	for _, want := range []string{"MongoDB", "upside-down", "Mail (Email), Pager (PagerDuty)", "health check"} {
 		if !strings.Contains(notes, want) {
 			t.Errorf("notes lack %q:\n%s", want, notes)
 		}
 	}
-	// Monitors that exist already are skipped; a backup with nothing new
-	// is refused.
-	_, again, _ := config.Load("t", []byte(base+res.Text), config.Options{})
-	if _, err := Kuma(data, again, Options{}); err == nil || !strings.Contains(err.Error(), "nothing to import") {
-		t.Fatalf("re-import: %v", err)
-	}
 	if _, err := Kuma([]byte(`{"foo":1}`), nil, Options{}); err == nil {
 		t.Fatal("not a backup accepted")
+	}
+}
+
+// The fixtures are real Uptime Kuma 1.23 and 2.0 data (database and JSON
+// backup), with made-up names, addresses and credentials.
+var kumaFixtures = []struct{ file, name string }{
+	{"testdata/kuma-v1.db", "kuma-v1-db"},
+	{"testdata/kuma-v1-backup.json", "kuma-v1-json"},
+	{"testdata/kuma-v2.db", "kuma-v2-db"},
+}
+
+func TestKumaFixtures(t *testing.T) {
+	for _, fx := range kumaFixtures {
+		t.Run(fx.name, func(t *testing.T) {
+			data, err := os.ReadFile(fx.file)
+			if err != nil {
+				t.Fatal(err)
+			}
+			res, err := Kuma(data, nil, Options{File: "kuma", Now: testNow})
+			if err != nil {
+				t.Fatal(err)
+			}
+			noSecretsInText(t, res)
+			text, cfg := apply(t, soaLine, res)
+			golden(t, fx.name+".bind", text)
+			golden(t, fx.name+".txt", res.Report(ReportOptions{Width: 80, Config: "monitors.bind"}))
+			golden(t, fx.name+".md", res.Markdown(ReportOptions{Config: "monitors.bind"}))
+			for _, w := range []int{40, 60, 100} {
+				reportWidth(t, res.Report(ReportOptions{Width: w}), w)
+			}
+			// Groups keep their nesting, names their original spelling.
+			if m := cfg.FindMonitor("api-health-json"); m == nil || m.Group != "Production / API" || m.Title != "API health (JSON)" {
+				t.Fatalf("nested group: %+v", m)
+			}
+			if m := cfg.FindMonitor("www.example.cn"); m == nil || m.Title != "官网首页" {
+				t.Fatalf("chinese name: %+v", m)
+			}
+			for _, m := range cfg.Monitors {
+				if len(m.Name) > 40 {
+					t.Errorf("name %s is too long", m.Name)
+				}
+			}
+			if !strings.HasSuffix(fx.file, ".json") {
+				if len(cfg.StatusPages) != 1 || cfg.StatusPages[0].Name != "public" || len(cfg.Maints) != 1 {
+					t.Fatalf("status page or maintenance missing")
+				}
+			}
+			// Importing again adds nothing.
+			again, err := Kuma(data, cfg, Options{Now: testNow, SecretExists: func(n string) bool { _, ok := res.Secrets[n]; return ok },
+				UserExists: func(string) bool { return true }})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(again.Records) != 0 || again.count("", StatusImported, StatusAttention) != 0 {
+				t.Fatalf("re-import adds %d records:\n%s", len(again.Records), again.Text)
+			}
+			if again.count("monitor", StatusSkipped) != res.Monitors {
+				t.Fatalf("re-import skipped %d of %d monitors", again.count("monitor", StatusSkipped), res.Monitors)
+			}
+		})
+	}
+}
+
+func TestKumaOddInput(t *testing.T) {
+	for _, in := range []string{"", "{}", "[]", "null", `{"monitorList":null}`, `{"monitorList":[{}]}`, `{"monitorList":[{"type":"http"}]}`,
+		`{"monitorList":[{"id":1,"type":"group","name":"g","parent":1}]}`, // a group that is its own parent
+		`{"monitorList":[{"id":1,"type":"http","name":"x","url":"http://x","notificationIDList":{"9":true}}]}`,
+		"SQLite format 3\x00garbage", "\xff\xfe"} {
+		res, err := Kuma([]byte(in), nil, Options{})
+		if err == nil {
+			apply(t, soaLine, res)
+		}
+	}
+	// A truncated database is refused with a plain message.
+	data, _ := os.ReadFile("testdata/kuma-v1.db")
+	if _, err := Kuma(data[:len(data)/3], nil, Options{}); err == nil || strings.Contains(err.Error(), "panic") {
+		t.Fatalf("truncated database: %v", err)
 	}
 }

@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -29,7 +29,9 @@ func isSQLite(data []byte) bool { return bytes.HasPrefix(data, sqliteMagic) }
 
 // readKumaDB reads monitors, notifications and users straight from
 // kuma.db, which is what Uptime Kuma 2 keeps (it has no JSON export).
-func readKumaDB(data []byte) (*kumaBackup, []KumaUser, error) {
+// wal is the database's write-ahead log (kuma.db-wal), when Uptime Kuma
+// was still running: recent changes may only be there.
+func readKumaDB(data, wal []byte) (*kumaBackup, []KumaUser, error) {
 	dir, err := os.MkdirTemp("", "kuma-import-")
 	if err != nil {
 		return nil, nil, err
@@ -39,14 +41,21 @@ func readKumaDB(data []byte) (*kumaBackup, []KumaUser, error) {
 	if err := os.WriteFile(path, data, 0o600); err != nil {
 		return nil, nil, err
 	}
-	db, err := sql.Open("sqlite", "file:"+path+"?mode=ro&immutable=1")
+	dsn := "file:" + path + "?mode=ro&immutable=1"
+	if len(wal) > 0 {
+		if err := os.WriteFile(path+"-wal", wal, 0o600); err != nil {
+			return nil, nil, err
+		}
+		dsn = "file:" + path // the log is applied on open
+	}
+	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, nil, err
 	}
 	defer db.Close()
 	monitors, err := rowsOf(db, "monitor")
 	if err != nil {
-		return nil, nil, fmt.Errorf("not an Uptime Kuma database: %w", err)
+		return nil, nil, errors.New("this database is not an Uptime Kuma database (it has no monitor table)")
 	}
 	notifs, _ := rowsOf(db, "notification")
 	links, _ := rowsOf(db, "monitor_notification")
@@ -54,9 +63,61 @@ func readKumaDB(data []byte) (*kumaBackup, []KumaUser, error) {
 	mtags, _ := rowsOf(db, "monitor_tag")
 	users, _ := rowsOf(db, "user")
 
-	bk := &kumaBackup{}
+	bk := &kumaBackup{FromDB: true, Proxies: map[int64]kumaProxy{}}
+	bk.Version = versionOf(db)
+	proxies, _ := rowsOf(db, "proxy")
+	for _, p := range proxies {
+		bk.Proxies[p.int("id")] = kumaProxy{Protocol: p.str("protocol"), Host: p.str("host"), Port: int(p.int("port")), Auth: p.bool("auth")}
+	}
+	maints, _ := rowsOf(db, "maintenance")
+	mm, _ := rowsOf(db, "monitor_maintenance")
+	for _, r := range maints {
+		mt := kumaMaint{ID: r.int("id"), Title: r.str("title"), Description: r.str("description"), Strategy: r.str("strategy"), Active: r.bool("active"),
+			StartDate: r.str("start_date"), EndDate: r.str("end_date"), StartTime: r.str("start_time"), EndTime: r.str("end_time"),
+			Weekdays: r.str("weekdays"), DaysOfMonth: r.str("days_of_month"), Cron: r.str("cron"), Zone: r.str("timezone"),
+			IntervalDay: int(r.int("interval_day")), Duration: int(r.int("duration"))}
+		for _, l := range mm {
+			if l.int("maintenance_id") == mt.ID {
+				mt.Monitors = append(mt.Monitors, l.int("monitor_id"))
+			}
+		}
+		bk.Maintenances = append(bk.Maintenances, mt)
+	}
+	pages, _ := rowsOf(db, "status_page")
+	groups, _ := rowsOf(db, "group")
+	mg, _ := rowsOf(db, "monitor_group")
+	cnames, _ := rowsOf(db, "status_page_cname")
+	sort.SliceStable(groups, func(i, j int) bool { return groups[i].int("weight") < groups[j].int("weight") })
+	sort.SliceStable(mg, func(i, j int) bool { return mg[i].int("weight") < mg[j].int("weight") })
+	for _, p := range pages {
+		sp := kumaStatusPage{Slug: p.str("slug"), Title: p.str("title"), Description: p.str("description"), Password: p.str("password") != ""}
+		for _, c := range cnames {
+			if c.int("status_page_id") == p.int("id") && c.str("domain") != "" {
+				sp.Domains = append(sp.Domains, c.str("domain"))
+			}
+		}
+		for _, g := range groups {
+			if g.int("status_page_id") != p.int("id") {
+				continue
+			}
+			pg := kumaPageGroup{Name: g.str("name")}
+			for _, l := range mg {
+				if l.int("group_id") == g.int("id") {
+					pg.Monitors = append(pg.Monitors, l.int("monitor_id"))
+				}
+			}
+			sp.Groups = append(sp.Groups, pg)
+		}
+		bk.StatusPages = append(bk.StatusPages, sp)
+	}
+	if inc, _ := rowsOf(db, "incident"); inc != nil {
+		bk.Incidents = len(inc)
+	}
+	if keys, _ := rowsOf(db, "api_key"); keys != nil {
+		bk.APIKeys = len(keys)
+	}
 	for _, n := range notifs {
-		bk.NotificationList = append(bk.NotificationList, kumaNotification{ID: n.int("id"), Name: n.str("name"), Config: n.str("config"), Active: flag(n.bool("active"))})
+		bk.NotificationList = append(bk.NotificationList, kumaNotification{ID: n.int("id"), Name: n.str("name"), Config: n.str("config"), Active: flag(n.bool("active")), IsDefault: flag(n.bool("is_default"))})
 	}
 	tagName := map[int64]string{}
 	for _, t := range tags {
@@ -89,6 +150,12 @@ func readKumaDB(data []byte) (*kumaBackup, []KumaUser, error) {
 			DBConn: r.str("database_connection_string"), DockerContainer: r.str("docker_container"),
 			GRPCURL: r.str("grpc_url"), GRPCService: r.str("grpc_service_name"), GRPCTLS: flag(r.bool("grpc_enable_tls")),
 			ExpiryNotify: flag(r.bool("expiry_notification")), Notifications: notifOf[id], Tags: tagsOf[id],
+			AuthMethod: r.str("auth_method"), Bearer: r.str("bearer_token"), JSONOp: r.str("json_path_operator"), PushToken: r.str("push_token"),
+			SNMPVersion: r.str("snmp_version"), SNMPOID: r.str("snmp_oid"), RadiusPassword: r.str("radius_password"),
+		}
+		if v, ok := r["proxy_id"]; ok && v != nil {
+			p := r.int("proxy_id")
+			m.ProxyID = &p
 		}
 		if v, ok := r["maxredirects"]; ok && v != nil {
 			n := int(r.int("maxredirects"))
@@ -117,6 +184,15 @@ func readKumaDB(data []byte) (*kumaBackup, []KumaUser, error) {
 		return nil, nil, errors.New("the Uptime Kuma database has no monitors and no users")
 	}
 	return bk, out, nil
+}
+
+// versionOf guesses the Uptime Kuma version from its schema: 2.x keeps
+// the applied migrations in knex_migrations.
+func versionOf(db *sql.DB) string {
+	if rows, err := rowsOf(db, "knex_migrations"); err == nil && len(rows) > 0 {
+		return "2.x"
+	}
+	return "1.x"
 }
 
 // row is one database row by column name; column sets differ between
