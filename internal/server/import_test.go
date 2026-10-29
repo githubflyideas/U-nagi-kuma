@@ -49,9 +49,10 @@ func TestKumaImportAPI(t *testing.T) {
 	if cfg.FindMonitor("api-health") == nil || cfg.FindChannel("tg-ops") == nil || !e.app.SecretStore().Has("kuma_tg_ops_token") {
 		t.Fatal("import not applied")
 	}
-	// Importing the same backup again is refused rather than duplicating.
-	if code, _ := post("?apply=1"); code != 400 {
-		t.Fatalf("second import: %d", code)
+	// Importing the same backup again changes nothing.
+	serial := e.app.Config().Serial
+	if code, again := post("?apply=1"); code != 200 || again["monitors"].(float64) != 0 || e.app.Config().Serial != serial {
+		t.Fatalf("second import: %d %v", code, again)
 	}
 }
 

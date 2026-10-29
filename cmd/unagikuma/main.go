@@ -51,14 +51,14 @@ Usage:
   unagikuma serial [bump] [file]   print or increase the serial
   unagikuma probe <target> [k=v]   run one check now (e.g. "udp 10.0.0.1:ntp")
   unagikuma keywords [dialect]     list the UDP keywords
-  unagikuma import kuma kuma.db    add monitors, channels and accounts from Uptime Kuma
-  unagikuma import nagios DIR      add hosts, services, contacts and time periods from Nagios
+  unagikuma import kuma FILE       move from Uptime Kuma (kuma.db or a JSON backup); try --dry-run first
+  unagikuma import nagios FILE|DIR move from Nagios (nagios.cfg or a folder of .cfg files); try --dry-run first
   unagikuma backup [--history] [--passphrase-file F]
                                   write a backup archive (encrypted, with keys, given a passphrase)
   unagikuma restore ARCHIVE        restore a backup into the data directory
   unagikuma service install|uninstall [--name N] [-- COMMAND ARGS]
                                   run unagikuma as a Windows service
-  unagikuma reset-password [user]  set a new password (asks on stdin)
+  unagikuma reset-password [user]  set a new password for a user (default admin); --generate makes one
   unagikuma promote [--data DIR]   make this stopped standby the master at its next start
   unagikuma version
 
@@ -404,6 +404,7 @@ func runCheck(args []string) error {
 			}
 			return probe.Validate(s)
 		},
+		ValidateChannel: app.ValidateChannel,
 	}
 	_, cfg, diags := config.Load(path, src, opts)
 	diags = append(diags, contactDiags(cfg, path, *data)...)
@@ -603,35 +604,6 @@ func runKeywords(args []string) error {
 		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", e.Keyword, port, e.EffectiveDepth(probe.Built(e.Template)), e.Service, note)
 	}
 	return tw.Flush()
-}
-
-func runResetPassword(args []string) error {
-	fs := flag.NewFlagSet("reset-password", flag.ExitOnError)
-	data := fs.String("data", defaultDataDir(), "data directory")
-	_ = fs.Parse(args)
-	user := "admin"
-	if fs.NArg() > 0 {
-		user = fs.Arg(0)
-	}
-	st, err := store.Open(*data, store.Options{Tool: true})
-	if err != nil {
-		return err
-	}
-	defer st.Close()
-	fmt.Fprint(os.Stderr, "new password: ")
-	pw, err := readLine(os.Stdin)
-	if err != nil {
-		return err
-	}
-	if n, _ := st.UserCount(); n == 0 {
-		_, err = st.CreateUser(user, pw)
-		return err
-	}
-	id, err := st.UserID(user)
-	if err != nil {
-		return fmt.Errorf("user %q not found", user)
-	}
-	return st.SetPassword(id, pw)
 }
 
 func readLine(r io.Reader) (string, error) {

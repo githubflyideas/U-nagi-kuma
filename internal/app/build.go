@@ -155,16 +155,7 @@ func (a *App) validators() config.Options {
 			}
 			return probe.Validate(s)
 		},
-		ValidateChannel: func(kind string, opts map[string]string) error {
-			if kind == "webhook" {
-				if b := opts["body"]; b != "" {
-					if err := notify.ValidateTemplate(b); err != nil {
-						return err
-					}
-				}
-			}
-			return notify.ValidateChannel(kind, opts)
-		},
+		ValidateChannel: ValidateChannel,
 	}
 }
 
@@ -421,4 +412,17 @@ func (a *App) BaseURL() string { return a.baseURL() }
 // page subscriptions).
 func (a *App) SendDirect(ctx context.Context, ch notify.Channel, m *notify.Message) notify.Attempt {
 	return a.sender.Send(ctx, ch, m)
+}
+
+// ValidateChannel checks a channel's options as the server does when it
+// loads the configuration (for the command-line check and import).
+func ValidateChannel(kind string, opts map[string]string) error {
+	if kind == "webhook" {
+		if b := opts["body"]; b != "" {
+			if err := notify.ValidateTemplate(b); err != nil {
+				return err
+			}
+		}
+	}
+	return notify.ValidateChannel(kind, opts)
 }

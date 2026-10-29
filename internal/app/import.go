@@ -26,10 +26,12 @@ type KumaOptions struct {
 
 // convert turns the data into records according to its source.
 func (a *App) convert(data []byte, o KumaOptions) (*importer.Result, error) {
+	opts := importer.Options{Area: o.Area, File: "upload", SecretExists: a.secrets.Has,
+		UserExists: func(name string) bool { _, err := a.store.UserID(name); return err == nil }}
 	if o.Source == "nagios" {
-		return importer.Nagios(data, a.Config().Config, importer.Options{Area: o.Area})
+		return importer.Nagios(data, a.Config().Config, opts)
 	}
-	return importer.Kuma(data, a.Config().Config, importer.Options{Area: o.Area})
+	return importer.Kuma(data, a.Config().Config, opts)
 }
 
 // UserNote is what happened to one account during an import.
@@ -91,14 +93,7 @@ func (a *App) ImportKuma(data []byte, author string, o KumaOptions) (ConfigState
 	st := a.Config()
 	if len(res.Records) > 0 {
 		st, err = a.EditConfig(author, fmt.Sprintf("import from %s: %d monitors, %d channels", from, res.Monitors, res.Channels),
-			func(f *config.File) error {
-				for _, r := range res.Records {
-					if err := f.UpsertRecord(r); err != nil {
-						return err
-					}
-				}
-				return nil
-			})
+			func(f *config.File) error { return f.AppendBlock(res.Render(f.EndArea())) })
 		if err != nil {
 			undo()
 			return st, res, nil, err
@@ -120,6 +115,12 @@ func (a *App) ImportKuma(data []byte, author string, o KumaOptions) (ConfigState
 			n.Result = resultOf(err)
 		}
 		notes = append(notes, n)
+	}
+	// Uptime Kuma push URLs keep working.
+	for name, tok := range res.PushTokens {
+		if err := a.store.SetPushToken(name, tok); err != nil {
+			res.Notes = append(res.Notes, "The push URL of "+name+" could not be kept ("+err.Error()+"); use the new one shown on the monitor.")
+		}
 	}
 	if mgrID != 0 && o.Area != "" {
 		if err := a.grantArea(mgrID, o.Area); err != nil {
