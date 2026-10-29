@@ -1246,5 +1246,9 @@
 "sys.digest_segment": "{n} monitores de {segment} fallan a la vez a nivel de red: la causa probable es el segmento, su switch o su enlace; los servicios quizá estén bien.",
 "sys.digest_dns": "{n} monitores no resuelven sus nombres a la vez: la causa probable es el DNS; los servicios quizá estén bien.",
 "ui.pol.network": "Equipo de red",
-"ui.pol.network_hint": "Opcional: canales que reciben los resúmenes con causa de red (segmento, DNS) en lugar de la cadena, p. ej. netadmin."
+"ui.pol.network_hint": "Opcional: canales que reciben los resúmenes con causa de red (segmento, DNS) en lugar de la cadena, p. ej. netadmin.",
+"sys.resolved": "Resuelto: {title}",
+"sys.resolved.local_network": "La red de este host ha vuelto",
+"sys.resolved.overload": "La carga del host vuelve a ser normal",
+"sys.resolved.all_failed": "Los canales de notificación vuelven a funcionar"
 }

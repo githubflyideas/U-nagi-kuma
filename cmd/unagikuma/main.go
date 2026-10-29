@@ -68,7 +68,11 @@ Run "unagikuma server -h" or "unagikuma agent -h" for their flags.
 func main() {
 	args := os.Args[1:]
 	cmd := "server"
-	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+	switch {
+	case len(args) > 0 && !strings.HasPrefix(args[0], "-"):
+		cmd, args = args[0], args[1:]
+	case len(args) > 0 && topLevelFlag[args[0]]:
+		// "unagikuma --version" / "--help": the program's, not the server's.
 		cmd, args = args[0], args[1:]
 	}
 	var err error
@@ -86,6 +90,9 @@ func main() {
 		os.Exit(1)
 	}
 }
+
+// topLevelFlag are the flags that are commands of the program itself.
+var topLevelFlag = map[string]bool{"-v": true, "-version": true, "--version": true, "-h": true, "-help": true, "--help": true}
 
 // dispatch runs one command.
 func dispatch(cmd string, args []string) error {
@@ -119,9 +126,9 @@ func dispatch(cmd string, args []string) error {
 		err = runResetPassword(args)
 	case "promote":
 		err = runPromote(args)
-	case "version", "-v", "--version":
+	case "version", "-v", "-version", "--version":
 		fmt.Println("unagikuma", version)
-	case "help", "-h", "--help":
+	case "help", "-h", "-help", "--help":
 		fmt.Print(usage)
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command %q\n\n%s", cmd, usage)

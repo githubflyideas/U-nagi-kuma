@@ -1247,5 +1247,9 @@
 "sys.digest_segment": "{n} monitors in {segment} fail at the network level at the same time: the segment, its switch or its uplink is the likely cause; the services may be fine.",
 "sys.digest_dns": "{n} monitors cannot resolve their names at the same time: DNS is the likely cause; the services may be fine.",
 "ui.pol.network": "Network team",
-"ui.pol.network_hint": "Optional: channels that get the summaries blaming the network (a segment, DNS) instead of the chain, e.g. netadmin."
+"ui.pol.network_hint": "Optional: channels that get the summaries blaming the network (a segment, DNS) instead of the chain, e.g. netadmin.",
+"sys.resolved": "Resolved: {title}",
+"sys.resolved.local_network": "This host's network is back",
+"sys.resolved.overload": "Host load back to normal",
+"sys.resolved.all_failed": "Notification channels work again"
 }

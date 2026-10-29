@@ -43,6 +43,9 @@ func Render(m *Message) (title, body string) {
 	if m.Priority == "low" && m.Kind != "RECOVERY" {
 		icon = "🟡"
 	}
+	if m.Kind == "SYSTEM" && m.Status == "ok" {
+		icon = kindIcons["RECOVERY"] // a system problem that is over
+	}
 	var prefix []string
 	if m.Delayed > 0 {
 		prefix = append(prefix, i18n.T(lang, "msg.delayed", "minutes", int(m.Delayed.Minutes())))

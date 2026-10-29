@@ -287,10 +287,23 @@ func (e *Engine) message(inc *Incident, n PlannedNotice, now time.Time) notify.M
 		msg.Kind = "SYSTEM"
 		msg.Body = inc.Detail
 		if n.Kind == NoticeRecovery {
-			msg.Body = inc.Summary
+			// Its own title: "node bj is back", not "node bj is offline".
+			msg.Title, msg.Body = e.resolvedTitle(inc), inc.Summary
 		}
 	}
 	return msg
+}
+
+// resolvedTitle is the title of a system incident's recovery notice.
+func (e *Engine) resolvedTitle(inc *Incident) string {
+	if node, ok := strings.CutPrefix(inc.System, SystemNodeOffline+":"); ok {
+		return e.text("node_back", node)
+	}
+	switch inc.System {
+	case SystemLocalNetwork, SystemOverload, SystemAllFailed:
+		return e.text("system_resolved_" + inc.System)
+	}
+	return e.text("system_resolved", inc.Title)
 }
 
 func (e *Engine) saveIncident(inc *Incident) {

@@ -1238,5 +1238,9 @@
 "sys.digest_segment": "{segment} 대역의 모니터 {n}개가 동시에 네트워크 계층에서 실패: 해당 대역, 스위치 또는 상위 회선이 원인일 가능성이 높으며 서비스 자체는 정상일 수 있습니다.",
 "sys.digest_dns": "모니터 {n}개가 동시에 이름 해석에 실패: DNS가 원인일 가능성이 높으며 서비스 자체는 정상일 수 있습니다.",
 "ui.pol.network": "네트워크 담당",
-"ui.pol.network_hint": "선택 사항: 네트워크 원인(대역, DNS) 요약을 체인 대신 이 채널로 보냅니다. 예: netadmin."
+"ui.pol.network_hint": "선택 사항: 네트워크 원인(대역, DNS) 요약을 체인 대신 이 채널로 보냅니다. 예: netadmin.",
+"sys.resolved": "해결됨: {title}",
+"sys.resolved.local_network": "이 호스트의 네트워크가 복구되었습니다",
+"sys.resolved.overload": "호스트 부하가 정상으로 돌아왔습니다",
+"sys.resolved.all_failed": "알림 채널이 다시 동작합니다"
 }

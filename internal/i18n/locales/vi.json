@@ -1238,5 +1238,9 @@
 "sys.digest_segment": "{n} giám sát trong {segment} cùng lỗi ở tầng mạng: nhiều khả năng do dải mạng, switch hoặc đường lên; bản thân dịch vụ có thể vẫn bình thường.",
 "sys.digest_dns": "{n} giám sát cùng không phân giải được tên: nhiều khả năng do DNS; bản thân dịch vụ có thể vẫn bình thường.",
 "ui.pol.network": "Đội mạng",
-"ui.pol.network_hint": "Không bắt buộc: các kênh nhận bản tóm tắt do mạng (dải mạng, DNS) thay cho chuỗi, ví dụ netadmin."
+"ui.pol.network_hint": "Không bắt buộc: các kênh nhận bản tóm tắt do mạng (dải mạng, DNS) thay cho chuỗi, ví dụ netadmin.",
+"sys.resolved": "Đã khắc phục: {title}",
+"sys.resolved.local_network": "Mạng của máy này đã trở lại",
+"sys.resolved.overload": "Tải của máy đã bình thường",
+"sys.resolved.all_failed": "Các kênh thông báo đã hoạt động lại"
 }

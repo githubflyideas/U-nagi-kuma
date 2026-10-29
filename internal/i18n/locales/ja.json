@@ -1238,5 +1238,9 @@
 "sys.digest_segment": "{segment} 内の {n} 件の監視が同時にネットワーク層で失敗：セグメント、スイッチ、上位回線が原因の可能性が高く、サービス自体は正常かもしれません。",
 "sys.digest_dns": "{n} 件の監視が同時に名前解決に失敗：DNS が原因の可能性が高く、サービス自体は正常かもしれません。",
 "ui.pol.network": "ネットワーク担当",
-"ui.pol.network_hint": "任意：ネットワーク起因（セグメント、DNS）のまとめ通知をチェーンではなくこれらのチャネルへ。例：netadmin。"
+"ui.pol.network_hint": "任意：ネットワーク起因（セグメント、DNS）のまとめ通知をチェーンではなくこれらのチャネルへ。例：netadmin。",
+"sys.resolved": "解消：{title}",
+"sys.resolved.local_network": "このホストのネットワークが復旧しました",
+"sys.resolved.overload": "ホストの負荷が正常に戻りました",
+"sys.resolved.all_failed": "通知チャネルが再び動作しています"
 }
