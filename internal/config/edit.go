@@ -248,7 +248,7 @@ func (f *File) UpsertRecord(r RecordSpec) error {
 		}
 	}
 	at, inGroup, before, area, endArea := -1, -1, -1, "", ""
-	var prev *Stmt
+	var prev, groupPrev *Stmt
 	anySection := !IsMonitorType(r.Type) // only monitors belong to sections
 	for i := range f.Stmts {
 		s := &f.Stmts[i]
@@ -268,12 +268,12 @@ func (f *File) UpsertRecord(r RecordSpec) error {
 		if sameFamily(rec.Type, r.Type) && (anySection || area == r.Area) {
 			at, prev = s.EndLine, s
 			if group != "" && optValue(rec, "group") == group {
-				inGroup = s.EndLine
+				inGroup, groupPrev = s.EndLine, s
 			}
 		}
 	}
 	if inGroup >= 0 {
-		at = inGroup
+		at, prev = inGroup, groupPrev // aligned like its group's records
 	}
 	endArea = area
 	var add []string
@@ -633,4 +633,39 @@ func recordETag(r Record) string {
 		h.Write([]byte{0})
 	}
 	return `"r` + hex.EncodeToString(h.Sum(nil)[:9]) + `"`
+}
+
+// EndArea is the section ($SCOPE) the file ends in ("" = global): text
+// appended to the file belongs to it.
+func (f *File) EndArea() string {
+	area := ""
+	for i := range f.Stmts {
+		s := &f.Stmts[i]
+		if s.isDirective() {
+			if d := s.directive(); d.Name == "SCOPE" {
+				area = scopeSpec(d)
+			}
+		}
+	}
+	return area
+}
+
+// AppendBlock adds a block of lines (comments, records, $SCOPE) at the end
+// of the file, after one blank line, in the file's line endings. The
+// result must parse; the file is unchanged otherwise.
+func (f *File) AppendBlock(block string) error {
+	ls := f.lines()
+	for len(ls) > 0 && strings.TrimSpace(strings.TrimSuffix(ls[len(ls)-1], "\r")) == "" {
+		ls = ls[:len(ls)-1]
+	}
+	cr := f.eol()
+	out := append([]string{}, ls...)
+	if len(out) > 0 {
+		out = append(out, cr)
+	}
+	for _, l := range strings.Split(strings.TrimRight(strings.ReplaceAll(block, "\r\n", "\n"), "\n"), "\n") {
+		out = append(out, l+cr)
+	}
+	out = append(out, "")
+	return f.setLines(out)
 }
