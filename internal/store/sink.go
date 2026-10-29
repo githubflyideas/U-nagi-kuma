@@ -275,8 +275,26 @@ func (b *batcher) flushNow() {
 		return
 	}
 	start := time.Now()
-	b.flushHistory(items)
-	b.flushCore(items)
+	var retry []item
+	if !b.flushHistory(items) {
+		for _, it := range items {
+			if it.verdict != nil {
+				retry = append(retry, it)
+			}
+		}
+	}
+	if !b.flushCore(items) {
+		for _, it := range items {
+			if it.verdict == nil {
+				retry = append(retry, it)
+			}
+		}
+	}
+	if len(retry) > 0 {
+		b.requeue(retry)
+	} else {
+		b.s.writes.ok()
+	}
 	b.s.flushes.Add(1)
 	b.s.flushMicros.Add(time.Since(start).Microseconds())
 	b.s.flushedItems.Add(int64(len(items)))
@@ -298,7 +316,85 @@ func (s *Store) WriteStats() WriteStats {
 	return WriteStats{Flushes: s.flushes.Load(), FlushSeconds: float64(s.flushMicros.Load()) / 1e6, Items: s.flushedItems.Load(), Queued: q}
 }
 
-func (b *batcher) flushHistory(items []item) {
+// beginBatch starts a batch transaction, replaceable in tests (a full disk
+// is hard to come by).
+var beginBatch = func(db *sql.DB) (*sql.Tx, error) { return db.Begin() }
+
+// maxRetry bounds what a failing disk keeps waiting in memory; beyond it
+// the oldest writes are lost (and counted).
+const maxRetry = 50000
+
+// requeue puts writes that failed back in front of the queue, keeping at
+// most maxRetry of them.
+func (b *batcher) requeue(items []item) {
+	b.mu.Lock()
+	all := append(items, b.items...)
+	lost := 0
+	if len(all) > maxRetry {
+		lost = len(all) - maxRetry
+		all = all[lost:]
+	}
+	b.items = all
+	b.mu.Unlock()
+	b.s.writes.failed(lost)
+}
+
+// writeHealth tracks whether the batched writes reach the disk.
+type writeHealth struct {
+	mu      sync.Mutex
+	since   time.Time
+	err     string
+	dropped int64
+}
+
+func (w *writeHealth) failed(lost int) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if w.since.IsZero() {
+		w.since = time.Now()
+	}
+	w.dropped += int64(lost)
+}
+
+func (w *writeHealth) fail(err error) {
+	if err == nil || errors.Is(err, sql.ErrConnDone) {
+		return
+	}
+	w.mu.Lock()
+	w.err = err.Error()
+	w.mu.Unlock()
+}
+
+func (w *writeHealth) ok() {
+	w.mu.Lock()
+	w.since, w.err = time.Time{}, ""
+	w.mu.Unlock()
+}
+
+// WriteHealth is whether results and events reach the disk: since when
+// writing fails, why, and how many writes were lost (the rest are kept and
+// retried).
+type WriteHealth struct {
+	Failing bool      `json:"failing"`
+	Since   time.Time `json:"since,omitzero"`
+	Error   string    `json:"error,omitempty"`
+	Lost    int64     `json:"lost"`
+	Waiting int       `json:"waiting"`
+}
+
+// WriteHealth reports the batch writer's state.
+func (s *Store) WriteHealth() WriteHealth {
+	s.batch.mu.Lock()
+	q := len(s.batch.items)
+	s.batch.mu.Unlock()
+	w := &s.writes
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return WriteHealth{Failing: !w.since.IsZero(), Since: w.since, Error: w.err, Lost: w.dropped, Waiting: q}
+}
+
+// flushHistory writes results; false when the batch did not reach the disk.
+func (b *batcher) flushHistory(items []item) bool {
 	s := b.s
 	type resolved struct {
 		v   *engine.VerdictRecord
@@ -317,12 +413,13 @@ func (b *batcher) flushHistory(items []item) {
 		vs = append(vs, resolved{it.verdict, mid})
 	}
 	if len(vs) == 0 {
-		return
+		return true
 	}
-	tx, err := s.hist.Begin()
+	tx, err := beginBatch(s.hist)
 	if err != nil {
 		s.logErr("history batch", err)
-		return
+		s.writes.fail(err)
+		return false
 	}
 	defer tx.Rollback()
 	ins, _ := tx.Prepare(`INSERT INTO rounds(mid,at,st,flags,lat,reason,nodes) VALUES(?,?,?,?,?,?,?)`)
@@ -363,7 +460,12 @@ func (b *batcher) flushHistory(items []item) {
 		}
 		b.aggregate(w, r.mid, v)
 	}
-	s.logErr("history commit", tx.Commit())
+	if err := tx.Commit(); err != nil {
+		s.logErr("history commit", err)
+		s.writes.fail(err)
+		return false
+	}
+	return true
 }
 
 // aggWriter adds seconds and latency to the 5-minute and hourly buckets.
@@ -468,14 +570,17 @@ func (b *batcher) spread(w *aggWriter, mid int64, from time.Time, d time.Duratio
 	}
 }
 
-func (b *batcher) flushCore(items []item) {
+// flushCore writes events, deliveries, evidence and counters; false when
+// the batch did not reach the disk.
+func (b *batcher) flushCore(items []item) bool {
 	s := b.s
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
-	tx, err := s.core.Begin()
+	tx, err := beginBatch(s.core)
 	if err != nil {
 		s.logErr("core batch", err)
-		return
+		s.writes.fail(err)
+		return false
 	}
 	defer tx.Rollback()
 	touched := map[[2]string]bool{}
@@ -509,5 +614,10 @@ func (b *batcher) flushCore(items []item) {
 			(SELECT id FROM evidence WHERE monitor=? AND node=? ORDER BY id DESC LIMIT ?)`, k[0], k[1], k[0], k[1], b.keep)
 		s.logErr("evidence ring", err)
 	}
-	s.logErr("core commit", tx.Commit())
+	if err := tx.Commit(); err != nil {
+		s.logErr("core commit", err)
+		s.writes.fail(err)
+		return false
+	}
+	return true
 }

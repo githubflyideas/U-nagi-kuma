@@ -1242,5 +1242,9 @@
 "sys.resolved": "Đã khắc phục: {title}",
 "sys.resolved.local_network": "Mạng của máy này đã trở lại",
 "sys.resolved.overload": "Tải của máy đã bình thường",
-"sys.resolved.all_failed": "Các kênh thông báo đã hoạt động lại"
+"sys.resolved.all_failed": "Các kênh thông báo đã hoạt động lại",
+"sys.title.storage": "Không ghi được dữ liệu giám sát",
+"sys.resolved.storage": "Đã ghi được dữ liệu giám sát trở lại",
+"sys.storage_failing": "Ghi vào thư mục dữ liệu thất bại từ {time} ({error}); kết quả và sự kiện được giữ trong bộ nhớ và thử lại, đã mất {lost}. Hãy giải phóng dung lượng hoặc sửa hệ thống tệp.",
+"ui.storage_failing": "Từ {since} không ghi được kết quả và sự kiện xuống đĩa (đầy đĩa?). Đang giữ trong bộ nhớ và thử lại; đã mất {lost}."
 }

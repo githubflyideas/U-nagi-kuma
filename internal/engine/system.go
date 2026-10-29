@@ -11,6 +11,20 @@ import (
 	"github.com/githubflyideas/unagikuma/internal/probe"
 )
 
+// StorageFailing opens the storage incident while writes to the data
+// directory keep failing (since when, why, how many writes were lost) and
+// resolves it once they succeed again.
+func (e *Engine) StorageFailing(on bool, since time.Time, why string, lost int64) {
+	e.do(func() {
+		now := e.now()
+		if on {
+			e.openSystem(SystemStorage, now, e.text("storage_failing", since, why, lost))
+			return
+		}
+		e.resolveSystem(SystemStorage, now, "")
+	})
+}
+
 // openSystem opens (or keeps) a system incident; it is notified through the
 // "system" policy.
 func (e *Engine) openSystem(key string, now time.Time, detail string) *Incident {

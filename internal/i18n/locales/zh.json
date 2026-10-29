@@ -1242,5 +1242,9 @@
 "sys.resolved": "已恢复：{title}",
 "sys.resolved.local_network": "本机网络已恢复",
 "sys.resolved.overload": "主机负载已恢复正常",
-"sys.resolved.all_failed": "通知通道已恢复正常"
+"sys.resolved.all_failed": "通知通道已恢复正常",
+"sys.title.storage": "监控数据无法写入",
+"sys.resolved.storage": "监控数据已恢复写入",
+"sys.storage_failing": "自 {time} 起写入数据目录失败（{error}）；检查结果和事件暂存内存并重试，已丢失 {lost} 条。请清理磁盘空间或修复文件系统。",
+"ui.storage_failing": "自 {since} 起检查结果和事件无法写入磁盘（磁盘满了？）。数据暂存内存并会重试，已丢失 {lost} 条。"
 }

@@ -213,6 +213,9 @@ function Shell({ user, onLogout, onLang }) {
         <span class=${'live' + (live ? ' on' : '')} title=${live ? t('ui.live.on') : t('ui.live.off')}><i></i><span class="hide-sm">${live ? t('ui.live.on') : t('ui.live.off')}</span></span>
       </header>
       ${banner && html`<div class="page" style=${{ paddingBottom: 0 }}><${ConfigBanner} banner=${banner} /></div>`}
+      ${ov.data && ov.data.storage && ov.data.storage.failing && html`<div class="page" style=${{ paddingBottom: 0 }}><div class="banner error">
+        <div class="spacer">${t('ui.storage_failing', { since: fmtTime(ov.data.storage.since), lost: ov.data.storage.lost })}
+          ${ov.data.storage.error && html`<div class="small ltr">${ov.data.storage.error}</div>`}</div></div></div>`}
       ${ov.data && ov.data.superseded && html`<div class="page" style=${{ paddingBottom: 0 }}><div class="banner error"><div class="spacer">
         ${t('ui.ha.superseded', { term: ov.data.superseded.term, by: ov.data.superseded.by || '?', at: fmtTime(ov.data.superseded.at) })}</div></div></div>`}
       ${view}

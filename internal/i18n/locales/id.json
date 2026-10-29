@@ -1242,5 +1242,9 @@
 "sys.resolved": "Teratasi: {title}",
 "sys.resolved.local_network": "Jaringan host ini sudah pulih",
 "sys.resolved.overload": "Beban host kembali normal",
-"sys.resolved.all_failed": "Kanal notifikasi berfungsi lagi"
+"sys.resolved.all_failed": "Kanal notifikasi berfungsi lagi",
+"sys.title.storage": "Data pemantauan tidak dapat ditulis",
+"sys.resolved.storage": "Data pemantauan kembali ditulis",
+"sys.storage_failing": "Penulisan ke direktori data gagal sejak {time} ({error}); hasil dan peristiwa disimpan di memori dan dicoba ulang, {lost} hilang. Kosongkan ruang disk atau perbaiki sistem berkas.",
+"ui.storage_failing": "Sejak {since} hasil dan peristiwa tidak dapat ditulis ke disk (disk penuh?). Disimpan di memori dan dicoba ulang; {lost} hilang."
 }

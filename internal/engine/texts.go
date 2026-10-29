@@ -63,6 +63,8 @@ func (e *Engine) text(id string, args ...any) string {
 		return i18n.T(lang, "sys.maint_end", "title", args[0])
 	case id == "node_back":
 		return i18n.T(lang, "sys.node_back", "node", args[0])
+	case id == "storage_failing":
+		return i18n.T(lang, "sys.storage_failing", "time", at(0), "error", args[1], "lost", args[2])
 	case id == "system_resolved":
 		return i18n.T(lang, "sys.resolved", "title", args[0])
 	case strings.HasPrefix(id, "system_resolved_"):

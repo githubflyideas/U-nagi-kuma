@@ -38,6 +38,7 @@ type Store struct {
 
 	// Batch writer counters for /metrics.
 	flushes, flushMicros, flushedItems atomic.Int64
+	writes                             writeHealth
 
 	// PrevClean reports whether the previous run shut down cleanly;
 	// PrevBeat is its last liveness timestamp.
