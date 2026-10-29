@@ -92,11 +92,18 @@ func (s *Store) SaveIncident(inc *engine.Incident) error {
 func (s *Store) SaveIntent(in *engine.Intent) error {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
-	_, err := s.core.Exec(`INSERT INTO intents(id,incident_id,seq,kind,policy,message,delivery,state,created_at,due_at,updated_at,system,force_fail,attempts)
-		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET delivery=excluded.delivery,state=excluded.state,
-		updated_at=excluded.updated_at,message=excluded.message,attempts=excluded.attempts`,
+	covers, chain := "", ""
+	if len(in.Covers) > 0 {
+		covers = mustJSON(in.Covers)
+	}
+	if len(in.Chain) > 0 {
+		chain = mustJSON(in.Chain)
+	}
+	_, err := s.core.Exec(`INSERT INTO intents(id,incident_id,seq,kind,policy,message,delivery,state,created_at,due_at,updated_at,system,force_fail,attempts,covers,chain)
+		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET delivery=excluded.delivery,state=excluded.state,
+		updated_at=excluded.updated_at,message=excluded.message,attempts=excluded.attempts,covers=excluded.covers`,
 		in.ID, in.IncidentID, in.Seq, in.Kind, in.Policy, mustJSON(in.Message), mustJSON(in.Delivery), in.State,
-		ms(in.CreatedAt), ms(in.DueAt), ms(in.UpdatedAt), in.System, in.ForceFail, mustJSON(in.Attempts))
+		ms(in.CreatedAt), ms(in.DueAt), ms(in.UpdatedAt), in.System, in.ForceFail, mustJSON(in.Attempts), covers, chain)
 	return err
 }
 
@@ -129,7 +136,7 @@ func (s *Store) queryIncidents(where string, args []any) ([]*engine.Incident, er
 
 // PendingIntents loads undelivered intents, oldest first.
 func (s *Store) PendingIntents() ([]*engine.Intent, error) {
-	rows, err := s.core.Query(`SELECT id,incident_id,seq,kind,policy,message,delivery,state,created_at,due_at,updated_at,system,force_fail,attempts
+	rows, err := s.core.Query(`SELECT id,incident_id,seq,kind,policy,message,delivery,state,created_at,due_at,updated_at,system,force_fail,attempts,covers,chain
 		FROM intents WHERE state='pending' ORDER BY created_at, id`)
 	if err != nil {
 		return nil, err
@@ -141,8 +148,15 @@ func (s *Store) PendingIntents() ([]*engine.Intent, error) {
 		var msg, del string
 		var attempts, policy sql.NullString
 		var created, due, updated int64
-		if err := rows.Scan(&in.ID, &in.IncidentID, &in.Seq, &in.Kind, &policy, &msg, &del, &in.State, &created, &due, &updated, &in.System, &in.ForceFail, &attempts); err != nil {
+		var covers, chain string
+		if err := rows.Scan(&in.ID, &in.IncidentID, &in.Seq, &in.Kind, &policy, &msg, &del, &in.State, &created, &due, &updated, &in.System, &in.ForceFail, &attempts, &covers, &chain); err != nil {
 			return nil, err
+		}
+		if covers != "" {
+			_ = json.Unmarshal([]byte(covers), &in.Covers)
+		}
+		if chain != "" {
+			_ = json.Unmarshal([]byte(chain), &in.Chain)
 		}
 		in.Policy = policy.String
 		_ = json.Unmarshal([]byte(msg), &in.Message)

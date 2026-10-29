@@ -104,6 +104,22 @@ func TestStatesIncidentsIntents(t *testing.T) {
 	if pending, _ = s.PendingIntents(); len(pending) != 0 {
 		t.Fatal("done intent still pending")
 	}
+	// A digest keeps what it stands for, an escalation its chain, and an
+	// incident whether a problem notice reached anyone, across a restart.
+	d := &engine.Intent{ID: "d1", Kind: "DIGEST", Policy: "default", State: engine.IntentPending, CreatedAt: t0, DueAt: t0,
+		Covers: []int64{inc.ID, 42}, Chain: []string{"oncall"}, Delivery: engine.NewDelivery([]string{"oncall"}, "")}
+	if err := s.SaveIntent(d); err != nil {
+		t.Fatal(err)
+	}
+	if pending, _ = s.PendingIntents(); len(pending) != 1 || len(pending[0].Covers) != 2 || pending[0].Covers[1] != 42 || len(pending[0].Chain) != 1 {
+		t.Fatalf("digest after restart: %+v", pending)
+	}
+	inc.State.Tracked = true
+	inc.State.Delivered()
+	s.SaveIncident(inc)
+	if open, _ = s.OpenIncidents(); len(open) != 1 || open[0].State.Told != 1 || !open[0].State.Tracked {
+		t.Fatalf("delivered record after restart: %+v", open[0].State)
+	}
 }
 
 func verdict(m string, at time.Time, status string, hard bool, lat float64) engine.VerdictRecord {

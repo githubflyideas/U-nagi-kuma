@@ -89,6 +89,10 @@ var coreMigrations = []string{
 		from_at INTEGER NOT NULL, until_at INTEGER NOT NULL, by TEXT NOT NULL DEFAULT '', note TEXT NOT NULL DEFAULT '',
 		created_at INTEGER NOT NULL);
 	CREATE INDEX oncall_overrides_until ON oncall_overrides(until_at);`,
+	// What a digest stands for and an escalation's own chain survive a
+	// restart, so a delivered digest still credits its incidents.
+	`ALTER TABLE intents ADD COLUMN covers TEXT NOT NULL DEFAULT '';
+	ALTER TABLE intents ADD COLUMN chain TEXT NOT NULL DEFAULT '';`,
 }
 
 var historyMigrations = []string{
