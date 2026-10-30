@@ -99,6 +99,9 @@ func (e *Engine) dispatchIntents(ctx context.Context, wg *sync.WaitGroup) {
 			in.UpdatedAt = now
 			if !in.Message.DryRun {
 				e.noteSent(name, now)
+				if newProblem(in) {
+					e.noteSent(backstopKey(in, name), now)
+				}
 			}
 			// Durable before the attempt: a crash now resends at most once.
 			if err := e.deps.Sink.SaveIntent(in); err != nil {

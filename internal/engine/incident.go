@@ -46,6 +46,7 @@ func (e *Engine) monitorFailed(m *MonitorSpec, rt *monRuntime, pol PolicySpec, n
 		}
 	}
 	inc.Reason, inc.Detail = rt.LastReason, rt.LastDetail
+	inc.openClass = reasonClass(rt.LastReason)
 	e.saveIncident(inc)
 	e.byMonitor[m.Name] = inc
 	e.incidents[inc.ID] = inc

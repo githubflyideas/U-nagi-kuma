@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/githubflyideas/unagikuma/internal/netscope"
 	"github.com/githubflyideas/unagikuma/internal/notify"
 	"github.com/githubflyideas/unagikuma/internal/probe"
 	"github.com/githubflyideas/unagikuma/internal/tunables"
@@ -69,8 +70,8 @@ func TestClassOf(t *testing.T) {
 }
 
 // No channel gets more than three alerts a minute: the rest wait for one
-// digest that names how many, the monitors and the worst. New incidents
-// and escalations always go through.
+// digest that names how many, the monitors and the worst. Escalations
+// always go through, and new incidents up to their own share.
 func TestBackstopFoldsIntoDigest(t *testing.T) {
 	e, sink := ledgerEngine(t, nil)
 	now := t0
@@ -135,6 +136,14 @@ func TestBackstopFoldsIntoDigest(t *testing.T) {
 	}
 	if folded != 2 {
 		t.Errorf("ledger: %d backstop entries", folded)
+	}
+	// New incidents have a share of their own: once three went out this
+	// window, a flood of them is folded too.
+	for range 3 {
+		e.noteSent("new:ops", now)
+	}
+	if flood := mk(5, NoticeProblem, 1, "cdn"); !e.backstop(flood, now) {
+		t.Error("a fourth new problem in a minute should be folded")
 	}
 	// The window moves on.
 	if e.overBackstop("ops", now.Add(61*time.Second)) {
@@ -226,5 +235,32 @@ func TestIncidentWhileDiskFull(t *testing.T) {
 	e.saveIncident(inc)
 	if inc.ID <= 0 || e.incidents[inc.ID] != inc || e.incidents[temp] != nil || in.IncidentID != inc.ID || in.Message.IncidentID != inc.ID {
 		t.Fatalf("real id: %d, intent %d", inc.ID, in.IncidentID)
+	}
+}
+
+// A service that failed on its own just before a local outage, and timed
+// out once the cut began, did not fail with the outage: its incident is not
+// taken back. One that failed at the network level is.
+func TestBackdateKeepsServiceFailures(t *testing.T) {
+	e, _ := ledgerEngine(t, nil)
+	now := t0.Add(time.Hour)
+	for _, n := range []string{"shop", "api"} {
+		e.states[n] = &monRuntime{LastReason: probe.ReasonTimeout, Scope: netscope.WAN, Family: FamilyV4, LastChange: now.Add(-50 * time.Second),
+			State: MonState{Avail: StatusCritical, Hard: true}}
+		e.monitors[n] = &MonitorSpec{Name: n}
+	}
+	e.incidents[1] = &Incident{ID: 1, Monitor: "shop", Reason: probe.ReasonTimeout, openClass: reasonClass(probe.ReasonHTTPStatus), State: IncidentState{OpenedAt: now.Add(-50 * time.Second)}}
+	e.incidents[2] = &Incident{ID: 2, Monitor: "api", Reason: probe.ReasonTimeout, openClass: reasonClass(probe.ReasonTimeout), State: IncidentState{OpenedAt: now.Add(-50 * time.Second)}}
+	e.byMonitor["shop"], e.byMonitor["api"] = e.incidents[1], e.incidents[2]
+	a := Anomaly{Kind: AnomalyUplink, Family: FamilyV4, Since: now}
+	e.localnet.cfg.Enabled = true
+	e.outageSeen = map[string]bool{}
+	e.localnet.f(FamilyV4).uplink = &a
+	e.backdate(a, now)
+	if !e.byMonitor["shop"].State.Open() {
+		t.Error("the service failure was taken back")
+	}
+	if inc := e.byMonitor["api"]; inc != nil && inc.State.Open() {
+		t.Error("the network failure was not taken back")
 	}
 }

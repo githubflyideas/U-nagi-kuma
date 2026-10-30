@@ -95,6 +95,9 @@ type Incident struct {
 	// Summary is the body of a system incident's recovery notice.
 	Summary string
 	State   IncidentState
+	// openClass is the reason class it opened with (Reason follows the
+	// latest check); kept in memory only.
+	openClass string
 }
 
 // Intent states.

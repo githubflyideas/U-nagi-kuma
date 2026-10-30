@@ -105,8 +105,8 @@ func Render(m *Message) (title, body string) {
 		lines = append(lines, i18n.N(lang, "msg.down_for", m.Count, "duration", i18n.Duration(m.Duration, lang), "count", m.Count))
 	} else {
 		reason := i18n.T(lang, "reason."+m.Reason)
-		if d := sanitize(i18n.Detail(lang, m.Detail), detailCap); d != "" {
-			reason += " — " + d
+		if d := sanitize(i18n.Detail(lang, m.Detail), detailCap); d != "" && !strings.EqualFold(d, reason) {
+			reason += " — " + d // not "timeout — timeout"
 		}
 		lines = append(lines, i18n.T(lang, "msg.reason", "reason", reason))
 		if m.Quorum != "" {

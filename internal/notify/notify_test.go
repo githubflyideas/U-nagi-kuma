@@ -452,3 +452,12 @@ func TestRedaction(t *testing.T) {
 		t.Fatal("redact")
 	}
 }
+
+// A detail that only repeats the reason is not written twice.
+func TestRenderNoRepeatedReason(t *testing.T) {
+	m := &Message{Kind: "PROBLEM", Monitor: "web", Title: "web", Status: "CRITICAL", Reason: "timeout", Detail: "no response within the timeout", Lang: "en"}
+	_, body := Render(m)
+	if n := strings.Count(strings.ToLower(body), "no response within the timeout"); n != 1 {
+		t.Fatalf("reason written %d times:\n%s", n, body)
+	}
+}

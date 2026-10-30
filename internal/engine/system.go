@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
 	"sort"
@@ -243,7 +244,9 @@ func (e *Engine) backdate(a Anomaly, now time.Time) {
 			continue
 		}
 		if inc := e.byMonitor[name]; inc != nil && inc.State.Open() {
-			if inc.State.told() || inc.State.OpenedAt.Before(cutoff) {
+			// A service that failed on its own (HTTP 500) and now times
+			// out because of the cut did not fail with the outage.
+			if inc.State.told() || inc.State.OpenedAt.Before(cutoff) || cmp.Or(inc.openClass, reasonClass(inc.Reason)) != "network" {
 				continue // someone knows about it: it stays, held
 			}
 			e.closeMonitorIncidents(name, "local_network")

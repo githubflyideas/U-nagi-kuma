@@ -15,8 +15,11 @@ import (
 // than notify.backstop-max alerts per notify.backstop-window. Further
 // alerts are folded and sent as one digest when the window has passed,
 // naming how many there were, the monitors involved and the worst ones.
-// The first alert of a new incident, escalations, system notices and
-// digests always go through.
+// Escalations, system notices and digests always go through. The first
+// alert of a new incident is not held back by repeats and reminders: new
+// incidents have a share of their own, so a new problem goes out at once
+// unless notify.backstop-max new problems already went out this window —
+// a hundred services failing together is one digest, not a hundred pages.
 
 type backstopBuf struct {
 	first time.Time
@@ -31,15 +34,26 @@ func backstopExempt(in *Intent) bool {
 	switch NoticeKind(in.Kind) {
 	case NoticeEscalate:
 		return true
-	case NoticeProblem:
-		return in.Seq <= 1 // a brand-new incident
-	case NoticeRepeat, NoticeReopen, NoticeRecovery:
+	case NoticeProblem, NoticeRepeat, NoticeReopen, NoticeRecovery:
 		return false
 	}
 	return true // digests, reports, drills, tests
 }
 
-// noteSent counts a send to a channel for the backstop.
+// newProblem reports whether an alert is the first of a new incident.
+func newProblem(in *Intent) bool { return NoticeKind(in.Kind) == NoticeProblem && in.Seq <= 1 }
+
+// backstopKey is what an alert counts against: the channel, or the
+// channel's share for new incidents.
+func backstopKey(in *Intent, ch string) string {
+	if newProblem(in) {
+		return "new:" + ch
+	}
+	return ch
+}
+
+// noteSent counts a send to a channel (or its share for new incidents) for
+// the backstop.
 func (e *Engine) noteSent(ch string, now time.Time) {
 	win := e.cfg.Tunables.Duration("notify.backstop-window")
 	ts := e.sentAt[ch]
@@ -73,7 +87,7 @@ func (e *Engine) backstop(in *Intent, now time.Time) bool {
 		return false
 	}
 	ch := in.Delivery.Steps[0].Channel
-	if !e.overBackstop(ch, now) {
+	if !e.overBackstop(backstopKey(in, ch), now) {
 		return false
 	}
 	key := in.Policy
