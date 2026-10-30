@@ -92,6 +92,7 @@ type OnCallRotation struct {
 	Rotate    string            `json:"rotate"`
 	Handoff   string            `json:"handoff"`
 	Start     string            `json:"start,omitempty"`
+	TZ        string            `json:"tz"` // the time zone it hands off in
 	Members   []OnCallMember    `json:"members"`
 	Now       string            `json:"now"`       // who is notified first now
 	Scheduled oncall.Shift      `json:"scheduled"` // the shift running now
@@ -113,7 +114,7 @@ func (a *App) OnCall(shifts int) ([]OnCallRotation, error) {
 	dir := a.Directory()
 	out := []OnCallRotation{}
 	for name, r := range rotations(cfg) {
-		ro := OnCallRotation{Name: name, Rotate: r.Src, Handoff: r.Handoff, Start: cfg.FindChannel(name).Opts[oncall.OptStart],
+		ro := OnCallRotation{Name: name, Rotate: r.Src, Handoff: r.Handoff, Start: cfg.FindChannel(name).Opts[oncall.OptStart], TZ: rotationZone(r, loc),
 			Scheduled: r.At(now, loc), Overrides: []oncall.Override{}, Policies: policiesUsing(cfg, name)}
 		ro.Now = ro.Scheduled.Member
 		if o := oncall.Active(name, os, now); o != nil {

@@ -15,10 +15,13 @@
 - A channel sends at most 3 alerts a minute (`notify.backstop-max`, `notify.backstop-window`); the rest come as one summary at the end of the minute. Escalations and system notices always go out; new problems have a share of their own.
 - The audit log is tamper-evident: `unagikuma audit verify` and **Check integrity** find changed, inserted or removed entries. It also records sign-ins, backups, restores, imports, password resets and what the system did by itself, highlights high-risk entries, filters by risk, address and time, and exports CSV or JSON (`unagikuma audit export`).
 - `unagikuma reset-password --revoke-tokens` also revokes that user's API tokens.
+- On call: a month or week calendar of who is on call each day (`GET /api/v1/oncall/calendar`), and swapping two shifts (`POST /api/v1/oncall/swap`), on top of stand-ins.
 - Monitors: tick monitors and **Pause** or **Resume** them together (`POST /api/v1/monitors/bulk-pause`, one change to the file).
 - Certificates now warn 62 days before they expire (`probe.cert-warn-days`, was 21), also for monitors imported from Uptime Kuma; thresholds you set yourself are kept. The overview lists certificates inside that window, and the expiry list is now called **Certificate validity**.
 
 **Fixed**
+- On call: shifts of hours (such as `rotate=12h`) moved by an hour at each daylight saving change; they now keep their local handoff times like day shifts. A handoff time the clocks skip happens when they resume, and one that happens twice is the first.
+- On call: handoffs were always read in the server's time zone, so a server running in UTC handed over at the wrong hour for a team elsewhere. `tz=` gives a rotation its own time zone.
 - On call: the recovery of a problem went to whoever was on call when it recovered, so a stand-in (or the person before a handoff) who was told about the problem never heard that it was over, and the next person got a recovery for a problem they never saw. It now goes to the person who was told.
 - A local outage whose last reply and first failure came at the same instant was not recognised, and its failures were alerted.
 - A problem that began while the disk was full got no recovery notice.

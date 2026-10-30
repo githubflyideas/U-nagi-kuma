@@ -150,7 +150,7 @@ func Kinds() []KindInfo {
 	// A contact group is resolved by the engine, not sent here.
 	// rotate= turns a group into an on-call rotation (one member at a time).
 	out = append(out, KindInfo{Kind: "group", Label: "Contact group", Fields: []Field{{Key: "members", Type: "text", Required: true, Placeholder: "ops-feishu,oncall-sms"},
-		{Key: "rotate", Type: "text", Placeholder: "weekly"}, {Key: "handoff", Type: "text", Placeholder: "mon 09:00"}, {Key: "start", Type: "text", Placeholder: "2026-11-02"}}})
+		{Key: "rotate", Type: "text", Placeholder: "weekly"}, {Key: "handoff", Type: "text", Placeholder: "mon 09:00"}, {Key: "start", Type: "text", Placeholder: "2026-11-02"}, {Key: "tz", Type: "text", Placeholder: "Asia/Shanghai"}}})
 	for i := range out {
 		if out[i].Fields == nil {
 			out[i].Fields = []Field{} // JSON [] rather than null

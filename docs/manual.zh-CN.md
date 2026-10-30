@@ -140,13 +140,13 @@ default   IN POLICY chain=team,night-sms mode=all repeat=30m max=3 escalate=30m:
 - **策略。** `chain=` 列出通道；`mode=fallback`（默认）依次尝试直到有一个成功，`mode=all` 全部发送。`repeat=`、`max=`、`delay=`、`reopen-window=`、`ack-expire=`、`recovery=no`、`notify-degraded=yes` 决定发送什么。监控项用 `policy=名称` 指定策略，否则使用 `default`。
 - **时间段。** `PERIOD` 记录是按周的规则（`mon-fri 09:00-18:00`，可跨午夜如 `22:00-07:00`，`24:00` 表示当天结束）。通道上写 `period=office` 表示只在时间段内使用，`period=!office` 表示只在时间段外使用。被跳过的通道不算失败：备用链会接着尝试下一个。
 - **联系组。** `group` 通道同时通知所有 `members=` 成员，任一成员成功即算成功。成员各自的时间段仍然有效。
-- **值班轮换。** 在 group 通道上写 `rotate=daily|weekly|Nd|Nh`，它就成为值班表：只通知当班的成员，联系不上时才按顺序通知其他人。`handoff="mon 09:00"` 设置交接时间（只有按整周轮换时才能指定星期几），`start=` 设置第一个成员开始值班的日期。每人一个通道（他的短信或 IM），按排班顺序列出：
+- **值班轮换。** 在 group 通道上写 `rotate=daily|weekly|Nd|Nh`，它就成为值班表：只通知当班的成员，联系不上时才按顺序通知其他人。`handoff="mon 09:00"` 设置交接时间（只有按整周轮换时才能指定星期几），`start=` 设置第一个成员开始值班的日期，`tz=`（例如 `Asia/Shanghai`）设置这两者所用的时区，与服务器自己的时区无关。夏令时切换时交接仍在当地的同一时刻（跨过切换的按天班次是 23 或 25 小时；被跳过的交接时刻顺延到时钟恢复时）。每人一个通道（他的短信或 IM），按排班顺序列出：
 
   ```text
-  oncall IN CHANNEL group members=li-sms,wang-sms,zhao-sms rotate=weekly handoff="mon 09:00" start=2026-11-02
+  oncall IN CHANNEL group members=li-sms,wang-sms,zhao-sms rotate=weekly handoff="mon 09:00" start=2026-11-02 tz=Asia/Shanghai
   ```
 
-  **值班** 页面显示当前谁在值班和之后的班次，可以新建值班表、安排代班：有人临时顶班，告警先发给他，原有排班顺序不变。页面还统计最近 `oncall.stats-window`（30 天）的 MTTA 和 MTTR，每起故障算在它发生时的值班人名下。
+  **值班** 页面用月历或周历显示每天谁在值班，可以新建值班表、安排代班和换班：代班是有人临时顶班，告警先发给他；换班是两个班次互换。两者都不改变原有排班顺序。故障恢复的通知发给当初收到故障通知的人，即使中间已经交接。页面还统计最近 `oncall.stats-window`（30 天）的 MTTA 和 MTTR，每起故障算在它发生时的值班人名下。
 - **升级。** 策略上的 `escalate=时长:通道[+通道],…` 在故障持续未确认时追加通知：30 分钟后通知主管，2 小时后再加上值班电话。确认后即停止。
 - **汇总会说明是哪类问题。** 短时间内积压很多通知时（`notify.coalesce-queue`、`notify.coalesce-wait`），会合并成汇总，汇总区分业务和网络：
   - 各自独立出错的业务排在最前面，写明"请尽快处理"，给业务负责人；

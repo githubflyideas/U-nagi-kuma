@@ -1389,5 +1389,6 @@
 "ui.mon.paused_n": "Đã tạm dừng giám sát: {n}",
 "ui.mon.resumed_n": "Đã tiếp tục giám sát: {n}",
 "ui.mon.resume_skipped": "Không tiếp tục vì thiếu script trên một số nút: {names}. Hãy tiếp tục từng cái trên trang của nó.",
-"ui.mon.view_hive": "Dạng tổ ong"
+"ui.mon.view_hive": "Dạng tổ ong",
+"ui.field.tz": "Múi giờ"
 }

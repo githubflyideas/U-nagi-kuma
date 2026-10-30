@@ -17,10 +17,13 @@ const (
 	OptRotate  = "rotate"  // daily | weekly | Nd | Nh
 	OptHandoff = "handoff" // "mon 09:00" (whole weeks) or "09:00"
 	OptStart   = "start"   // YYYY-MM-DD: the first member's first shift
+	OptTZ      = "tz"      // IANA time zone of handoff and start (default: the server's)
 )
 
 // IsOption reports whether key is a rotation option.
-func IsOption(key string) bool { return key == OptRotate || key == OptHandoff || key == OptStart }
+func IsOption(key string) bool {
+	return key == OptRotate || key == OptHandoff || key == OptStart || key == OptTZ
+}
 
 // defaultStart anchors rotations without start=: a Monday, so weekly
 // rotations handing off on Mondays begin with the first member there.
@@ -39,6 +42,21 @@ type Rotation struct {
 	Start   time.Time
 	Src     string // the rotate= value, for display
 	Handoff string // the handoff= value as written, or the default
+	// Loc is the time zone of tz=; nil: the server's time zone, which
+	// the callers pass in.
+	Loc *time.Location
+	TZ  string
+}
+
+// zone is the rotation's own time zone, else loc.
+func (r *Rotation) zone(loc *time.Location) *time.Location {
+	if r.Loc != nil {
+		return r.Loc
+	}
+	if loc == nil {
+		return time.Local
+	}
+	return loc
 }
 
 var dayNames = map[string]time.Weekday{"sun": time.Sunday, "mon": time.Monday, "tue": time.Tuesday,
@@ -49,7 +67,7 @@ var dayNames = map[string]time.Weekday{"sun": time.Sunday, "mon": time.Monday, "
 func Parse(opts map[string]string, members []string) (*Rotation, error) {
 	rot, ok := opts[OptRotate]
 	if !ok {
-		for _, k := range []string{OptHandoff, OptStart} {
+		for _, k := range []string{OptHandoff, OptStart, OptTZ} {
 			if _, set := opts[k]; set {
 				return nil, fmt.Errorf("%s needs rotate=", k)
 			}
@@ -109,6 +127,13 @@ func Parse(opts map[string]string, members []string) (*Rotation, error) {
 		}
 		r.Start = t
 	}
+	if tz := strings.TrimSpace(opts[OptTZ]); tz != "" {
+		l, err := time.LoadLocation(tz)
+		if err != nil || strings.EqualFold(tz, "local") {
+			return nil, fmt.Errorf("tz must be a time zone like Asia/Shanghai or UTC, got %q", tz)
+		}
+		r.Loc, r.TZ = l, tz
+	}
 	if len(members) == 0 {
 		return nil, fmt.Errorf("a rotation needs members")
 	}
@@ -120,19 +145,60 @@ func Parse(opts map[string]string, members []string) (*Rotation, error) {
 // even when it is not a handoff day.
 func (r *Rotation) anchor(loc *time.Location) time.Time {
 	y, m, d := r.Start.Date()
-	a := time.Date(y, m, d, r.Clock/60, r.Clock%60, 0, 0, loc)
 	if r.Weekday >= 0 {
-		a = a.AddDate(0, 0, -((int(a.Weekday()) - int(r.Weekday) + 7) % 7))
+		wd := time.Date(y, m, d, 12, 0, 0, 0, time.UTC).Weekday()
+		d -= (int(wd) - int(r.Weekday) + 7) % 7
 	}
-	return a
+	return wallTime(y, m, d, r.Clock, r.zone(loc))
 }
 
-// shiftStart is when shift k begins.
-func (r *Rotation) shiftStart(a time.Time, k int) time.Time {
-	if r.Days > 0 {
-		return a.AddDate(0, 0, k*r.Days)
+// wallTime is the instant of minute (after midnight; may overflow into
+// the next days) on a local date. A handoff inside a daylight saving gap
+// moves to the end of the gap; one that happens twice when clocks go back
+// is the first of the two.
+func wallTime(y int, m time.Month, d, minute int, loc *time.Location) time.Time {
+	d += floorDiv(minute, 24*60)
+	minute -= floorDiv(minute, 24*60) * 24 * 60
+	h, mi := minute/60, minute%60
+	t := time.Date(y, m, d, h, mi, 0, 0, loc)
+	if t.Hour() != h || t.Minute() != mi {
+		// In a gap: the first instant after it is the zone change.
+		start, end := t.ZoneBounds()
+		if t.Hour()*60+t.Minute() < h*60+mi && !end.IsZero() {
+			return end
+		}
+		return start
 	}
-	return a.Add(time.Duration(k*r.Hours) * time.Hour)
+	// Happens twice: take the earlier one.
+	for _, back := range []time.Duration{time.Hour, 30 * time.Minute, 2 * time.Hour} {
+		if e := t.Add(-back); e.Hour() == h && e.Minute() == mi && e.Day() == t.Day() {
+			return e
+		}
+	}
+	return t
+}
+
+func floorDiv(a, b int) int {
+	q := a / b
+	if a%b != 0 && (a < 0) != (b < 0) {
+		q--
+	}
+	return q
+}
+
+// shiftStart is when shift k begins: on the local clock, so handoffs stay
+// at the same local time across daylight saving changes (a day shift that
+// spans one lasts 23 or 25 hours).
+func (r *Rotation) shiftStart(a time.Time, k int) time.Time {
+	y, m, d := r.Start.Date()
+	if r.Weekday >= 0 {
+		wd := time.Date(y, m, d, 12, 0, 0, 0, time.UTC).Weekday()
+		d -= (int(wd) - int(r.Weekday) + 7) % 7
+	}
+	if r.Days > 0 {
+		return wallTime(y, m, d+k*r.Days, r.Clock, a.Location())
+	}
+	return wallTime(y, m, d, r.Clock+k*r.Hours*60, a.Location())
 }
 
 // shiftAt returns the index of the shift running at t (negative before

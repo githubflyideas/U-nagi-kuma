@@ -1399,5 +1399,6 @@
 "ui.mon.paused_n": "Monitors paused: {n}",
 "ui.mon.resumed_n": "Monitors resumed: {n}",
 "ui.mon.resume_skipped": "Not resumed because their script is missing on some nodes: {names}. Resume them one by one from their page.",
-"ui.mon.view_hive": "Honeycomb view"
+"ui.mon.view_hive": "Honeycomb view",
+"ui.field.tz": "Time zone"
 }

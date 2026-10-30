@@ -1398,5 +1398,6 @@
 "ui.mon.paused_n": "Moniteurs mis en pause : {n}",
 "ui.mon.resumed_n": "Moniteurs relancés : {n}",
 "ui.mon.resume_skipped": "Non relancés car leur script manque sur certains nœuds : {names}. Relancez-les un par un depuis leur page.",
-"ui.mon.view_hive": "Vue en nid d'abeille"
+"ui.mon.view_hive": "Vue en nid d'abeille",
+"ui.field.tz": "Fuseau horaire"
 }

@@ -1389,5 +1389,6 @@
 "ui.mon.paused_n": "일시 중지된 모니터: {n}",
 "ui.mon.resumed_n": "재개된 모니터: {n}",
 "ui.mon.resume_skipped": "일부 노드에 스크립트가 없어 재개하지 않았습니다: {names}. 각 모니터 페이지에서 하나씩 재개하세요.",
-"ui.mon.view_hive": "벌집 보기"
+"ui.mon.view_hive": "벌집 보기",
+"ui.field.tz": "시간대"
 }

@@ -1398,5 +1398,6 @@
 "ui.mon.paused_n": "Monitores pausados: {n}",
 "ui.mon.resumed_n": "Monitores retomados: {n}",
 "ui.mon.resume_skipped": "Não retomados porque o script falta em alguns nós: {names}. Retome-os um a um na página de cada um.",
-"ui.mon.view_hive": "Vista em favo"
+"ui.mon.view_hive": "Vista em favo",
+"ui.field.tz": "Fuso horário"
 }

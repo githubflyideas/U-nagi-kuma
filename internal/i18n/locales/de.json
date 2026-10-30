@@ -1398,5 +1398,6 @@
 "ui.mon.paused_n": "Pausierte Monitore: {n}",
 "ui.mon.resumed_n": "Fortgesetzte Monitore: {n}",
 "ui.mon.resume_skipped": "Nicht fortgesetzt, weil ihr Skript auf einigen Knoten fehlt: {names}. Setzen Sie sie einzeln auf ihrer Seite fort.",
-"ui.mon.view_hive": "Wabenansicht"
+"ui.mon.view_hive": "Wabenansicht",
+"ui.field.tz": "Zeitzone"
 }

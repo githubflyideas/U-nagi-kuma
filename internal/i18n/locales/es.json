@@ -1398,5 +1398,6 @@
 "ui.mon.paused_n": "Monitores pausados: {n}",
 "ui.mon.resumed_n": "Monitores reanudados: {n}",
 "ui.mon.resume_skipped": "No se reanudaron porque falta su script en algunos nodos: {names}. Reanúdalos uno a uno desde su página.",
-"ui.mon.view_hive": "Vista de panal"
+"ui.mon.view_hive": "Vista de panal",
+"ui.field.tz": "Zona horaria"
 }

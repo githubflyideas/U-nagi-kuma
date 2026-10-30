@@ -1389,5 +1389,6 @@
 "ui.mon.paused_n": "一時停止した監視：{n}",
 "ui.mon.resumed_n": "再開した監視：{n}",
 "ui.mon.resume_skipped": "一部のノードでスクリプトが見つからないため再開しませんでした：{names}。各監視のページから個別に再開してください。",
-"ui.mon.view_hive": "ハニカム表示"
+"ui.mon.view_hive": "ハニカム表示",
+"ui.field.tz": "タイムゾーン"
 }

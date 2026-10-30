@@ -1389,5 +1389,6 @@
 "ui.mon.paused_n": "已暂停监控：{n}",
 "ui.mon.resumed_n": "已恢复监控：{n}",
 "ui.mon.resume_skipped": "以下监控的脚本在部分节点上缺失，未恢复：{names}。请到各自页面单独恢复。",
-"ui.mon.view_hive": "蜂巢视图"
+"ui.mon.view_hive": "蜂巢视图",
+"ui.field.tz": "时区"
 }
