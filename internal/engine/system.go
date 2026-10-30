@@ -307,9 +307,29 @@ func (e *Engine) onInterruption(in Interruption, now time.Time) {
 }
 
 // systemNotice sends a one-off message through the system policy.
+// Its title is the notice itself (shortened), so a phone shows what
+// happened instead of a generic "system notice".
 func (e *Engine) systemNotice(now time.Time, body string) {
 	e.enqueue(&Intent{Kind: "SYSTEM", Policy: e.policy("system").Name, CreatedAt: now, DueAt: now, System: true,
-		Message: notify.Message{Kind: "SYSTEM", Priority: "high", Title: e.text("system_notice_title"), Body: body, Time: now, Instance: e.cfg.Instance, Lang: e.cfg.Lang}})
+		Message: notify.Message{Kind: "SYSTEM", Priority: "high", Title: noticeTitle(body, e.text("system_notice_title")), Body: body, Time: now, Instance: e.cfg.Instance, Lang: e.cfg.Lang}})
+}
+
+// noticeTitle is the first sentence of body, at most 90 characters.
+func noticeTitle(body, fallback string) string {
+	s, _, _ := strings.Cut(strings.TrimSpace(body), "\n")
+	for _, sep := range []string{". ", "。", "; ", "；"} {
+		if i := strings.Index(s, sep); i > 0 {
+			s = s[:i]
+		}
+	}
+	s = strings.TrimSpace(strings.TrimRight(s, ".。"))
+	if r := []rune(s); len(r) > 90 {
+		s = string(r[:89]) + "…"
+	}
+	if s == "" {
+		return fallback
+	}
+	return s
 }
 
 // StartupNotice reports how the previous run ended: an abnormal exit (no

@@ -3,7 +3,9 @@ package engine
 import (
 	"sort"
 	"strings"
+	"time"
 
+	"github.com/githubflyideas/unagikuma/internal/i18n"
 	"github.com/githubflyideas/unagikuma/internal/probe"
 )
 
@@ -33,7 +35,7 @@ func (e *Engine) classify(q []*Intent) (service digestPart, network []digestPart
 	dns := &digestPart{cause: "dns"}
 	var order []string
 	for _, in := range q {
-		line := in.Kind + " " + in.Message.Title
+		line := digestLine(in)
 		var id int64
 		if in.IncidentID != 0 && NoticeKind(in.Kind) != NoticeRecovery {
 			id = in.IncidentID
@@ -103,4 +105,23 @@ func partsLen(parts []digestPart) int {
 		n += len(p.lines)
 	}
 	return n
+}
+
+// digestLine is one merged notice as people read it: what happened to
+// which monitor, why and for how long ("Problem: web — connection
+// refused (5m)").
+func digestLine(in *Intent) string {
+	m := in.Message
+	name := m.Title
+	if name == "" {
+		name = m.Monitor
+	}
+	line := i18n.T(m.Lang, "msg.kind."+in.Kind) + ": " + name
+	if m.Reason != "" && m.Reason != "ok" && NoticeKind(in.Kind) != NoticeRecovery {
+		line += " — " + i18n.T(m.Lang, "reason."+m.Reason)
+	}
+	if m.Duration >= time.Minute {
+		line += " (" + i18n.Duration(m.Duration.Round(time.Minute), m.Lang) + ")"
+	}
+	return line
 }

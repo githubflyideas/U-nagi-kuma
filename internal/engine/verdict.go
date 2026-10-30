@@ -88,7 +88,11 @@ func (v Verdict) Summary() string {
 	if v.N <= 1 {
 		return ""
 	}
-	return fmt.Sprintf("%d/%d failed (need %d): %s", v.Fail, v.N, v.QEff, strings.Join(v.FailingNodes, ","))
+	s := fmt.Sprintf("%d/%d failed (need %d)", v.Fail, v.N, v.QEff)
+	if len(v.FailingNodes) > 0 {
+		s += ": " + strings.Join(v.FailingNodes, ",")
+	}
+	return s
 }
 
 type quorumKind int
