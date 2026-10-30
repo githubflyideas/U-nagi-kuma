@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -180,5 +181,50 @@ func TestLedgerRecordsSteps(t *testing.T) {
 	// problem, with what was tried.
 	if s.Step != LedFailed || s.Class != ClassChannelDown || len(s.Receipts) != 1 || s.Receipts[0].Channel != "ops" {
 		t.Errorf("last: %+v", s)
+	}
+}
+
+// fullSink cannot save incidents while full is set (a full disk).
+type fullSink struct {
+	*memSink
+	full bool
+}
+
+func (s *fullSink) SaveIncident(inc *Incident) error {
+	if s.full {
+		return errors.New("database or disk is full")
+	}
+	return s.memSink.SaveIncident(inc)
+}
+
+// An incident opened while the disk is full keeps a temporary id: its
+// delivered alert credits it, so its recovery is still owed, and it gets
+// its real id, with its queued alerts, once the disk has room again.
+func TestIncidentWhileDiskFull(t *testing.T) {
+	sink := &fullSink{memSink: newMemSink(), full: true}
+	e := New(Deps{Sink: sink})
+	ts, _ := tunables.New(nil)
+	e.cfg = Config{Tunables: ts, Location: time.UTC, Policies: map[string]PolicySpec{"default": {Name: "default", Chain: []string{"ops"}, Mode: DeliverFallback, Notify: DefaultNotifyPolicy(ts)}},
+		Channels: map[string]ChannelSpec{"ops": {Channel: notify.Channel{Name: "ops", Kind: "log"}}}}
+	inc := &Incident{Monitor: "web", Policy: "default"}
+	e.saveIncident(inc)
+	if inc.ID >= 0 || e.incidents[inc.ID] != inc {
+		t.Fatalf("temporary id: %d", inc.ID)
+	}
+	temp := inc.ID
+	in := &Intent{IncidentID: temp, Kind: "PROBLEM", Policy: "default", CreatedAt: t0, DueAt: t0, Message: notify.Message{Kind: "PROBLEM", IncidentID: temp}}
+	e.enqueue(in)
+	e.credit(in)
+	if inc.State.Told == 0 {
+		t.Fatal("a delivered alert must credit the unsaved incident")
+	}
+	e.saveIncident(inc)
+	if inc.ID != temp {
+		t.Fatalf("still full: id %d", inc.ID)
+	}
+	sink.full = false
+	e.saveIncident(inc)
+	if inc.ID <= 0 || e.incidents[inc.ID] != inc || e.incidents[temp] != nil || in.IncidentID != inc.ID || in.Message.IncidentID != inc.ID {
+		t.Fatalf("real id: %d, intent %d", inc.ID, in.IncidentID)
 	}
 }

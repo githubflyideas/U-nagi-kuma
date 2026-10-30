@@ -512,7 +512,9 @@ func (d *LocalNet) evalUplink(fam Family, s *famState, now time.Time) []LocalNet
 			// A wan anchor answers: the uplink is fine.
 		case configured && allDown:
 			enter = true
-		case !s.episodeStart.IsZero() && s.lastReachWAN.Before(s.episodeStart):
+		case !s.episodeStart.IsZero() && !s.lastReachWAN.After(s.episodeStart):
+			// A reply stamped the same instant as the first failure (rounds
+			// started together) is not a reply after it.
 			for k, ds := range s.domains {
 				if ds.networkFail && !ds.lastAt.Before(s.episodeStart) && !s.preDead[k] {
 					failing++

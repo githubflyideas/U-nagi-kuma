@@ -200,9 +200,11 @@ type Engine struct {
 	maintOf   map[string]string    // monitor → open maintenance window
 	maintOpen map[string]time.Time // open windows → their end
 	intents   map[string]*Intent   // undelivered intents
-	chanRate  map[string]*ratelimit.Bucket
-	sentAt    map[string][]time.Time  // per channel: sends in the backstop window
-	folded    map[string]*backstopBuf // per policy: alerts the backstop held back
+	// tempIncident numbers incidents the store could not save yet (< 0).
+	tempIncident int64
+	chanRate     map[string]*ratelimit.Bucket
+	sentAt       map[string][]time.Time  // per channel: sends in the backstop window
+	folded       map[string]*backstopBuf // per policy: alerts the backstop held back
 
 	sem     chan struct{}
 	stats   selfStats

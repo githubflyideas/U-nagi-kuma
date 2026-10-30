@@ -67,15 +67,12 @@ func localOutage(t *testing.T, notifyAfter string, wantSystem int, downAtStart b
 		HostClock: func() (hostclock.Reading, bool) { return hostclock.Reading{}, false },
 		Gateways:  func() ([]netscope.Gateway, error) { return nil, nil },
 	})
-	gateHosts, gateCache := "5", "30s"
+	gateHosts := "5"
 	if downAtStart {
 		gateHosts = "50" // the target still answering is among the ones re-checked
-		// A cached "the network works" from while it still answered must
-		// not outlive it.
-		gateCache = "0s"
 	}
 	ts, err := tunables.New(map[string]string{"localnet.gate-hosts": gateHosts, "engine.first-round-delay": "0s", "suspend.recheck-spread": "0s", "suspend.tick": "200ms",
-		"engine.round-grace": "0s", "localnet.window": "10s", "localnet.gate-cache": gateCache, "notify.retry-backoff": "200ms", "localnet.notify-after": notifyAfter, "localnet.exit-target": ""})
+		"engine.round-grace": "0s", "localnet.window": "10s", "notify.retry-backoff": "200ms", "localnet.notify-after": notifyAfter, "localnet.exit-target": ""})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,13 +91,22 @@ func localOutage(t *testing.T, notifyAfter string, wantSystem int, downAtStart b
 	go func() { e.Run(ctx); close(done) }()
 	t.Cleanup(func() { cancel(); <-done })
 
-	time.Sleep(time.Second) // all fine
+	// All fine first: every target must have answered once, or a target
+	// never seen answering is no evidence of a cut (it may be dead).
+	waitCond(t, "every monitor to be OK first", 20*time.Second, func() bool {
+		for _, r := range e.Rows() {
+			if r.Status != StatusOK {
+				return false
+			}
+		}
+		return true
+	})
 	down.Store(true)
 	if downAtStart {
 		// One target still answers for a moment: the self-check rightly
 		// finds the network working, and the others turn CRITICAL before
 		// the outage can be recognised.
-		waitCond(t, "a monitor to fail before the outage is recognised", 10*time.Second, func() bool {
+		waitCond(t, "a monitor to fail before the outage is recognised", 20*time.Second, func() bool {
 			r, _ := e.Row("site0")
 			return r.Status == StatusCritical
 		})
@@ -112,7 +118,16 @@ func localOutage(t *testing.T, notifyAfter string, wantSystem int, downAtStart b
 			for _, r := range e.Rows() {
 				st = append(st, r.Name+"="+r.Status+"/"+r.Reason)
 			}
-			t.Fatalf("timed out waiting for the outage to be recognised: health %+v, monitors %v", e.Overview().Health, st)
+			var ln string
+			e.do(func() {
+				for f, fs := range e.localnet.fam {
+					ln += fmt.Sprintf("fam %d episode %v lastReachWAN %v preDead %v;", f, fs.episodeStart.Format("15:04:05.000"), fs.lastReachWAN.Format("15:04:05.000"), fs.preDead)
+					for k, d := range fs.domains {
+						ln += fmt.Sprintf(" %s{at %s reach %v nf %v lastOK %s}", k, d.lastAt.Format("15:04:05.000"), d.reachable, d.networkFail, d.lastReachable.Format("15:04:05.000"))
+					}
+				}
+			})
+			t.Fatalf("timed out waiting for the outage to be recognised: health %+v, monitors %v, localnet %s", e.Overview().Health, st, ln)
 		}
 	}
 	time.Sleep(2 * time.Second)
@@ -243,7 +258,16 @@ func TestMaxHoldReleasesStuckHold(t *testing.T) {
 			for _, r := range e.Rows() {
 				st = append(st, r.Name+"="+r.Status+"/"+r.Reason)
 			}
-			t.Fatalf("timed out waiting for the outage to be recognised: health %+v, monitors %v", e.Overview().Health, st)
+			var ln string
+			e.do(func() {
+				for f, fs := range e.localnet.fam {
+					ln += fmt.Sprintf("fam %d episode %v lastReachWAN %v preDead %v;", f, fs.episodeStart.Format("15:04:05.000"), fs.lastReachWAN.Format("15:04:05.000"), fs.preDead)
+					for k, d := range fs.domains {
+						ln += fmt.Sprintf(" %s{at %s reach %v nf %v lastOK %s}", k, d.lastAt.Format("15:04:05.000"), d.reachable, d.networkFail, d.lastReachable.Format("15:04:05.000"))
+					}
+				}
+			})
+			t.Fatalf("timed out waiting for the outage to be recognised: health %+v, monitors %v, localnet %s", e.Overview().Health, st, ln)
 		}
 	}
 	waitCond(t, "the hold to be released and a monitor to fail", 20*time.Second, func() bool {

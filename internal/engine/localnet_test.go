@@ -482,3 +482,27 @@ func TestFailureDomain(t *testing.T) {
 		t.Error("FamilyOf")
 	}
 }
+
+// The last reply and the first failure carry the same instant (rounds
+// that started together): the cut is still recognised once nothing
+// answers any more. It used to wait for a reply that never came.
+func TestUplinkLastReplySameInstantAsFirstFailure(t *testing.T) {
+	d, cfg := defaultLocalNet(t)
+	doms := []string{"4:a", "4:b", "4:c", "4:d"}
+	for _, dm := range doms {
+		d.Observe(wanOK(t0, dm))
+	}
+	at := t0.Add(sec(1))
+	d.Observe(wanOK(at, doms[3]))
+	d.Observe(wanFail(at, doms[0]))
+	for i, dm := range doms {
+		d.Observe(wanFail(at.Add(sec(1+i)), dm))
+	}
+	var evs []LocalNetEvent
+	for s := 2; s < 10+int(cfg.Window/time.Second); s++ {
+		evs = append(evs, d.Evaluate(at.Add(sec(s)))...)
+	}
+	if !enters(evs, string(AnomalyUplink)) {
+		t.Fatalf("uplink cut not recognised: %+v", evs)
+	}
+}

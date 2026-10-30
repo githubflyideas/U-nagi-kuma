@@ -110,7 +110,7 @@ func (e *Engine) sendBackstop(pol string, ins []*Intent, now time.Time) {
 	for _, in := range ins {
 		switch NoticeKind(in.Kind) {
 		case NoticeProblem, NoticeRepeat, NoticeReopen:
-			if in.IncidentID > 0 {
+			if in.IncidentID != 0 {
 				ids = append(ids, in.IncidentID)
 			}
 		}

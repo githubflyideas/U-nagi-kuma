@@ -329,12 +329,37 @@ func (e *Engine) resolvedTitle(inc *Incident) string {
 }
 
 func (e *Engine) saveIncident(inc *Incident) {
+	// An incident the store could not take yet (a full disk) lives under
+	// a temporary negative id, so its alerts still credit it and its
+	// recovery is still owed; the first save that works gives it its id.
+	temp := inc.ID
+	if temp < 0 {
+		inc.ID = 0
+	}
 	if err := e.deps.Sink.SaveIncident(inc); err != nil {
 		e.log.Error("cannot persist incident", "err", err, "monitor", inc.Monitor)
 	}
-	if inc.ID != 0 {
-		e.incidents[inc.ID] = inc
+	switch {
+	case inc.ID == 0 && temp < 0:
+		inc.ID = temp
+	case inc.ID == 0:
+		e.tempIncident--
+		inc.ID = e.tempIncident
+	case temp < 0:
+		delete(e.incidents, temp)
+		for _, in := range e.intents {
+			if in.IncidentID == temp {
+				in.IncidentID = inc.ID
+				in.Message.IncidentID = inc.ID
+			}
+			for i, c := range in.Covers {
+				if c == temp {
+					in.Covers[i] = inc.ID
+				}
+			}
+		}
 	}
+	e.incidents[inc.ID] = inc
 }
 
 func (e *Engine) saveState(name string, rt *monRuntime) {
