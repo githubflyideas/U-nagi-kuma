@@ -67,12 +67,15 @@ func localOutage(t *testing.T, notifyAfter string, wantSystem int, downAtStart b
 		HostClock: func() (hostclock.Reading, bool) { return hostclock.Reading{}, false },
 		Gateways:  func() ([]netscope.Gateway, error) { return nil, nil },
 	})
-	gateHosts := "5"
+	gateHosts, gateCache := "5", "30s"
 	if downAtStart {
 		gateHosts = "50" // the target still answering is among the ones re-checked
+		// A cached "the network works" from while it still answered must
+		// not outlive it.
+		gateCache = "0s"
 	}
 	ts, err := tunables.New(map[string]string{"localnet.gate-hosts": gateHosts, "engine.first-round-delay": "0s", "suspend.recheck-spread": "0s", "suspend.tick": "200ms",
-		"engine.round-grace": "0s", "localnet.window": "10s", "notify.retry-backoff": "200ms", "localnet.notify-after": notifyAfter, "localnet.exit-target": ""})
+		"engine.round-grace": "0s", "localnet.window": "10s", "localnet.gate-cache": gateCache, "notify.retry-backoff": "200ms", "localnet.notify-after": notifyAfter, "localnet.exit-target": ""})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +106,15 @@ func localOutage(t *testing.T, notifyAfter string, wantSystem int, downAtStart b
 		})
 		lastStanding.Store(false)
 	}
-	waitCond(t, "the outage to be recognised", 45*time.Second, func() bool { return e.Overview().Health.Uplink == "wan_down" })
+	for deadline := time.Now().Add(45 * time.Second); e.Overview().Health.Uplink != "wan_down"; time.Sleep(50 * time.Millisecond) {
+		if time.Now().After(deadline) {
+			var st []string
+			for _, r := range e.Rows() {
+				st = append(st, r.Name+"="+r.Status+"/"+r.Reason)
+			}
+			t.Fatalf("timed out waiting for the outage to be recognised: health %+v, monitors %v", e.Overview().Health, st)
+		}
+	}
 	time.Sleep(2 * time.Second)
 	down.Store(false)
 	waitCond(t, "every monitor to be OK again", 10*time.Second, func() bool {
@@ -226,7 +237,15 @@ func TestMaxHoldReleasesStuckHold(t *testing.T) {
 
 	time.Sleep(time.Second)
 	down.Store(true)
-	waitCond(t, "the outage to be recognised", 45*time.Second, func() bool { return e.Overview().Health.Uplink == "wan_down" })
+	for deadline := time.Now().Add(45 * time.Second); e.Overview().Health.Uplink != "wan_down"; time.Sleep(50 * time.Millisecond) {
+		if time.Now().After(deadline) {
+			var st []string
+			for _, r := range e.Rows() {
+				st = append(st, r.Name+"="+r.Status+"/"+r.Reason)
+			}
+			t.Fatalf("timed out waiting for the outage to be recognised: health %+v, monitors %v", e.Overview().Health, st)
+		}
+	}
 	waitCond(t, "the hold to be released and a monitor to fail", 20*time.Second, func() bool {
 		r, _ := e.Row("site0")
 		return r.Status == StatusCritical
