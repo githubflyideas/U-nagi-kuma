@@ -485,9 +485,9 @@ button.search { cursor: text; font: inherit; text-align: start; }
 /* ---- first run ---- */
 .ob { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 @media (max-width: 1000px) { .ob { grid-template-columns: 1fr; } }
-.ob-step { display: flex; gap: 12px; padding: 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--panel-2); }
-.ob-step.done { opacity: .6; }
-.ob-n { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; flex: none; font-weight: 700; background: color-mix(in srgb, var(--link) 16%, transparent); color: var(--link); }
+.ob-step { display: flex; gap: 12px; padding: 14px; border-radius: 12px; border: 1.5px solid var(--degraded); background: var(--panel-2); }
+.ob-step.done { opacity: .7; border-color: var(--ok); }
+.ob-n { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; flex: none; font-weight: 800; background: var(--degraded-soft); color: var(--degraded); }
 .ob-step.done .ob-n { background: var(--ok-soft); color: var(--ok); }
 .ob-b { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 8px; }
 .ob-b p { margin: 0; }

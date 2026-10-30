@@ -1392,5 +1392,7 @@
 "ui.pm.download_json": "Baixar JSON",
 "sys.outage_unsent": "Não foi possível enviar nesse período: {items}",
 "sys.dns_summary_ok": "O resolvedor DNS deste host não respondeu de {from} a {to} ({duration}); os {paused} monitores verificados por nome aguardaram. Verificados de novo: tudo bem.",
-"sys.dns_summary_failing": "O resolvedor DNS deste host não respondeu de {from} a {to} ({duration}); os {paused} monitores verificados por nome aguardaram. Verificados de novo: {failing} ainda com falha — {names}"
+"sys.dns_summary_failing": "O resolvedor DNS deste host não respondeu de {from} a {to} ({duration}); os {paused} monitores verificados por nome aguardaram. Verificados de novo: {failing} ainda com falha — {names}",
+"ui.ob.done": "Concluído",
+"ui.ob.todo": "Ainda não feito"
 }

@@ -1383,5 +1383,7 @@
 "ui.pm.download_json": "下载 JSON",
 "sys.outage_unsent": "期间未能发出的通知：{items}",
 "sys.dns_summary_ok": "监控主机的 DNS 解析器 {from}–{to}（{duration}）无响应，{paused} 个按域名检测的监控暂停判定。恢复后已重新检测：全部正常。",
-"sys.dns_summary_failing": "监控主机的 DNS 解析器 {from}–{to}（{duration}）无响应，{paused} 个按域名检测的监控暂停判定。恢复后已重新检测：{failing} 个仍异常——{names}"
+"sys.dns_summary_failing": "监控主机的 DNS 解析器 {from}–{to}（{duration}）无响应，{paused} 个按域名检测的监控暂停判定。恢复后已重新检测：{failing} 个仍异常——{names}",
+"ui.ob.done": "已完成",
+"ui.ob.todo": "尚未完成"
 }

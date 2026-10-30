@@ -377,7 +377,7 @@ function Onboarding({ d, reload }) {
   };
   const dismiss = () => { try { localStorage.setItem('unagikuma.onboard', 'done'); } catch { /* unavailable */ } setHidden(true); };
   const step = (i, title, hint, body) => html`<div class=${'ob-step' + (steps[i] ? ' done' : '')}>
-    <div class="ob-n">${steps[i] ? '✓' : i + 1}</div>
+    <div class="ob-n" aria-label=${steps[i] ? t('ui.ob.done') : t('ui.ob.todo')} title=${steps[i] ? t('ui.ob.done') : t('ui.ob.todo')}>${steps[i] ? '✓' : '!'}</div>
     <div class="ob-b"><b>${title}</b><p class="muted small">${hint}</p>${!steps[i] && body}</div></div>`;
   return html`<${Card} title=${t('ui.ob.title')} actions=${html`<button class="btn sm ghost" onClick=${dismiss}>${t('ui.ob.hide')}</button>`}>
     <div class="ob">

@@ -1392,5 +1392,7 @@
 "ui.pm.download_json": "JSON herunterladen",
 "sys.outage_unsent": "Konnte in dieser Zeit nicht gesendet werden: {items}",
 "sys.dns_summary_ok": "Der DNS-Resolver dieses Hosts antwortete {from}–{to} ({duration}) nicht; die {paused} per Name geprüften Monitore warteten. Seitdem erneut geprüft: alles in Ordnung.",
-"sys.dns_summary_failing": "Der DNS-Resolver dieses Hosts antwortete {from}–{to} ({duration}) nicht; die {paused} per Name geprüften Monitore warteten. Seitdem erneut geprüft: {failing} weiterhin fehlerhaft — {names}"
+"sys.dns_summary_failing": "Der DNS-Resolver dieses Hosts antwortete {from}–{to} ({duration}) nicht; die {paused} per Name geprüften Monitore warteten. Seitdem erneut geprüft: {failing} weiterhin fehlerhaft — {names}",
+"ui.ob.done": "Erledigt",
+"ui.ob.todo": "Noch offen"
 }

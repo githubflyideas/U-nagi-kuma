@@ -1388,5 +1388,7 @@
 "ui.pm.download_json": "JSON डाउनलोड करें",
 "sys.outage_unsent": "इस बीच भेजा नहीं जा सका: {items}",
 "sys.dns_summary_ok": "इस होस्ट का DNS रिज़ॉल्वर {from}–{to} ({duration}) जवाब नहीं दे रहा था; नाम से जाँचे जाने वाले {paused} मॉनिटर रुके रहे। दोबारा जाँच: सब ठीक।",
-"sys.dns_summary_failing": "इस होस्ट का DNS रिज़ॉल्वर {from}–{to} ({duration}) जवाब नहीं दे रहा था; नाम से जाँचे जाने वाले {paused} मॉनिटर रुके रहे। दोबारा जाँच: {failing} अब भी विफल — {names}"
+"sys.dns_summary_failing": "इस होस्ट का DNS रिज़ॉल्वर {from}–{to} ({duration}) जवाब नहीं दे रहा था; नाम से जाँचे जाने वाले {paused} मॉनिटर रुके रहे। दोबारा जाँच: {failing} अब भी विफल — {names}",
+"ui.ob.done": "पूरा हुआ",
+"ui.ob.todo": "अभी बाकी है"
 }

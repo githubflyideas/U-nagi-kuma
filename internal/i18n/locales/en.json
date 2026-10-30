@@ -1393,5 +1393,7 @@
 "ui.pm.download_json": "Download JSON",
 "sys.outage_unsent": "Could not be sent meanwhile: {items}",
 "sys.dns_summary_ok": "This host's DNS resolver did not answer {from}–{to} ({duration}); the {paused} monitors checked by name waited. Re-checked since: all fine.",
-"sys.dns_summary_failing": "This host's DNS resolver did not answer {from}–{to} ({duration}); the {paused} monitors checked by name waited. Re-checked since: {failing} still failing — {names}"
+"sys.dns_summary_failing": "This host's DNS resolver did not answer {from}–{to} ({duration}); the {paused} monitors checked by name waited. Re-checked since: {failing} still failing — {names}",
+"ui.ob.done": "Done",
+"ui.ob.todo": "Not done yet"
 }
