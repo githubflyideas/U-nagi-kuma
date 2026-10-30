@@ -102,6 +102,12 @@ var coreMigrations = []string{
 	CREATE INDEX audit_action ON audit(action);
 	CREATE TRIGGER audit_append_only BEFORE UPDATE ON audit WHEN OLD.hash != ''
 	BEGIN SELECT RAISE(ABORT, 'the audit log is append-only'); END;`,
+	// The decision ledger: every step an alert went through, and why.
+	`CREATE TABLE decisions (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, incident_id INTEGER NOT NULL DEFAULT 0,
+		intent_id TEXT NOT NULL DEFAULT '', monitor TEXT NOT NULL DEFAULT '', step TEXT NOT NULL, data TEXT NOT NULL);
+	CREATE INDEX decisions_incident ON decisions(incident_id);
+	CREATE INDEX decisions_monitor_at ON decisions(monitor, at);
+	CREATE INDEX decisions_at ON decisions(at);`,
 }
 
 var historyMigrations = []string{

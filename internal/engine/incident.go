@@ -214,21 +214,36 @@ func (e *Engine) incidentEvent(inc *Incident, ev string) {
 
 // notices turns planned notices into durable intents.
 func (e *Engine) notices(inc *Incident, ns []PlannedNotice, now time.Time) {
-	if len(ns) > 0 && e.maintenanceIncident(inc) {
+	if len(ns) == 0 {
+		return
+	}
+	class, evidence := e.classOf(inc)
+	if e.maintenanceIncident(inc) {
 		e.event(Event{Type: EventNotify, Severity: "info", Monitor: inc.Monitor, Message: "not notified: maintenance window", Data: map[string]any{"msg": "not_notified_maint"}})
+		for _, n := range ns {
+			e.decide(Decision{IncidentID: inc.ID, Monitor: inc.Monitor, Kind: string(n.Kind), Step: LedSuppressed, Class: class,
+				Evidence: evidence, DetectedAt: inc.State.HardAt, Note: "maintenance window"})
+		}
 		return
 	}
 	for _, n := range ns {
 		msg := e.message(inc, n, now)
-		e.enqueue(&Intent{
+		msg.Class = class
+		if line := e.classLine(class, n.Kind, evidence); line != "" {
+			msg.Body = strings.TrimSpace(msg.Body + "\n" + line)
+		}
+		in := &Intent{
 			IncidentID: inc.ID, Seq: n.Seq, Kind: string(n.Kind), Policy: inc.Policy,
-			Message: msg, CreatedAt: now, DueAt: now, System: inc.Kind == IncidentSystem,
-		})
+			Message: msg, CreatedAt: now, DueAt: now, System: inc.Kind == IncidentSystem, Evidence: evidence,
+		}
+		if e.enqueue(in) {
+			e.decideIntent(in, LedQueued, "")
+		}
 	}
 }
 
 // enqueue persists a new intent and queues it for delivery.
-func (e *Engine) enqueue(in *Intent) {
+func (e *Engine) enqueue(in *Intent) bool {
 	pol := e.policy(in.Policy)
 	in.ID = newID()
 	in.Message.DeliveryID = in.ID
@@ -246,9 +261,11 @@ func (e *Engine) enqueue(in *Intent) {
 		in.State = IntentFailed
 		_ = e.deps.Sink.SaveIntent(in)
 		e.event(Event{Type: EventNotify, Severity: "warning", Monitor: in.Message.Monitor, Message: "not notified: policy " + pol.Name + " has no channels", Data: map[string]any{"msg": "no_channels", "policy": pol.Name}})
-		return
+		e.decideIntent(in, LedFailed, "policy "+pol.Name+" has no channels")
+		return false
 	}
 	e.intents[in.ID] = in
+	return true
 }
 
 // message builds the notification for an incident notice.

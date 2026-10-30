@@ -201,6 +201,8 @@ type Engine struct {
 	maintOpen map[string]time.Time // open windows → their end
 	intents   map[string]*Intent   // undelivered intents
 	chanRate  map[string]*ratelimit.Bucket
+	sentAt    map[string][]time.Time  // per channel: sends in the backstop window
+	folded    map[string]*backstopBuf // per policy: alerts the backstop held back
 
 	sem     chan struct{}
 	stats   selfStats
@@ -310,6 +312,8 @@ func New(d Deps) *Engine {
 		votes:     make(chan RemoteVote, 1024),
 		intents:   map[string]*Intent{},
 		chanRate:  map[string]*ratelimit.Bucket{},
+		sentAt:    map[string][]time.Time{},
+		folded:    map[string]*backstopBuf{},
 		results:   make(chan roundResult, 256),
 		attempts:  make(chan attemptResult, 64),
 		handling:  map[string]bool{},

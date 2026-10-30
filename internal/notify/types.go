@@ -36,6 +36,9 @@ type Message struct {
 	DeliveryID string        `json:"delivery_id"`    // idempotency key, also X-Unagikuma-Delivery-Id
 	Lang       string        `json:"lang"`           // zh or en
 	Body       string        `json:"body,omitempty"` // preformatted body for SYSTEM/DIGEST kinds
+	// Class is what the failure is: business (the service answers wrongly),
+	// network, uncertain (cannot be reached) or system.
+	Class string `json:"class,omitempty"`
 }
 
 // Channel is a resolved channel definition (secrets already substituted).

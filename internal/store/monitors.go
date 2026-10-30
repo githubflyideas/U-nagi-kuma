@@ -221,6 +221,7 @@ func (s *Store) RenameMonitor(oldName, newName string) error {
 		`UPDATE incidents SET monitor=? WHERE monitor=?`,
 		`UPDATE events SET monitor=? WHERE monitor=?`,
 		`UPDATE deliveries SET monitor=? WHERE monitor=?`,
+		`UPDATE decisions SET monitor=? WHERE monitor=?`,
 		`UPDATE evidence SET monitor=? WHERE monitor=?`,
 		`UPDATE push_tokens SET monitor=? WHERE monitor=?`,
 	} {

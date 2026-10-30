@@ -600,6 +600,9 @@ func (s *Store) Prune(r Retention) error {
 	_, err3 := s.core.Exec(`DELETE FROM events WHERE at<?`, cut)
 	_, err4 := s.core.Exec(`DELETE FROM deliveries WHERE at<?`, cut)
 	_, err5 := s.core.Exec(`DELETE FROM incidents WHERE closed=1 AND updated_at<?`, cut)
+	if _, err := s.core.Exec(`DELETE FROM decisions WHERE at<?`, cut); err != nil && err3 == nil {
+		err3 = err
+	}
 	_, err6 := s.core.Exec(`DELETE FROM intents WHERE state!='pending' AND updated_at<?`, cut)
 	_, err7 := s.core.Exec(`DELETE FROM sessions WHERE expires_at<?`, ms(now))
 	var err8 error

@@ -221,6 +221,9 @@ func (s *Store) auditSystem(ev engine.Event) {
 }
 
 // Counter adds to a daily value counter.
+// Decision records a step in the decision ledger.
+func (s *Store) Decision(d engine.Decision) { s.batch.add(item{decision: &d}) }
+
 func (s *Store) Counter(name string, n int) { s.batch.add(item{counter: name, n: n}) }
 
 // Flush writes pending batched items now.
@@ -243,6 +246,7 @@ type item struct {
 	delivery *engine.DeliveryRecord
 	evidence *evidenceItem
 	event    *engine.Event
+	decision *engine.Decision
 	counter  string
 	n        int
 }
@@ -649,6 +653,10 @@ func (b *batcher) flushCore(items []item) bool {
 			d := it.delivery
 			_, err = tx.Exec(`INSERT INTO deliveries(intent_id,incident_id,kind,seq,at,attempts,ok,fallback,drill,delayed_s) VALUES(?,?,?,?,?,?,?,?,?,?)`,
 				d.IntentID, d.IncidentID, d.Kind, d.Seq, ms(d.At), mustJSON(d.Attempts), d.OK, d.Fallback, d.Drill, int(d.Delayed.Seconds()))
+		case it.decision != nil:
+			d := it.decision
+			_, err = tx.Exec(`INSERT INTO decisions(at,incident_id,intent_id,monitor,step,data) VALUES(?,?,?,?,?,?)`,
+				ms(d.At), d.IncidentID, d.IntentID, d.Monitor, d.Step, mustJSON(d))
 		case it.evidence != nil:
 			e := it.evidence
 			_, err = tx.Exec(`INSERT INTO evidence(monitor,node,at,result) VALUES(?,?,?,?)`, e.name, e.node, ms(e.at), mustJSON(e.r))

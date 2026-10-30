@@ -61,6 +61,8 @@ var defs = []Def{
 	{Key: "notify.coalesce-queue", Kind: Int, Default: "10", Min: "1", Max: "1000", Desc: "queued messages per channel before the rest is merged into one digest", DescZH: "通道排队超过多少条后，其余合并为一条摘要"},
 	{Key: "notify.group-min", Kind: Int, Default: "3", Min: "2", Max: "1000", Desc: "monitors of one IP segment (or failing to resolve names) that must fail together before a summary blames the network instead of the services", DescZH: "同一网段（或同时域名解析失败）的监控至少多少个一起故障，汇总才判定为网络问题而非业务问题"},
 	{Key: "notify.coalesce-wait", Kind: Duration, Default: "2m", Min: "10s", Max: "1h", Desc: "max queue wait before the rest is merged into one digest", DescZH: "排队超过多长时间后，其余合并为一条摘要"},
+	{Key: "notify.backstop-max", Kind: Int, Default: "3", Min: "0", Max: "1000", Desc: "alerts one channel gets per backstop window before the rest wait for one digest (0 = off); new incidents and escalations always go through", DescZH: "每个通道在一个窗口内最多收到几条告警，超出的等窗口结束后合并成一条摘要（0 为关闭）；新故障和升级始终立即发送"},
+	{Key: "notify.backstop-window", Kind: Duration, Default: "1m", Min: "10s", Max: "1h", Desc: "the window of notify.backstop-max", DescZH: "notify.backstop-max 的统计窗口"},
 	{Key: "notify.intent-late", Kind: Duration, Default: "5m", Min: "0s", Max: "24h", Desc: "deliveries later than this are tagged [delayed]", DescZH: "晚于此时长补发的通知加 [延迟] 标记"},
 	{Key: "notify.daily-reminder", Kind: Bool, Default: "on", Desc: "daily reminder of still-open incidents", DescZH: "每日提醒仍未解决的故障"},
 	{Key: "notify.daily-reminder-at", Kind: TimeOfDay, Default: "10:00", Desc: "local time of the daily open-incident reminder", DescZH: "每日未解决故障提醒的时间"},

@@ -236,6 +236,7 @@ func (e *Engine) Ack(id int64, by, comment string, expire time.Duration) error {
 	return e.withIncident(id, func(inc *Incident, pol PolicySpec, now time.Time) {
 		Ack(&inc.State, by, now, expire, pol.Notify)
 		inc.AckComment = comment
+		e.decide(Decision{At: now, IncidentID: id, Monitor: inc.Monitor, Step: LedAcked, Note: by})
 		e.event(Event{Type: EventAck, Severity: "info", Monitor: inc.Monitor, Message: "acknowledged by " + by, Data: map[string]any{"msg": "acked", "by": by, "incident_id": id, "comment": comment}})
 	})
 }

@@ -38,10 +38,13 @@ func (e *Engine) pendingIntents() []*Intent {
 // dispatchIntents starts the channel attempts that are due, honouring
 // per-channel rate limits, pauses during local outages and storm control.
 func (e *Engine) dispatchIntents(ctx context.Context, wg *sync.WaitGroup) {
+	now := e.now()
+	if len(e.folded) > 0 {
+		e.flushBackstop(now)
+	}
 	if len(e.intents) == 0 {
 		return
 	}
-	now := e.now()
 	e.coalesce(now)
 	paused := func(ch string) bool {
 		c, ok := e.cfg.Channels[ch]
@@ -54,7 +57,7 @@ func (e *Engine) dispatchIntents(ctx context.Context, wg *sync.WaitGroup) {
 	timeout := e.cfg.Tunables.Duration("notify.channel-timeout")
 	late := e.cfg.Tunables.Duration("notify.intent-late")
 	for _, in := range e.pendingIntents() {
-		if now.Before(in.DueAt) {
+		if now.Before(in.DueAt) || e.backstop(in, now) {
 			continue
 		}
 		steps, st := in.Delivery.Next(now, paused)
@@ -94,6 +97,9 @@ func (e *Engine) dispatchIntents(ctx context.Context, wg *sync.WaitGroup) {
 			}
 			in.Delivery.Begin(i)
 			in.UpdatedAt = now
+			if !in.Message.DryRun {
+				e.noteSent(name, now)
+			}
 			// Durable before the attempt: a crash now resends at most once.
 			if err := e.deps.Sink.SaveIntent(in); err != nil {
 				e.log.Error("cannot persist intent", "err", err)
@@ -174,6 +180,7 @@ func (e *Engine) finishIntent(in *Intent, now time.Time) {
 		in.State = IntentDone
 	}
 	_ = e.deps.Sink.SaveIntent(in)
+	e.decideIntent(in, map[bool]string{true: LedSent, false: LedFailed}[ok], "")
 	e.deps.Sink.Delivery(DeliveryRecord{
 		IntentID: in.ID, IncidentID: in.IncidentID, Kind: in.Kind, Seq: in.Seq, At: now,
 		Attempts: in.Attempts, OK: ok, Fallback: in.Delivery.Fallback(), Drill: in.Message.DryRun,
@@ -247,6 +254,7 @@ func (e *Engine) coalesce(now time.Time) {
 			in.State, in.UpdatedAt = IntentMerged, now
 			_ = e.deps.Sink.SaveIntent(in)
 			delete(e.intents, in.ID)
+			e.decideIntent(in, LedMerged, "storm control: merged into a summary")
 		}
 		e.deps.Sink.Counter(CounterOutageMerged, len(q))
 		// Services first and urgent; network causes said as such, to the

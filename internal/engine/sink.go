@@ -131,6 +131,8 @@ type Intent struct {
 	// Covers: the incidents a digest stands for; its delivery counts as
 	// telling each of them.
 	Covers []int64 `json:"-"`
+	// Evidence behind the alert's classification, for the ledger.
+	Evidence map[string]any `json:"-"`
 }
 
 // DeliveryRecord is one row of the notification log.

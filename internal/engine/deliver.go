@@ -200,6 +200,15 @@ func (d *Delivery) Fallback() bool {
 	return false
 }
 
+// Channels lists the channels of the chain, in order.
+func (d *Delivery) Channels() []string {
+	out := make([]string, len(d.Steps))
+	for i, s := range d.Steps {
+		out[i] = s.Channel
+	}
+	return out
+}
+
 // Pos is the chain position persisted as chain_pos: the first step that is
 // not finished (len(Steps) when all are).
 func (d *Delivery) Pos() int {

@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -152,6 +153,8 @@ func (e *Engine) releaseHold(since, now time.Time) {
 			continue
 		}
 		held++
+		e.decide(Decision{At: now, Monitor: name, Step: LedReleased, Class: ClassNetwork, HoldStart: since, HoldEnd: now,
+			Note: "local outage lasted longer than localnet.max-hold: judged normally again"})
 		if m := e.monitors[name]; m != nil && !m.Paused && !m.Push && !rt.Running {
 			e.schedule(name, now.Add(Spread(name, max(spread, time.Second))))
 		}
@@ -192,6 +195,13 @@ func (e *Engine) finishOutage(now time.Time) {
 		}
 	}
 	e.outage = nil
+	for _, name := range o.names {
+		note := "held during the local outage; fine when re-checked"
+		if slices.Contains(failing, name) {
+			note = "held during the local outage; still failing when re-checked"
+		}
+		e.decide(Decision{At: now, Monitor: name, Step: LedHeld, Class: ClassNetwork, HoldStart: o.since, HoldEnd: o.end, Note: note})
+	}
 	summary := e.text("outage_summary", o.since, o.end, len(o.names), failing)
 	inc := e.system[SystemLocalNetwork]
 	if inc == nil || !inc.State.Open() {
@@ -240,6 +250,8 @@ func (e *Engine) backdate(a Anomaly, now time.Time) {
 		e.saveState(name, rt)
 		e.outageSeen[name] = true
 		taken++
+		e.decide(Decision{At: now, Monitor: name, Step: LedHeld, Class: ClassNetwork, HoldStart: a.Since,
+			Evidence: map[string]any{"local_outage": string(a.Kind), "reason": rt.LastReason}, Note: "failure began with the local outage: taken back"})
 	}
 	// Notices that failed for lack of network are not a broken channel.
 	if inc := e.system[SystemAllFailed]; inc != nil && inc.State.Open() && !inc.State.OpenedAt.Before(cutoff) && !inc.State.told() {
@@ -262,6 +274,7 @@ func (e *Engine) dropQueued(from, now time.Time) int {
 		in.State, in.UpdatedAt = IntentDropped, now
 		_ = e.deps.Sink.SaveIntent(in)
 		delete(e.intents, id)
+		e.decideIntent(in, LedDropped, "queued during a local outage: replaced by its summary")
 		n++
 	}
 	return n

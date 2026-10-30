@@ -46,6 +46,10 @@ func (e *Engine) text(id string, args ...any) string {
 		return i18n.T(lang, "sys.digest_segment", "n", args[0], "segment", args[1])
 	case id == "digest_dns":
 		return i18n.T(lang, "sys.digest_dns", "n", args[0])
+	case id == "backstop_title":
+		return i18n.T(lang, "sys.backstop_title", "n", args[0])
+	case id == "backstop_body":
+		return i18n.T(lang, "sys.backstop_body", "n", args[0], "monitors", args[1], "names", args[2])
 	case id == "digest_body":
 		lines, _ := args[0].([]string)
 		s := strings.Join(lines, "\n")
