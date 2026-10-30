@@ -314,6 +314,18 @@ func TestAuth(t *testing.T) {
 	if _, err := s.Authenticate("admin", "another password"); err != nil {
 		t.Fatal(err)
 	}
+	// reset-password --revoke-tokens
+	p1, _ := s.CreateToken(id, "a", []string{"read"})
+	s.CreateToken(id, "b", []string{"read"})
+	if len(p1) < 3 || p1[:3] != "uk_" {
+		t.Fatalf("token prefix: %.3s", p1)
+	}
+	if n, err := s.DeleteUserTokens(id); err != nil || n != 2 {
+		t.Fatalf("revoked %d, %v", n, err)
+	}
+	if _, err := s.TokenByPlain(p1); err != ErrNotFound {
+		t.Fatal("token survived revoke")
+	}
 }
 
 func TestPushTokens(t *testing.T) {

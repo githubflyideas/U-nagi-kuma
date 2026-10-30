@@ -15,13 +15,14 @@ import (
 	"github.com/githubflyideas/unagikuma/internal/store"
 )
 
-const resetUsage = `Usage: unagikuma reset-password [--data DIR] [--generate] [USER]
+const resetUsage = `Usage: unagikuma reset-password [--data DIR] [--generate] [--revoke-tokens] [USER]
 
 Sets a new password for USER (default: admin) when it is forgotten.
 Run it on the machine where Unagikuma runs; it may keep running.
 
-  --data DIR    the data directory (default: %s)
-  --generate    make a strong random password and print it once
+  --data DIR       the data directory (default: %s)
+  --generate       make a strong random password and print it once
+  --revoke-tokens  also revoke USER's API tokens (scripts using them stop working)
 
 The new password is typed twice and not shown. From a script, pipe it in:
   echo 'new password' | unagikuma reset-password admin
@@ -33,6 +34,7 @@ func runResetPassword(args []string) error {
 	fs.SetOutput(io.Discard)
 	data := fs.String("data", defaultDataDir(), "")
 	generate := fs.Bool("generate", false, "")
+	revoke := fs.Bool("revoke-tokens", false, "")
 	if err := fs.Parse(interleavedFlags(args, map[string]bool{"data": true})); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			fmt.Printf(resetUsage, defaultDataDir())
@@ -97,6 +99,15 @@ func runResetPassword(args []string) error {
 			return err
 		}
 		fmt.Fprintf(os.Stderr, "Password of %s changed. Anyone signed in as %s was signed out.\n", user, user)
+		if *revoke {
+			n, err := st.DeleteUserTokens(found.ID)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(os.Stderr, "API tokens of %s revoked: %d.\n", user, n)
+		} else if n := userTokens(st, found.ID); n > 0 {
+			fmt.Fprintf(os.Stderr, "%s still has %d API token(s); add --revoke-tokens if they may be known to someone else.\n", user, n)
+		}
 		if found.Disabled {
 			fmt.Fprintf(os.Stderr, "Note: %s is disabled, so it still cannot sign in. An administrator can enable it again under Settings.\n", user)
 		}
@@ -187,4 +198,16 @@ func interleavedFlags(args []string, valued map[string]bool) []string {
 		rest = append(rest, a)
 	}
 	return append(flags, rest...)
+}
+
+// userTokens counts a user's API tokens.
+func userTokens(st *store.Store, userID int64) int {
+	toks, _ := st.Tokens()
+	n := 0
+	for _, t := range toks {
+		if t.UserID == userID {
+			n++
+		}
+	}
+	return n
 }

@@ -433,6 +433,18 @@ func (s *Store) DeleteToken(id int64) error {
 	return err
 }
 
+// DeleteUserTokens revokes every API token of a user and says how many.
+func (s *Store) DeleteUserTokens(userID int64) (int, error) {
+	s.wmu.Lock()
+	defer s.wmu.Unlock()
+	res, err := s.core.Exec(`DELETE FROM tokens WHERE user_id=?`, userID)
+	if err != nil {
+		return 0, err
+	}
+	n, _ := res.RowsAffected()
+	return int(n), nil
+}
+
 // PushToken returns the push token of a monitor, creating one if needed.
 // Only the hash is stored; the plaintext is derived from a per-install
 // secret (and a rotation counter) so the UI can show the URL again.
