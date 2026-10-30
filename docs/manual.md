@@ -75,7 +75,7 @@ mail     IN CHANNEL email host=smtp.example.com port=587 tls=starttls username=a
 default  IN POLICY chain=ops,mail mode=fallback max=3 repeat=30m
 
 ; monitors: name [interval] IN TYPE target key=value...
-www      IN HTTP https://www.example.com/ title="Website" keyword="Welcome" cert-days=14 group=public
+www      IN HTTP https://www.example.com/ title="Website" keyword="Welcome" cert-days=62 group=public
 api  30s IN HTTP https://api.example.com/health json-path=$.status json-expect=ok
 db       IN TCP  10.0.0.5:5432 title="Postgres"
 gw       IN PING 192.168.1.1
@@ -101,7 +101,7 @@ main     IN STATUSPAGE "Service status" select="group:public"
   ```
 
   `select=` takes fields that only depend on the configuration: `name`, `title`, `type`, `svc`, `port`, `host`, `cidr`, `tag`, `group`, `policy`, `node`, `area`, plus free text; terms are AND-ed, commas mean "any of", `-` negates, `/…/` is a regular expression.
-- HTTPS checks and TCP checks with `tls=yes` watch their certificate: inside `probe.cert-warn-days` (21) they are degraded, inside `probe.cert-critical-days` (7) they fail, and an expired certificate always fails — also with `insecure=yes`. `cert-days=` and `cert-critical-days=` on a monitor set its own thresholds (0 turns one off).
+- HTTPS checks and TCP checks with `tls=yes` watch their certificate: inside `probe.cert-warn-days` (62) they are degraded, inside `probe.cert-critical-days` (7) they fail, and an expired certificate always fails — also with `insecure=yes`. `cert-days=` and `cert-critical-days=` on a monitor set its own thresholds (0 turns one off).
 - `DOMAIN` watches when a domain's registration expires, asking the registry over RDAP (or WHOIS where there is no RDAP), every 6 hours by default and at most hourly. Inside `days=` (30) it is degraded, inside `critical-days=` (7) it fails; if no registry answers it is UNKNOWN, never down. **Monitors › Expiry dates** lists every domain and TLS certificate, soonest first.
 - `unagikuma keywords` lists the UDP keywords and what each check proves.
 - Every day at 10:00 (`notify.daily-report-at`) a status report lists the hosts that are DOWN and UP and every service that is not OK; **Notices & status › Daily report** previews it and sends it on demand.

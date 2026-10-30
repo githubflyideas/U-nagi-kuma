@@ -64,7 +64,7 @@ old-site-paused                        1m IN HTTP     https://old.example.com/ t
 orders-db                              1m IN MYSQL    db.example.com:3306 title="Orders DB" user=app database=orders password=${secret:kuma_orders_db_password} attempts=1 timeout=48s
 private-api-returns-401                1m IN HTTP     https://api.example.com/private title="Private API returns 401" expect=401 attempts=1 timeout=48s
 redis-container                        1m IN DOCKER   redis title="Redis container" attempts=1 timeout=48s
-shop-tls                               1m IN HTTP     https://shop.example.com/ title="Shop TLS" cert-days=14 attempts=1 timeout=48s tags=env:prod policy=notify-dingtalk-bot-feishu-bot
+shop-tls                               1m IN HTTP     https://shop.example.com/ title="Shop TLS" cert-days=62 attempts=1 timeout=48s tags=env:prod policy=notify-dingtalk-bot-feishu-bot
 ssh-bastion                            2m IN TCP      10.0.0.5:22 title="SSH bastion" retry=1m attempts=1 timeout=48s policy=notify-wecom-bot
 switch-uptime-snmp                     1m IN SNMP     10.0.0.2 title="Switch uptime SNMP" community=${secret:kuma_switch_uptime_snmp_community} attempts=1 timeout=48s
 tailscale-node                         1m IN PING     node1 title="Tailscale node" attempts=1 timeout=48s

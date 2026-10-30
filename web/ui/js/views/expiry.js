@@ -11,7 +11,9 @@ export function Expiry() {
   useLive(['state'], d.reload, 5000);
   if (!d.data) return html`<div class="page">${d.error ? html`<${ErrorBox} error=${d.error} retry=${d.reload} />` : html`<${Loading} />`}</div>`;
   const items = d.data.items;
-  const cls = (days) => days < 7 ? 'err-text' : days < 30 ? 'warn-text' : '';
+  // Certificates are flagged inside the 62-day warning window, domain
+  // registrations inside 30 days (the defaults of their checks).
+  const cls = (days, what) => days < 7 ? 'err-text' : days < (what === 'cert' ? 62 : 30) ? 'warn-text' : '';
   const day = (days) => new Date(Date.now() + days * 864e5).toLocaleDateString(currentLang(), { year: 'numeric', month: 'short', day: 'numeric' });
   return html`<div class="page">
     <div class="row"><a href="#/monitors" class="muted">← ${t('ui.nav.monitors')}</a></div>
@@ -24,7 +26,7 @@ export function Expiry() {
           <td><span class="tag">${t('ui.exp.kind.' + x.what)}</span></td>
           <td><${Dot} status=${x.status} /> <span class="name">${x.title}</span><div class="sub small muted ltr">${x.target}</div></td>
           <td class="nowrap">${day(x.days)}</td>
-          <td class="right nowrap"><span class=${cls(x.days)}>${x.days < 0 ? t('ui.exp.expired') : tn('ui.ov.days_left', Math.floor(x.days))}</span></td>
+          <td class="right nowrap"><span class=${cls(x.days, x.what)}>${x.days < 0 ? t('ui.exp.expired') : tn('ui.ov.days_left', Math.floor(x.days))}</span></td>
         </tr>`)}</tbody>
       </table>`}
     </div></div>

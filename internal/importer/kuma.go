@@ -659,7 +659,7 @@ func (k *kumaImport) monitorSpec(m *kumaMonitor, it *Item) *config.RecordSpec {
 			add("no-follow", "yes")
 		}
 		if bool(m.ExpiryNotify) && strings.HasPrefix(m.URL, "https://") {
-			add("cert-days", "14")
+			add("cert-days", "62")
 		}
 		switch {
 		case m.BasicUser != "" && (m.AuthMethod == "" || m.AuthMethod == "basic"):

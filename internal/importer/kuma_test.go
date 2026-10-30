@@ -25,7 +25,7 @@ func TestKumaJSON(t *testing.T) {
 		t.Fatalf("monitors %d channels %d", res.Monitors, res.Channels)
 	}
 	site := cfg.FindMonitor("www.example.com") // 官网 has no ASCII name: named after its host
-	if site == nil || site.Title != "官网" || site.Group != "Core" || site.Opts["keyword"] != "Welcome" || site.Attempts != 3 || site.Opts["cert-days"] != "14" {
+	if site == nil || site.Title != "官网" || site.Group != "Core" || site.Opts["keyword"] != "Welcome" || site.Attempts != 3 || site.Opts["cert-days"] != "62" {
 		t.Fatalf("keyword monitor: %+v", site)
 	}
 	if p := cfg.FindPolicy(site.Policy); p == nil || strings.Join(p.Chain, ",") != "feishu,tg-ops" || p.Name != "notify-feishu-tg-ops" {

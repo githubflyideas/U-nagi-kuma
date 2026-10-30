@@ -15,9 +15,9 @@ func TestCertDefaults(t *testing.T) {
 		spec       probe.Spec
 		warn, crit string
 	}{
-		{probe.Spec{Type: "HTTP", Target: "https://example.com/"}, "21", "7"},
+		{probe.Spec{Type: "HTTP", Target: "https://example.com/"}, "62", "7"},
 		{probe.Spec{Type: "HTTP", Target: "http://example.com/"}, "", ""},
-		{probe.Spec{Type: "TCP", Target: "10.0.0.1:993", Opts: map[string]string{"tls": "yes"}}, "21", "7"},
+		{probe.Spec{Type: "TCP", Target: "10.0.0.1:993", Opts: map[string]string{"tls": "yes"}}, "62", "7"},
 		{probe.Spec{Type: "TCP", Target: "10.0.0.1:22"}, "", ""},
 		{probe.Spec{Type: "HTTP", Target: "https://x/", Opts: map[string]string{"cert-days": "30", "cert-critical-days": "0"}}, "30", "0"},
 	} {

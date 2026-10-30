@@ -126,9 +126,19 @@ func (s *Server) overview(w http.ResponseWriter, r *http.Request) (any, error) {
 		What    string  `json:"what"`
 	}
 	expiring := []exp{}
+	// Certificates show up inside the certificate warning window (62 days
+	// by default); domain registrations inside 30.
+	certWin := float64(cfg.Tunables.Int("probe.cert-warn-days"))
+	if certWin <= 0 {
+		certWin = 62
+	}
 	for _, row := range s.app.Engine().Rows() {
 		for what, key := range map[string]string{"cert": "cert.days", "domain": "domain.days"} {
-			if d, ok := row.Metrics[key]; ok && d < 30 {
+			win := 30.0
+			if what == "cert" {
+				win = certWin
+			}
+			if d, ok := row.Metrics[key]; ok && d < win {
 				expiring = append(expiring, exp{row.Name, row.Title, d, what})
 			}
 		}

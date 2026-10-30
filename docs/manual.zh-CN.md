@@ -75,7 +75,7 @@ mail     IN CHANNEL email host=smtp.example.com port=587 tls=starttls username=a
 default  IN POLICY chain=ops,mail mode=fallback max=3 repeat=30m
 
 ; 监控：名称 [间隔] IN 类型 目标 key=value...
-www      IN HTTP https://www.example.com/ title="官网" keyword="Welcome" cert-days=14 group=public
+www      IN HTTP https://www.example.com/ title="官网" keyword="Welcome" cert-days=62 group=public
 api  30s IN HTTP https://api.example.com/health json-path=$.status json-expect=ok
 db       IN TCP  10.0.0.5:5432 title="Postgres"
 gw       IN PING 192.168.1.1
@@ -101,7 +101,7 @@ main     IN STATUSPAGE "服务状态" select="group:public"
   ```
 
   `select=` 只能使用由配置决定的字段：`name`、`title`、`type`、`svc`、`port`、`host`、`cidr`、`tag`、`group`、`policy`、`node`、`area`，以及自由文本；多个条件同时满足，逗号表示“任一”，`-` 表示取反，`/…/` 表示正则表达式。
-- HTTPS 检查以及带 `tls=yes` 的 TCP 检查会同时监控证书：剩余不到 `probe.cert-warn-days`（21）天为降级，不到 `probe.cert-critical-days`（7）天为故障；已过期的证书一律判为故障，设置了 `insecure=yes` 也一样。监控项上的 `cert-days=`、`cert-critical-days=` 可单独设置阈值（写 0 表示关闭）。
+- HTTPS 检查以及带 `tls=yes` 的 TCP 检查会同时监控证书：剩余不到 `probe.cert-warn-days`（62）天为降级，不到 `probe.cert-critical-days`（7）天为故障；已过期的证书一律判为故障，设置了 `insecure=yes` 也一样。监控项上的 `cert-days=`、`cert-critical-days=` 可单独设置阈值（写 0 表示关闭）。
 - `DOMAIN` 监控域名注册的到期时间，通过 RDAP（没有 RDAP 时用 WHOIS）向注册局查询，默认每 6 小时检查一次，最频繁每小时一次。剩余不到 `days=`（30）天为降级，不到 `critical-days=`（7）天为故障；注册局都无法查询时为 UNKNOWN，不会判为故障。**监控 › 到期时间** 按到期先后列出所有域名和 TLS 证书。
 - `unagikuma keywords` 列出所有 UDP 关键字及其检查深度。
 - 每天 10:00（`notify.daily-report-at`）发送状态日报：列出宕机与正常的主机，以及所有异常服务；在 **通告和状态 › 状态日报** 中可预览和立即发送。
