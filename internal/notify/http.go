@@ -170,7 +170,7 @@ func (s *Sender) buildWebhook(ctx context.Context, o map[string]string, m *Messa
 		payload := map[string]any{
 			"title": title, "text": text, "kind": m.Kind, "priority": m.Priority, "monitor": m.Monitor,
 			"display_name": m.Title, "type": m.Type, "target": m.Target, "depth": m.Depth, "status": m.Status,
-			"reason": m.Reason, "detail": sanitize(m.Detail, detailCap), "quorum": m.Quorum, "count": m.Count, "max": m.Max,
+			"reason": m.Reason, "class": m.Class, "detail": sanitize(m.Detail, detailCap), "quorum": m.Quorum, "count": m.Count, "max": m.Max,
 			"incident_id": m.IncidentID, "duration_s": int(m.Duration.Seconds()), "detail_url": m.DetailURL,
 			"tags": append([]string{}, m.Tags...), "time": m.Time, "delayed_s": int(m.Delayed.Seconds()), "drill": m.DryRun,
 			"instance": m.Instance, "delivery_id": m.DeliveryID,
