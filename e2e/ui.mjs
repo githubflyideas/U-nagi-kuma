@@ -194,6 +194,25 @@ await step('a rotation shows who is on call and takes a stand-in', async () => {
   if (errors.length) throw new Error(errors.join(' | '));
 });
 
+await step('the on-call calendar shows the shifts and takes swaps', async () => {
+  await page.goto(base + '/#/oncall');
+  await page.waitForSelector('.oc-cal .oc-seg:not([disabled])');
+  if ((await page.locator('.oc-cal .oc-day').count()) !== 42) throw new Error('the month view is not six weeks');
+  await page.click('.oc-bar .seg button:has-text("Week")');
+  await until('the week view', async () => (await page.locator('.oc-cal .oc-day').count()) === 7);
+  // A future shift opens a stand-in for that shift.
+  await page.locator('.oc-cal .oc-seg:not([disabled])').last().click();
+  await page.click('.modal .btn.primary:has-text("Save")');
+  await until('the stand-in in the calendar', async () => (await page.locator('.oc-cal .oc-seg.standin').count()) > 0);
+  await page.click('.oc-rot button:has-text("Swap shifts")');
+  await page.click('.modal .btn.primary:has-text("Swap shifts")');
+  await until('the swap', async () => (await page.locator('.oc-rot .bd .row button:has-text("Cancel")').count()) >= 3);
+  const cal = await api('/oncall/calendar');
+  if (!cal.rotations.length || !cal.rotations[0].segments.some(x => x.stand_in)) throw new Error('no stand-in in the calendar API');
+  await page.click('.oc-bar .seg button:has-text("Month")');
+  if (errors.length) throw new Error(errors.join(' | '));
+});
+
 await step('the language can be switched', async () => {
   await page.goto(base + '/#/');
   await page.selectOption('select:has(option[value="zh"])', 'zh');

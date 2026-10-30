@@ -2,8 +2,10 @@ package app
 
 import (
 	"fmt"
+	"os"
 	"slices"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/githubflyideas/unagikuma/internal/oncall"
@@ -32,13 +34,16 @@ type CalendarRotation struct {
 const maxCalendar = 92 * 24 * time.Hour
 
 // OnCallCalendar lays out who is on call in [from, to) for every rotation,
-// stand-ins applied, cut where a shift or a stand-in begins or ends.
+// stand-ins applied, cut where a shift or a stand-in begins or ends. The
+// first and the last segment are whole: they may begin before from and
+// end after to.
 func (a *App) OnCallCalendar(from, to time.Time) ([]CalendarRotation, error) {
 	if !to.After(from) || to.Sub(from) > maxCalendar {
 		return nil, fmt.Errorf("%w: the calendar covers up to 92 days", ErrOnCall)
 	}
 	cfg := a.Config().Config
-	os, err := a.store.Overrides(from)
+	// Stand-ins ended before from still shape the first, whole shift.
+	os, err := a.store.Overrides(from.Add(-91 * 24 * time.Hour))
 	if err != nil {
 		return nil, err
 	}
@@ -61,29 +66,54 @@ func rotationZone(r *oncall.Rotation, loc *time.Location) string {
 	if r.TZ != "" {
 		return r.TZ
 	}
+	return zoneName(loc)
+}
+
+// zoneName names a time zone for people: "Local" becomes the zone the
+// system is set to (TZ, else /etc/localtime), or its offset.
+func zoneName(loc *time.Location) string {
 	if loc == nil {
 		loc = time.Local
 	}
-	return loc.String()
+	if loc != time.Local && loc.String() != "Local" {
+		return loc.String()
+	}
+	if tz := strings.TrimPrefix(os.Getenv("TZ"), ":"); tz != "" && !strings.HasPrefix(tz, "/") {
+		return tz
+	}
+	if p, err := os.Readlink("/etc/localtime"); err == nil {
+		if _, name, ok := strings.Cut(p, "zoneinfo/"); ok && name != "" {
+			return name
+		}
+	}
+	_, off := time.Now().In(loc).Zone()
+	sign := "+"
+	if off < 0 {
+		sign, off = "-", -off
+	}
+	return fmt.Sprintf("UTC%s%02d:%02d", sign, off/3600, off%3600/60)
 }
 
 func calendar(r *oncall.Rotation, name string, os []oncall.Override, from, to time.Time, loc *time.Location) []CalendarSegment {
-	cuts := []time.Time{from, to}
+	// Every shift boundary from the start of the shift running at from to
+	// the end of the one running at to, and the edges of the stand-ins in
+	// between: the first and last shifts show their whole length.
+	first := r.At(from, loc)
+	cuts := []time.Time{first.From}
 	for _, s := range r.Next(from, 4000, loc) {
-		if !s.From.Before(to) {
+		cuts = append(cuts, s.Until)
+		if !s.Until.Before(to) {
 			break
 		}
-		if s.From.After(from) {
-			cuts = append(cuts, s.From)
-		}
 	}
+	lo, hi := first.From, cuts[len(cuts)-1]
 	for _, o := range os {
 		if o.Rotation != name {
 			continue
 		}
-		for _, t := range []time.Time{o.From, o.Until} {
-			if t.After(from) && t.Before(to) {
-				cuts = append(cuts, t)
+		for _, c := range []time.Time{o.From, o.Until} {
+			if c.After(lo) && c.Before(hi) {
+				cuts = append(cuts, c)
 			}
 		}
 	}
