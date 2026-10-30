@@ -155,6 +155,7 @@ type LocalNetEvent struct {
 	Enter   bool
 	Anomaly Anomaly
 	At      time.Time
+	Back    time.Time // an exit: when the evidence first said the network was back
 }
 
 type anchorState struct {
@@ -284,7 +285,9 @@ func (d *LocalNet) Observe(o Observation) {
 			// Any reply vetoes the current episode.
 			s.episodeStart, s.preDead = time.Time{}, nil
 		}
-	case o.NetworkFail && s.uplink == nil && s.episodeStart.IsZero():
+	case o.NetworkFail && s.uplink == nil && s.episodeStart.IsZero() && !o.At.Before(s.lastReachWAN):
+		// (A failure from before the last reply, observed late because
+		// rounds end out of order, does not start one: the next does.)
 		s.episodeStart = o.At
 		// Targets that were already failing are not evidence of a new
 		// local outage (a host that has been dead for days stays out) —
@@ -557,7 +560,7 @@ func (d *LocalNet) evalUplink(fam Family, s *famState, now time.Time) []LocalNet
 	if !anyOK && now.Sub(s.healthySince) < time.Duration(max(1, d.cfg.ExitWindows)-1)*d.cfg.Window {
 		return nil
 	}
-	ev := LocalNetEvent{Anomaly: *s.uplink, At: now}
+	ev := LocalNetEvent{Anomaly: *s.uplink, At: now, Back: s.healthySince}
 	s.uplink, s.episodeStart, s.preDead, s.healthySince = nil, time.Time{}, nil, time.Time{}
 	return []LocalNetEvent{ev}
 }

@@ -99,8 +99,13 @@ func TestUplinkDownAndExit(t *testing.T) {
 	if evs := d.Evaluate(now.Add(30 * time.Second)); len(evs) != 0 {
 		t.Fatalf("exit before the second window: %+v", evs)
 	}
-	if evs := d.Evaluate(now.Add(time.Minute)); !exits(evs, AnomalyUplink) {
+	evs = d.Evaluate(now.Add(time.Minute))
+	if !exits(evs, AnomalyUplink) {
 		t.Fatalf("expected exit: %+v", evs)
+	}
+	// The summary says when the network was back, not when that was confirmed.
+	if !evs[0].Back.Equal(now) {
+		t.Fatalf("back at %v, want %v", evs[0].Back, now)
 	}
 	if ex, _ := d.Affects(netscope.WAN, FamilyV4, false, false); ex {
 		t.Fatal("still excluded after exit")
@@ -495,6 +500,31 @@ func TestUplinkLastReplySameInstantAsFirstFailure(t *testing.T) {
 	at := t0.Add(sec(1))
 	d.Observe(wanOK(at, doms[3]))
 	d.Observe(wanFail(at, doms[0]))
+	for i, dm := range doms {
+		d.Observe(wanFail(at.Add(sec(1+i)), dm))
+	}
+	var evs []LocalNetEvent
+	for s := 2; s < 10+int(cfg.Window/time.Second); s++ {
+		evs = append(evs, d.Evaluate(at.Add(sec(s)))...)
+	}
+	if !enters(evs, string(AnomalyUplink)) {
+		t.Fatalf("uplink cut not recognised: %+v", evs)
+	}
+}
+
+// A failure stamped before the last reply but observed after it (rounds
+// end out of order) is not the start of a cut: the cut starts with the
+// first failure after the last reply, and is recognised once nothing
+// answers any more. It used to wait for a reply that never came.
+func TestUplinkFailureObservedAfterALaterReply(t *testing.T) {
+	d, cfg := defaultLocalNet(t)
+	doms := []string{"4:a", "4:b", "4:c", "4:d"}
+	for _, dm := range doms {
+		d.Observe(wanOK(t0, dm))
+	}
+	at := t0.Add(sec(1))
+	d.Observe(wanOK(at.Add(time.Millisecond), doms[3]))
+	d.Observe(wanFail(at, doms[0])) // arrives late
 	for i, dm := range doms {
 		d.Observe(wanFail(at.Add(sec(1+i)), dm))
 	}

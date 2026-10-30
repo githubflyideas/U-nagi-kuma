@@ -137,7 +137,11 @@ func (e *Engine) onLocalNet(ev LocalNetEvent, now time.Time) {
 		e.closeSystemQuietly(SystemAllFailed, now, "")
 	}
 	wait := delay + spread + timeout + e.cfg.Tunables.Duration("engine.round-grace") + 2*time.Second
-	e.outage = &outageEnd{since: since, end: now, names: names, deadline: now.Add(wait), dropped: dropped}
+	back := now
+	if !ev.Back.IsZero() && ev.Back.Before(now) && ev.Back.After(since) {
+		back = ev.Back
+	}
+	e.outage = &outageEnd{since: since, end: now, back: back, names: names, deadline: now.Add(wait), dropped: dropped}
 }
 
 // releaseHold fails open: a local outage has lasted longer than
@@ -169,6 +173,7 @@ func (e *Engine) releaseHold(since, now time.Time) {
 // monitors it hid have been re-checked.
 type outageEnd struct {
 	since, end, deadline time.Time
+	back                 time.Time // when the network was back (end less the exit confirmation)
 	names                []string
 	dropped              int
 }
@@ -200,16 +205,16 @@ func (e *Engine) finishOutage(now time.Time) {
 		if slices.Contains(failing, name) {
 			note = "held during the local outage; still failing when re-checked"
 		}
-		e.decide(Decision{At: now, Monitor: name, Step: LedHeld, Class: ClassNetwork, HoldStart: o.since, HoldEnd: o.end, Note: note})
+		e.decide(Decision{At: now, Monitor: name, Step: LedHeld, Class: ClassNetwork, HoldStart: o.since, HoldEnd: o.back, Note: note})
 	}
-	summary := e.text("outage_summary", o.since, o.end, len(o.names), failing)
+	summary := e.text("outage_summary", o.since, o.back, len(o.names), failing)
 	inc := e.system[SystemLocalNetwork]
 	if inc == nil || !inc.State.Open() {
 		return
 	}
 	e.event(Event{Type: EventSystem, Severity: "info", Message: summary,
-		Data: map[string]any{"msg": "outage_summary", "duration_s": int(o.end.Sub(o.since).Seconds()), "affected": len(o.names), "failing": len(failing), "dropped": o.dropped}})
-	if inc.State.told() || o.end.Sub(o.since) < e.cfg.Tunables.Duration("localnet.notify-after") {
+		Data: map[string]any{"msg": "outage_summary", "duration_s": int(o.back.Sub(o.since).Seconds()), "affected": len(o.names), "failing": len(failing), "dropped": o.dropped}})
+	if inc.State.told() || o.back.Sub(o.since) < e.cfg.Tunables.Duration("localnet.notify-after") {
 		// Told at the start (a channel that still worked): the recovery
 		// carries the summary. A short outage ends quietly.
 		e.resolveSystem(SystemLocalNetwork, now, summary)

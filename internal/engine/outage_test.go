@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -30,13 +31,36 @@ func TestLocalOutageSendsOneSummary(t *testing.T) {
 	// the monitors fail and try to notify before the outage is recognised.
 	// Recognising it takes those failures back.
 	t.Run("failures before it was recognised", func(t *testing.T) { localOutage(t, "0s", 1, true) })
+	// A service already down before the outage was told once; it is not
+	// told again, and gets no recovery it did not have.
+	t.Run("a service down before it", func(t *testing.T) {
+		outage(t, outageCase{notifyAfter: "0s", wantSystem: 1, deadBefore: "site8", want: []string{"PROBLEM site8"}})
+	})
+	// A service that broke while nothing could be checked is alerted once
+	// the network is back, and nothing else is.
+	t.Run("a service breaking during it", func(t *testing.T) {
+		outage(t, outageCase{notifyAfter: "0s", wantSystem: 1, failsDuring: "site7", want: []string{"PROBLEM site7"}})
+	})
+}
+
+type outageCase struct {
+	notifyAfter             string
+	wantSystem              int
+	downAtStart             bool
+	deadBefore, failsDuring string   // a monitor failing on its own (HTTP 500) from the start, or from the cut on
+	want                    []string // the monitor notices expected (kind and name)
 }
 
 func localOutage(t *testing.T, notifyAfter string, wantSystem int, downAtStart bool) {
+	outage(t, outageCase{notifyAfter: notifyAfter, wantSystem: wantSystem, downAtStart: downAtStart})
+}
+
+func outage(t *testing.T, c outageCase) {
+	notifyAfter, wantSystem, downAtStart := c.notifyAfter, c.wantSystem, c.downAtStart
 	if testing.Short() {
 		t.Skip("runs through a real outage window")
 	}
-	var down atomic.Bool
+	var down, failing atomic.Bool
 	// One target keeps answering until the others have failed, so the
 	// self-check finds the network working until then.
 	var lastStanding atomic.Bool
@@ -46,6 +70,11 @@ func localOutage(t *testing.T, notifyAfter string, wantSystem int, downAtStart b
 	var got, tried []string
 	e := New(Deps{
 		Probe: func(_ context.Context, s probe.Spec) probe.Result {
+			if s.Name == c.deadBefore || s.Name == c.failsDuring && failing.Load() {
+				if !down.Load() {
+					return probe.Result{Vote: probe.VoteFail, Reason: probe.ReasonHTTPStatus, Detail: "HTTP 500", Evidence: &probe.Evidence{Peer: s.Target}}
+				}
+			}
 			if down.Load() && !(lastStanding.Load() && strings.HasPrefix(s.Target, "198.51.108.")) {
 				return probe.Result{Vote: probe.VoteFail, Reason: downReason, Detail: "connect: network is unreachable"}
 			}
@@ -95,13 +124,21 @@ func localOutage(t *testing.T, notifyAfter string, wantSystem int, downAtStart b
 	// never seen answering is no evidence of a cut (it may be dead).
 	waitCond(t, "every monitor to be OK first", 20*time.Second, func() bool {
 		for _, r := range e.Rows() {
-			if r.Status != StatusOK {
+			if r.Status != StatusOK && r.Name != c.deadBefore {
 				return false
 			}
 		}
 		return true
 	})
+	if c.deadBefore != "" {
+		waitCond(t, "the dead service to be told", 20*time.Second, func() bool {
+			mu.Lock()
+			defer mu.Unlock()
+			return slices.ContainsFunc(got, func(m string) bool { return strings.HasPrefix(m, "PROBLEM "+c.deadBefore) })
+		})
+	}
 	down.Store(true)
+	failing.Store(true)
 	if downAtStart {
 		// One target still answers for a moment: the self-check rightly
 		// finds the network working, and the others turn CRITICAL before
@@ -134,7 +171,7 @@ func localOutage(t *testing.T, notifyAfter string, wantSystem int, downAtStart b
 	down.Store(false)
 	waitCond(t, "every monitor to be OK again", 10*time.Second, func() bool {
 		for _, r := range e.Rows() {
-			if r.Status != StatusOK {
+			if r.Status != StatusOK && r.Name != c.deadBefore && r.Name != c.failsDuring {
 				return false
 			}
 		}
@@ -153,8 +190,19 @@ func localOutage(t *testing.T, notifyAfter string, wantSystem int, downAtStart b
 			monitorMsgs = append(monitorMsgs, m)
 		}
 	}
-	if len(monitorMsgs) > 0 {
-		t.Errorf("monitor notifications about a local outage: %q", monitorMsgs)
+	var unexpected []string
+	for _, m := range monitorMsgs {
+		if !slices.ContainsFunc(c.want, func(w string) bool { return strings.HasPrefix(m, w) }) {
+			unexpected = append(unexpected, m)
+		}
+	}
+	if len(unexpected) > 0 {
+		t.Errorf("monitor notifications about a local outage: %q", unexpected)
+	}
+	for _, w := range c.want {
+		if n := len(slices.DeleteFunc(slices.Clone(monitorMsgs), func(m string) bool { return !strings.HasPrefix(m, w) })); n != 1 {
+			t.Errorf("want one %q, got %d in %q", w, n, monitorMsgs)
+		}
 	}
 	if len(system) != wantSystem {
 		t.Errorf("want %d message(s) about the outage, got %q", wantSystem, system)
