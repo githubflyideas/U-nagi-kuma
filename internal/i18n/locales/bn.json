@@ -1380,5 +1380,6 @@
 "ui.inc.report": "প্রতিবেদন",
 "ui.pm.download_md": "Markdown ডাউনলোড করুন",
 "ui.pm.download_html": "HTML ডাউনলোড করুন",
-"ui.pm.download_json": "JSON ডাউনলোড করুন"
+"ui.pm.download_json": "JSON ডাউনলোড করুন",
+"sys.outage_unsent": "এর মধ্যে পাঠানো যায়নি: {items}"
 }

@@ -264,3 +264,29 @@ func TestBackdateKeepsServiceFailures(t *testing.T) {
 		t.Error("the network failure was not taken back")
 	}
 }
+
+// A system notice that could not be sent during a local outage (this
+// host crashed and restarted meanwhile) is told in the outage's summary,
+// even when the outage was short enough to end quietly.
+func TestOutageSummaryTellsWhatCouldNotBeSent(t *testing.T) {
+	e, _ := ledgerEngine(t, nil)
+	now := t0.Add(time.Hour)
+	e.openSystem(SystemLocalNetwork, now, "the network is down")
+	crash := &Intent{Kind: "SYSTEM", System: true, Policy: "default", CreatedAt: now.Add(10 * time.Second), DueAt: now,
+		Message: notify.Message{Kind: "SYSTEM", Body: "Unagikuma exited abnormally around 10:00\nmore"}}
+	e.enqueue(crash)
+	crash.Delivery.Begin(0)
+	crash.Delivery.Finish(0, false, "timeout", now.Add(20*time.Second), 0, 0)
+	e.finishIntent(crash, now.Add(20*time.Second))
+	e.outage = &outageEnd{since: now, end: now.Add(time.Minute), back: now.Add(time.Minute), deadline: now}
+	e.finishOutage(now.Add(2 * time.Minute))
+	var body string
+	for _, in := range e.intents {
+		if in.Kind == "SYSTEM" && in != crash {
+			body = in.Message.Body
+		}
+	}
+	if !strings.Contains(body, "Could not be sent meanwhile: Unagikuma exited abnormally around 10:00") || strings.Contains(body, "more") {
+		t.Fatalf("summary %q", body)
+	}
+}

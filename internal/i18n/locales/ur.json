@@ -1388,5 +1388,6 @@
 "ui.inc.report": "رپورٹ",
 "ui.pm.download_md": "Markdown ڈاؤن لوڈ کریں",
 "ui.pm.download_html": "HTML ڈاؤن لوڈ کریں",
-"ui.pm.download_json": "JSON ڈاؤن لوڈ کریں"
+"ui.pm.download_json": "JSON ڈاؤن لوڈ کریں",
+"sys.outage_unsent": "اس دوران بھیجا نہ جا سکا: {items}"
 }

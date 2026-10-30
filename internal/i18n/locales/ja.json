@@ -1380,5 +1380,6 @@
 "ui.inc.report": "レポート",
 "ui.pm.download_md": "Markdown をダウンロード",
 "ui.pm.download_html": "HTML をダウンロード",
-"ui.pm.download_json": "JSON をダウンロード"
+"ui.pm.download_json": "JSON をダウンロード",
+"sys.outage_unsent": "この間に送れなかった通知: {items}"
 }

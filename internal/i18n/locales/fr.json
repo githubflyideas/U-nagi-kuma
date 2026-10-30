@@ -1389,5 +1389,6 @@
 "ui.inc.report": "Rapport",
 "ui.pm.download_md": "Télécharger en Markdown",
 "ui.pm.download_html": "Télécharger en HTML",
-"ui.pm.download_json": "Télécharger en JSON"
+"ui.pm.download_json": "Télécharger en JSON",
+"sys.outage_unsent": "N’a pas pu être envoyé entre-temps : {items}"
 }

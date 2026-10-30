@@ -1380,5 +1380,6 @@
 "ui.inc.report": "Laporan",
 "ui.pm.download_md": "Unduh Markdown",
 "ui.pm.download_html": "Unduh HTML",
-"ui.pm.download_json": "Unduh JSON"
+"ui.pm.download_json": "Unduh JSON",
+"sys.outage_unsent": "Tidak dapat dikirim selama itu: {items}"
 }

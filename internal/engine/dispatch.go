@@ -1,8 +1,11 @@
 package engine
 
 import (
+	"cmp"
 	"context"
+	"slices"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -204,7 +207,34 @@ func (e *Engine) finishIntent(in *Intent, now time.Time) {
 	}
 	if !in.System {
 		e.openSystem(SystemAllFailed, now, e.text("all_failed", in.Policy, in.Message.Title))
+	} else if in.Kind == "SYSTEM" && !in.Message.DryRun {
+		// Most likely this host's own network: said in its summary.
+		e.unsent = append(e.unsent[max(0, len(e.unsent)-9):], unsentNote{at: in.CreatedAt, text: firstLine(cmp.Or(in.Message.Body, in.Message.Title))})
 	}
+}
+
+func firstLine(s string) string {
+	s, _, _ = strings.Cut(strings.TrimSpace(s), "\n")
+	return s
+}
+
+// unsentNote is a system notice that could not be sent.
+type unsentNote struct {
+	at   time.Time
+	text string
+}
+
+// takeUnsent returns, once, the system notices that could not be sent
+// since a time, as one line.
+func (e *Engine) takeUnsent(since time.Time) string {
+	var items []string
+	for _, u := range e.unsent {
+		if !u.at.Before(since) && !slices.Contains(items, u.text) {
+			items = append(items, u.text)
+		}
+	}
+	e.unsent = nil
+	return strings.Join(items, "; ")
 }
 
 // digest queues one summary notice standing for the incidents ids; chain

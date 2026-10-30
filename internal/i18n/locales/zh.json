@@ -1380,5 +1380,6 @@
 "ui.inc.report": "复盘报告",
 "ui.pm.download_md": "下载 Markdown",
 "ui.pm.download_html": "下载 HTML",
-"ui.pm.download_json": "下载 JSON"
+"ui.pm.download_json": "下载 JSON",
+"sys.outage_unsent": "期间未能发出的通知：{items}"
 }

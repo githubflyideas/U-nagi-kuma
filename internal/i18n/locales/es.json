@@ -1389,5 +1389,6 @@
 "ui.inc.report": "Informe",
 "ui.pm.download_md": "Descargar Markdown",
 "ui.pm.download_html": "Descargar HTML",
-"ui.pm.download_json": "Descargar JSON"
+"ui.pm.download_json": "Descargar JSON",
+"sys.outage_unsent": "No se pudo enviar mientras tanto: {items}"
 }

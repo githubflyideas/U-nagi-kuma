@@ -204,6 +204,7 @@ type Engine struct {
 	tempIncident int64
 	chanRate     map[string]*ratelimit.Bucket
 	sentAt       map[string][]time.Time  // per channel: sends in the backstop window
+	unsent       []unsentNote            // system notices that could not be sent (told after a local outage)
 	folded       map[string]*backstopBuf // per policy: alerts the backstop held back
 
 	sem     chan struct{}

@@ -1404,5 +1404,6 @@
 "ui.inc.report": "Отчёт",
 "ui.pm.download_md": "Скачать Markdown",
 "ui.pm.download_html": "Скачать HTML",
-"ui.pm.download_json": "Скачать JSON"
+"ui.pm.download_json": "Скачать JSON",
+"sys.outage_unsent": "Не удалось отправить за это время: {items}"
 }

@@ -209,15 +209,20 @@ func (e *Engine) finishOutage(now time.Time) {
 		e.decide(Decision{At: now, Monitor: name, Step: LedHeld, Class: ClassNetwork, HoldStart: o.since, HoldEnd: o.back, Note: note})
 	}
 	summary := e.text("outage_summary", o.since, o.back, len(o.names), failing)
+	lost := e.takeUnsent(o.since.Add(-e.cfg.Tunables.Duration("localnet.backdate")))
+	if lost != "" {
+		summary += "\n" + e.text("outage_unsent", lost) // e.g. a crash during the outage
+	}
 	inc := e.system[SystemLocalNetwork]
 	if inc == nil || !inc.State.Open() {
 		return
 	}
 	e.event(Event{Type: EventSystem, Severity: "info", Message: summary,
 		Data: map[string]any{"msg": "outage_summary", "duration_s": int(o.back.Sub(o.since).Seconds()), "affected": len(o.names), "failing": len(failing), "dropped": o.dropped}})
-	if inc.State.told() || o.back.Sub(o.since) < e.cfg.Tunables.Duration("localnet.notify-after") {
+	if inc.State.told() || o.back.Sub(o.since) < e.cfg.Tunables.Duration("localnet.notify-after") && lost == "" {
 		// Told at the start (a channel that still worked): the recovery
-		// carries the summary. A short outage ends quietly.
+		// carries the summary. A short outage ends quietly, unless a
+		// notice (a crash meanwhile) could not be sent.
 		e.resolveSystem(SystemLocalNetwork, now, summary)
 		return
 	}

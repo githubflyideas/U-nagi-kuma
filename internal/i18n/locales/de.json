@@ -1389,5 +1389,6 @@
 "ui.inc.report": "Bericht",
 "ui.pm.download_md": "Markdown herunterladen",
 "ui.pm.download_html": "HTML herunterladen",
-"ui.pm.download_json": "JSON herunterladen"
+"ui.pm.download_json": "JSON herunterladen",
+"sys.outage_unsent": "Konnte in dieser Zeit nicht gesendet werden: {items}"
 }

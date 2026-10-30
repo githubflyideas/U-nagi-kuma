@@ -1389,5 +1389,6 @@
 "ui.inc.report": "Relatório",
 "ui.pm.download_md": "Baixar Markdown",
 "ui.pm.download_html": "Baixar HTML",
-"ui.pm.download_json": "Baixar JSON"
+"ui.pm.download_json": "Baixar JSON",
+"sys.outage_unsent": "Não foi possível enviar nesse período: {items}"
 }

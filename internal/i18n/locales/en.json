@@ -1390,5 +1390,6 @@
 "ui.inc.report": "Report",
 "ui.pm.download_md": "Download Markdown",
 "ui.pm.download_html": "Download HTML",
-"ui.pm.download_json": "Download JSON"
+"ui.pm.download_json": "Download JSON",
+"sys.outage_unsent": "Could not be sent meanwhile: {items}"
 }

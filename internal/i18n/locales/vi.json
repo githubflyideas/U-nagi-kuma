@@ -1380,5 +1380,6 @@
 "ui.inc.report": "Báo cáo",
 "ui.pm.download_md": "Tải Markdown",
 "ui.pm.download_html": "Tải HTML",
-"ui.pm.download_json": "Tải JSON"
+"ui.pm.download_json": "Tải JSON",
+"sys.outage_unsent": "Không gửi được trong thời gian đó: {items}"
 }

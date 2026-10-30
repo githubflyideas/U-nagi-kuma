@@ -1385,5 +1385,6 @@
 "ui.inc.report": "रिपोर्ट",
 "ui.pm.download_md": "Markdown डाउनलोड करें",
 "ui.pm.download_html": "HTML डाउनलोड करें",
-"ui.pm.download_json": "JSON डाउनलोड करें"
+"ui.pm.download_json": "JSON डाउनलोड करें",
+"sys.outage_unsent": "इस बीच भेजा नहीं जा सका: {items}"
 }

@@ -1420,5 +1420,6 @@
 "ui.inc.report": "التقرير",
 "ui.pm.download_md": "تنزيل Markdown",
 "ui.pm.download_html": "تنزيل HTML",
-"ui.pm.download_json": "تنزيل JSON"
+"ui.pm.download_json": "تنزيل JSON",
+"sys.outage_unsent": "تعذّر إرساله خلال ذلك: {items}"
 }
