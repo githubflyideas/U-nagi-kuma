@@ -20,6 +20,7 @@
 - Certificates now warn 62 days before they expire (`probe.cert-warn-days`, was 21), also for monitors imported from Uptime Kuma; thresholds you set yourself are kept. The overview lists certificates inside that window, and the expiry list is now called **Certificate validity**.
 
 **Fixed**
+- On call: response times were counted for whoever was scheduled, even when a stand-in since cancelled, or the next member because the person on call could not be reached, took the alert. They now count for whoever was told.
 - On call: shifts of hours (such as `rotate=12h`) moved by an hour at each daylight saving change; they now keep their local handoff times like day shifts. A handoff time the clocks skip happens when they resume, and one that happens twice is the first.
 - On call: handoffs were always read in the server's time zone, so a server running in UTC handed over at the wrong hour for a team elsewhere. `tz=` gives a rotation its own time zone.
 - On call: the recovery of a problem went to whoever was on call when it recovered, so a stand-in (or the person before a handoff) who was told about the problem never heard that it was over, and the next person got a recovery for a problem they never saw. It now goes to the person who was told.

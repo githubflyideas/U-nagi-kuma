@@ -1226,7 +1226,7 @@
 "ui.oc.acked": "dikonfirmasi",
 "ui.oc.mtta": "waktu sampai dikonfirmasi",
 "ui.oc.mttr": "waktu sampai pulih",
-"ui.oc.stats_hint": "Tiap insiden dihitung untuk yang piket saat insiden muncul. Latihan dan gangguan host ini tidak dihitung.",
+"ui.oc.stats_hint": "Setiap insiden dihitung untuk orang dalam rotasi yang diberi tahu (untuk insiden lama, yang bertugas saat insiden dimulai). Latihan dan gangguan host ini sendiri tidak dihitung.",
 "sys.outage_summary_ok": "Host ini kehilangan jaringan {from}–{to} ({duration}) dan tidak bisa memeriksa apa pun selama itu ({paused} monitor menunggu). Diperiksa ulang: semua normal.",
 "sys.outage_summary_failing": "Host ini kehilangan jaringan {from}–{to} ({duration}) dan tidak bisa memeriksa apa pun selama itu ({paused} monitor menunggu). Diperiksa ulang: {failing} masih gagal — {names}",
 "ev.outage_summary": "Gangguan lokal selesai ({duration_s} dtk): {affected} monitor terdampak, {failing} masih gagal setelah diperiksa ulang, {dropped} notifikasi usang dibuang",

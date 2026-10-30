@@ -1226,7 +1226,7 @@
 "ui.oc.acked": "đã xác nhận",
 "ui.oc.mtta": "thời gian đến khi xác nhận",
 "ui.oc.mttr": "thời gian đến khi khắc phục",
-"ui.oc.stats_hint": "Mỗi sự cố tính cho người trực lúc sự cố xảy ra. Không tính diễn tập và sự cố của chính máy này.",
+"ui.oc.stats_hint": "Mỗi sự cố được tính cho người trong luân phiên đã nhận thông báo (sự cố cũ hơn: người trực lúc sự cố bắt đầu). Diễn tập và sự cố của chính máy này không được tính.",
 "sys.outage_summary_ok": "Máy giám sát mất mạng {from}–{to} ({duration}) và không thể kiểm tra gì trong lúc đó ({paused} giám sát tạm chờ). Đã kiểm tra lại: tất cả bình thường.",
 "sys.outage_summary_failing": "Máy giám sát mất mạng {from}–{to} ({duration}) và không thể kiểm tra gì trong lúc đó ({paused} giám sát tạm chờ). Đã kiểm tra lại: {failing} vẫn lỗi — {names}",
 "ev.outage_summary": "Sự cố mạng cục bộ kết thúc ({duration_s} giây): {affected} giám sát bị ảnh hưởng, {failing} vẫn lỗi sau khi kiểm tra lại, bỏ {dropped} thông báo cũ",

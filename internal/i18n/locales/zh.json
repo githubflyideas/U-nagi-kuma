@@ -1226,7 +1226,7 @@
 "ui.oc.acked": "已确认",
 "ui.oc.mtta": "平均确认用时",
 "ui.oc.mttr": "平均恢复用时",
-"ui.oc.stats_hint": "每起故障算在它发生时的值班人名下。演练和本机自身故障不计入。",
+"ui.oc.stats_hint": "每起故障算在值班表中实际收到通知的人名下（较早的故障算在发生时的值班人名下）。演练和本机自身故障不计入。",
 "sys.outage_summary_ok": "监控主机网络中断 {from}–{to}（{duration}），期间无法检测（{paused} 个监控暂停判定）。恢复后已重新检测：全部正常。",
 "sys.outage_summary_failing": "监控主机网络中断 {from}–{to}（{duration}），期间无法检测（{paused} 个监控暂停判定）。恢复后已重新检测：{failing} 个仍异常——{names}",
 "ev.outage_summary": "本机断网结束（{duration_s} 秒）：{affected} 个监控受影响，重新检测后 {failing} 个仍异常，丢弃 {dropped} 条过时通知",

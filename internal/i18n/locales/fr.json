@@ -1234,7 +1234,7 @@
 "ui.oc.acked": "acquittés",
 "ui.oc.mtta": "délai d'acquittement",
 "ui.oc.mttr": "délai de résolution",
-"ui.oc.stats_hint": "Chaque incident compte pour la personne d'astreinte à son ouverture. Exercices et pannes de cet hôte exclus.",
+"ui.oc.stats_hint": "Chaque incident compte pour la personne de la rotation qui en a été avertie (pour les plus anciens, celle de garde à son ouverture). Les exercices et les pannes de cet hôte ne comptent pas.",
 "sys.outage_summary_ok": "Cet hôte a perdu le réseau de {from} à {to} ({duration}) et n'a rien pu vérifier entre-temps ({paused} sondes en attente). Revérifié depuis : tout va bien.",
 "sys.outage_summary_failing": "Cet hôte a perdu le réseau de {from} à {to} ({duration}) et n'a rien pu vérifier entre-temps ({paused} sondes en attente). Revérifié depuis : {failing} toujours en échec — {names}",
 "ev.outage_summary": "Panne locale terminée ({duration_s} s) : {affected} sondes concernées, {failing} toujours en échec après revérification, {dropped} notifications périmées abandonnées",

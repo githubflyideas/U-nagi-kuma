@@ -1234,7 +1234,7 @@
 "ui.oc.acked": "reconocidos",
 "ui.oc.mtta": "tiempo hasta reconocer",
 "ui.oc.mttr": "tiempo hasta resolver",
-"ui.oc.stats_hint": "Cada incidente cuenta para quien estaba de guardia al abrirse. Se excluyen simulacros y caídas de este host.",
+"ui.oc.stats_hint": "Cada incidente cuenta para quien de la rotación recibió el aviso (en los más antiguos, quien estaba de guardia al abrirse). No cuentan los simulacros ni las caídas de este host.",
 "sys.outage_summary_ok": "Este host perdió la red de {from} a {to} ({duration}) y no pudo comprobar nada mientras tanto ({paused} monitores en espera). Comprobado de nuevo: todo bien.",
 "sys.outage_summary_failing": "Este host perdió la red de {from} a {to} ({duration}) y no pudo comprobar nada mientras tanto ({paused} monitores en espera). Comprobado de nuevo: {failing} siguen fallando — {names}",
 "ev.outage_summary": "Caída local terminada ({duration_s} s): {affected} monitores afectados, {failing} siguen fallando tras la nueva comprobación, {dropped} avisos obsoletos descartados",

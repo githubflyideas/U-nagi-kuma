@@ -146,7 +146,7 @@ default   IN POLICY chain=team,night-sms mode=all repeat=30m max=3 escalate=30m:
   oncall IN CHANNEL group members=li-sms,wang-sms,zhao-sms rotate=weekly handoff="mon 09:00" start=2026-11-02 tz=Asia/Shanghai
   ```
 
-  The **On call** page shows a month or week calendar of who is on call each day, creates rotations, and takes stand-ins and swaps: a stand-in covers for a while and alerts go to them first; a swap trades two shifts. Neither changes the order of the shifts. A recovery goes to whoever was told about the problem, even after a handoff. It also measures MTTA and MTTR over `oncall.stats-window` (30 days), counting each incident for whoever was on call when it opened.
+  The **On call** page shows a month or week calendar of who is on call each day, creates rotations, and takes stand-ins and swaps: a stand-in covers for a while and alerts go to them first; a swap trades two shifts. Neither changes the order of the shifts. A recovery goes to whoever was told about the problem, even after a handoff. It also measures MTTA and MTTR over `oncall.stats-window` (30 days), counting each incident for whoever was told about it.
 - **Escalation.** `escalate=DELAY:channel[+channel],…` on a policy notifies more channels while an incident stays open and unacknowledged: after 30 minutes the manager, after two hours also the on-call phone. Acknowledging stops it.
 - **Summaries say what kind of problem it is.** When many notices queue up at once (`notify.coalesce-queue`, `notify.coalesce-wait`) they are replaced by a summary, and the summary tells services from the network:
   - services that fail on their own come first, as "please act now", for their owners;

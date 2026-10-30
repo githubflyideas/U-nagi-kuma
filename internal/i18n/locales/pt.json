@@ -1234,7 +1234,7 @@
 "ui.oc.acked": "reconhecidos",
 "ui.oc.mtta": "tempo até reconhecer",
 "ui.oc.mttr": "tempo até resolver",
-"ui.oc.stats_hint": "Cada incidente conta para quem estava de plantão quando abriu. Simulações e falhas deste host ficam de fora.",
+"ui.oc.stats_hint": "Cada incidente conta para quem do rodízio foi avisado (nos mais antigos, quem estava de plantão quando abriu). Simulações e falhas deste host ficam de fora.",
 "sys.outage_summary_ok": "Este host ficou sem rede de {from} a {to} ({duration}) e não pôde verificar nada nesse tempo ({paused} monitores em espera). Verificado de novo: tudo bem.",
 "sys.outage_summary_failing": "Este host ficou sem rede de {from} a {to} ({duration}) e não pôde verificar nada nesse tempo ({paused} monitores em espera). Verificado de novo: {failing} ainda com falha — {names}",
 "ev.outage_summary": "Queda local terminada ({duration_s} s): {affected} monitores afetados, {failing} ainda com falha após nova verificação, {dropped} avisos obsoletos descartados",

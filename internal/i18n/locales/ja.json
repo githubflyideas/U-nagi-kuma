@@ -1226,7 +1226,7 @@
 "ui.oc.acked": "確認済み",
 "ui.oc.mtta": "確認までの平均時間",
 "ui.oc.mttr": "復旧までの平均時間",
-"ui.oc.stats_hint": "各障害は発生時の当番に計上します。訓練とこのホスト自身の障害は除きます。",
+"ui.oc.stats_hint": "各インシデントは、ローテーションの中で実際に通知を受けた人の分として数えます（以前のインシデントは発生時の当番の分）。訓練とこのホスト自身の障害は除きます。",
 "sys.outage_summary_ok": "監視ホストのネットワークが {from}–{to}（{duration}）切断され、その間は確認できませんでした（{paused} 件の監視が保留）。復旧後に再確認：すべて正常です。",
 "sys.outage_summary_failing": "監視ホストのネットワークが {from}–{to}（{duration}）切断され、その間は確認できませんでした（{paused} 件の監視が保留）。復旧後に再確認：{failing} 件がまだ異常——{names}",
 "ev.outage_summary": "ローカル障害終了（{duration_s} 秒）：{affected} 件の監視が影響、再確認後も {failing} 件が異常、古い通知 {dropped} 件を破棄",

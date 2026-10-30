@@ -1,7 +1,10 @@
 package store
 
 import (
+	"encoding/json"
 	"time"
+
+	"github.com/githubflyideas/unagikuma/internal/engine"
 
 	"github.com/githubflyideas/unagikuma/internal/oncall"
 )
@@ -57,13 +60,23 @@ type IncidentTimes struct {
 	Opened   time.Time
 	FirstAck time.Time
 	Resolved time.Time
+	// Responders are who took its problem notices, by rotation
+	// ("rotation=member,..."; empty for incidents from before this was kept).
+	Responders string
+}
+
+// Responder is the member of rotation who took the incident's problem
+// notices, "" when unknown.
+func (it IncidentTimes) Responder(rotation string) string {
+	st := engine.IncidentState{Responders: it.Responders}
+	return st.Responder(rotation)
 }
 
 // IncidentTimesBetween returns the incidents of monitors opened in
 // [from, to), drills and this host's own outages aside. Incident times
 // are kept in milliseconds, acknowledgements in seconds.
 func (s *Store) IncidentTimesBetween(from, to time.Time) ([]IncidentTimes, error) {
-	rows, err := s.core.Query(`SELECT i.id, i.monitor, COALESCE(i.policy,''), i.opened_at, COALESCE(i.resolved_at,0),
+	rows, err := s.core.Query(`SELECT i.id, i.monitor, COALESCE(i.policy,''), i.opened_at, COALESCE(i.resolved_at,0), COALESCE(i.state,''),
 		COALESCE((SELECT MIN(a.at) FROM acks a WHERE a.incident_id=i.id AND a.action='ack'),0)
 		FROM incidents i WHERE i.opened_at>=? AND i.opened_at<? AND i.drill=0 AND COALESCE(i.system,'')=''
 		ORDER BY i.opened_at`, from.UnixMilli(), to.UnixMilli())
@@ -82,8 +95,15 @@ func (s *Store) IncidentTimesBetween(from, to time.Time) ([]IncidentTimes, error
 	for rows.Next() {
 		var it IncidentTimes
 		var opened, resolved, ack int64
-		if err := rows.Scan(&it.ID, &it.Monitor, &it.Policy, &opened, &resolved, &ack); err != nil {
+		var state string
+		if err := rows.Scan(&it.ID, &it.Monitor, &it.Policy, &opened, &resolved, &state, &ack); err != nil {
 			return nil, err
+		}
+		var st struct {
+			Responders string `json:"responders"`
+		}
+		if json.Unmarshal([]byte(state), &st) == nil {
+			it.Responders = st.Responders
 		}
 		it.Opened, it.Resolved, it.FirstAck = time.UnixMilli(opened), at(resolved, time.UnixMilli), at(ack, secs)
 		out = append(out, it)

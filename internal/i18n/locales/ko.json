@@ -1226,7 +1226,7 @@
 "ui.oc.acked": "확인됨",
 "ui.oc.mtta": "확인까지 평균 시간",
 "ui.oc.mttr": "복구까지 평균 시간",
-"ui.oc.stats_hint": "각 장애는 발생 당시 당직자에게 집계됩니다. 훈련과 이 호스트 자체 장애는 제외합니다.",
+"ui.oc.stats_hint": "각 인시던트는 순번에서 실제로 알림을 받은 사람에게 집계됩니다(이전 인시던트는 발생 당시 당번). 훈련과 이 호스트 자체의 장애는 제외됩니다.",
 "sys.outage_summary_ok": "모니터링 호스트의 네트워크가 {from}–{to}({duration}) 끊겨 그동안 확인할 수 없었습니다({paused}개 모니터 보류). 복구 후 재확인: 모두 정상입니다.",
 "sys.outage_summary_failing": "모니터링 호스트의 네트워크가 {from}–{to}({duration}) 끊겨 그동안 확인할 수 없었습니다({paused}개 모니터 보류). 복구 후 재확인: {failing}개가 아직 이상 — {names}",
 "ev.outage_summary": "로컬 장애 종료({duration_s}초): 모니터 {affected}개 영향, 재확인 후 {failing}개 여전히 이상, 오래된 알림 {dropped}개 폐기",

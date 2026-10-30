@@ -259,9 +259,14 @@ func (a *App) OnCallStats(window time.Duration) (OnCallStatsResult, error) {
 	for _, it := range its {
 		res.All.add(it)
 		for _, rot := range byPolicy[it.Policy] {
-			who := rots[rot].At(it.Opened, a.opts.Location).Member
-			if o := oncall.Active(rot, os, it.Opened); o != nil {
-				who = o.Member
+			// Whoever took the problem notice; for older incidents, who
+			// was on call when it opened.
+			who := it.Responder(rot)
+			if who == "" {
+				who = rots[rot].At(it.Opened, a.opts.Location).Member
+				if o := oncall.Active(rot, os, it.Opened); o != nil {
+					who = o.Member
+				}
 			}
 			if s := stats[[2]string{rot, who}]; s != nil {
 				s.add(it)

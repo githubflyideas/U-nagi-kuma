@@ -146,7 +146,7 @@ default   IN POLICY chain=team,night-sms mode=all repeat=30m max=3 escalate=30m:
   oncall IN CHANNEL group members=li-sms,wang-sms,zhao-sms rotate=weekly handoff="mon 09:00" start=2026-11-02 tz=Asia/Shanghai
   ```
 
-  **值班** 页面用月历或周历显示每天谁在值班，可以新建值班表、安排代班和换班：代班是有人临时顶班，告警先发给他；换班是两个班次互换。两者都不改变原有排班顺序。故障恢复的通知发给当初收到故障通知的人，即使中间已经交接。页面还统计最近 `oncall.stats-window`（30 天）的 MTTA 和 MTTR，每起故障算在它发生时的值班人名下。
+  **值班** 页面用月历或周历显示每天谁在值班，可以新建值班表、安排代班和换班：代班是有人临时顶班，告警先发给他；换班是两个班次互换。两者都不改变原有排班顺序。故障恢复的通知发给当初收到故障通知的人，即使中间已经交接。页面还统计最近 `oncall.stats-window`（30 天）的 MTTA 和 MTTR，每起故障算在实际收到通知的人名下。
 - **升级。** 策略上的 `escalate=时长:通道[+通道],…` 在故障持续未确认时追加通知：30 分钟后通知主管，2 小时后再加上值班电话。确认后即停止。
 - **汇总会说明是哪类问题。** 短时间内积压很多通知时（`notify.coalesce-queue`、`notify.coalesce-wait`），会合并成汇总，汇总区分业务和网络：
   - 各自独立出错的业务排在最前面，写明"请尽快处理"，给业务负责人；

@@ -1235,7 +1235,7 @@
 "ui.oc.acked": "acknowledged",
 "ui.oc.mtta": "time to acknowledge",
 "ui.oc.mttr": "time to resolve",
-"ui.oc.stats_hint": "Each incident counts for whoever was on call when it opened. Drills and this host's own outages are left out.",
+"ui.oc.stats_hint": "Each incident counts for whoever of the rotation was told about it (for older incidents, whoever was on call when it opened). Drills and this host's own outages are left out.",
 "sys.outage_summary_ok": "This host lost its network {from}–{to} ({duration}) and could not check anything meanwhile ({paused} monitors waited). Re-checked since: all fine.",
 "sys.outage_summary_failing": "This host lost its network {from}–{to} ({duration}) and could not check anything meanwhile ({paused} monitors waited). Re-checked since: {failing} still failing — {names}",
 "ev.outage_summary": "Local outage over ({duration_s}s): {affected} monitors affected, {failing} still failing after the re-check, {dropped} stale notices dropped",
