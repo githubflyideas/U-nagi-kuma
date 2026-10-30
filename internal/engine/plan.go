@@ -152,6 +152,7 @@ func Fail(prev *IncidentState, now time.Time, reasonClass string, p NotifyPolicy
 		return s, notices, events
 	}
 	s = prev
+	upFor := now.Sub(s.ResolvedAt)
 	s.ResolvedAt, s.SummaryDue = time.Time{}, time.Time{}
 	s.HardAt = now
 	s.ReopenCount++
@@ -160,8 +161,16 @@ func Fail(prev *IncidentState, now time.Time, reasonClass string, p NotifyPolicy
 		events = append(events, IncidentAckCleared)
 	}
 	max := p.max(s.Low)
+	told := s.NotifyCount > 0
+	if told && upFor >= p.ReopenWindow/2 {
+		// It was really back (at least half the reopen window): this
+		// failure counts its own notifications again ("1 of 3"), so a
+		// service that fails now and then never runs out of alerts. Quick
+		// flaps keep counting and fold into the summary once capped.
+		s.NotifyCount, s.Capped = 0, false
+	}
 	switch {
-	case s.NotifyCount == 0:
+	case !told:
 		// Nobody was told about the first failure (it recovered within the
 		// delay): start over as if it were new.
 		n, e := Advance(s, now, p)

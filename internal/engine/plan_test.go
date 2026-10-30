@@ -119,9 +119,15 @@ func TestReopenCountsAgainstCap(t *testing.T) {
 	if !reflect.DeepEqual(ns, []PlannedNotice{{Kind: NoticeReopen, Seq: 2, Max: 3}}) {
 		t.Fatalf("reopen notice: %+v", ns)
 	}
+	// Back for more than half the window: the count starts again.
+	s.Delivered()
+	Recover(s, t0.Add(11*time.Minute), p)
+	if _, ns, _ = Fail(s, t0.Add(11*time.Minute+p.ReopenWindow/2), "", p); len(ns) != 1 || ns[0].Kind != NoticeReopen || ns[0].Seq != 1 {
+		t.Fatalf("reopen after a real recovery: %+v", ns)
+	}
 	// Outside the window: a brand-new incident.
-	Recover(s, t0.Add(15*time.Minute), p)
-	s3, ns, _ := Fail(s, t0.Add(15*time.Minute+p.ReopenWindow), "", p)
+	Recover(s, t0.Add(30*time.Minute), p)
+	s3, ns, _ := Fail(s, t0.Add(30*time.Minute+p.ReopenWindow), "", p)
 	if s3 == s || len(ns) != 1 || ns[0].Kind != NoticeProblem || ns[0].Seq != 1 {
 		t.Fatalf("new incident outside window: %+v", ns)
 	}
