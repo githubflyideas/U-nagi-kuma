@@ -136,8 +136,12 @@ func (e *Engine) judge(m *MonitorSpec, rt *monRuntime, votes []NodeVote, results
 		if t.SoftFailure && m.Retry > 0 && m.Retry < m.Interval {
 			next = now.Add(m.Retry)
 		}
-		for i := 0; i < missed; i++ {
-			e.watchdog.RecordRound(now, true)
+		// Rounds missed because this process was stopped or the machine
+		// paused are not an overloaded host.
+		if _, paused := e.watchdog.Overlaps(due, now); !paused {
+			for i := 0; i < missed; i++ {
+				e.watchdog.RecordRound(now, true)
+			}
 		}
 		e.schedule(m.Name, next)
 	}

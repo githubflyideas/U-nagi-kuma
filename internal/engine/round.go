@@ -73,7 +73,7 @@ func (e *Engine) dispatchDue(ctx context.Context, wg *sync.WaitGroup) {
 			// All workers busy: try again shortly. A round that cannot start
 			// within its interval counts as dropped (overload detection).
 			e.sched.Set(name, now.Add(50*time.Millisecond))
-			if !rt.Due.IsZero() && now.Sub(rt.Due) > m.Interval {
+			if _, paused := e.watchdog.Overlaps(rt.Due, now); !rt.Due.IsZero() && now.Sub(rt.Due) > m.Interval && !paused {
 				e.watchdog.RecordRound(now, true)
 				e.stats.dropped.Add(1)
 				rt.Due = now

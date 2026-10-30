@@ -169,6 +169,8 @@ func (w *Watchdog) Tick(s ClockSample) (*Interruption, *ClockJump) {
 		in.Start, in.End = prev.At, s.At
 		in.Notify = in.Duration >= w.cfg.NotifyAfter
 		w.recent = append(w.recent, *in)
+		// Rounds late because of it say nothing about the host's load.
+		w.buckets = [overloadBuckets]roundBucket{}
 		if len(w.recent) > maxInterruptions {
 			w.recent = append(w.recent[:0], w.recent[len(w.recent)-maxInterruptions:]...)
 		}

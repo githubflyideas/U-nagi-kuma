@@ -176,3 +176,18 @@ func TestOverloadWindowChangeResets(t *testing.T) {
 		t.Fatalf("stats must reset: %+v", ev)
 	}
 }
+
+// Rounds late because the process was stopped (SIGSTOP, a paused VM) are
+// not an overloaded host: the stall clears what was counted around it.
+func TestStallIsNotOverload(t *testing.T) {
+	w, c, cfg := newWatchdog(t)
+	for i := 0; i < cfg.OverloadMinRounds*2; i++ {
+		w.RecordRound(c.at, true)
+	}
+	if in, _ := w.Tick(c.advance(90*time.Second, 90*time.Second, 90*time.Second)); in == nil {
+		t.Fatal("no stall")
+	}
+	if ev := w.EvaluateOverload(c.at); ev != nil {
+		t.Fatalf("overload after a stall: %+v", ev)
+	}
+}
