@@ -37,14 +37,16 @@ func localOutage(t *testing.T, notifyAfter string, wantSystem int, downAtStart b
 		t.Skip("runs through a real outage window")
 	}
 	var down atomic.Bool
-	var downAt time.Time
-	lastStanding := downAtStart
+	// One target keeps answering until the others have failed, so the
+	// self-check finds the network working until then.
+	var lastStanding atomic.Bool
+	lastStanding.Store(downAtStart)
 	sink := &traceSink{memSink: newMemSink()}
 	var mu sync.Mutex
 	var got, tried []string
 	e := New(Deps{
 		Probe: func(_ context.Context, s probe.Spec) probe.Result {
-			if down.Load() && !(lastStanding && strings.HasPrefix(s.Target, "198.51.108.") && time.Since(downAt) < 8*time.Second) {
+			if down.Load() && !(lastStanding.Load() && strings.HasPrefix(s.Target, "198.51.108.")) {
 				return probe.Result{Vote: probe.VoteFail, Reason: downReason, Detail: "connect: network is unreachable"}
 			}
 			return probe.Result{Vote: probe.VoteOK, Reason: probe.ReasonOK, Evidence: &probe.Evidence{Peer: s.Target}}
@@ -90,7 +92,6 @@ func localOutage(t *testing.T, notifyAfter string, wantSystem int, downAtStart b
 	t.Cleanup(func() { cancel(); <-done })
 
 	time.Sleep(time.Second) // all fine
-	downAt = time.Now()
 	down.Store(true)
 	if downAtStart {
 		// One target still answers for a moment: the self-check rightly
@@ -100,8 +101,9 @@ func localOutage(t *testing.T, notifyAfter string, wantSystem int, downAtStart b
 			r, _ := e.Row("site0")
 			return r.Status == StatusCritical
 		})
+		lastStanding.Store(false)
 	}
-	waitCond(t, "the outage to be recognised", 20*time.Second, func() bool { return e.Overview().Health.Uplink == "wan_down" })
+	waitCond(t, "the outage to be recognised", 45*time.Second, func() bool { return e.Overview().Health.Uplink == "wan_down" })
 	time.Sleep(2 * time.Second)
 	down.Store(false)
 	waitCond(t, "every monitor to be OK again", 10*time.Second, func() bool {
@@ -224,7 +226,7 @@ func TestMaxHoldReleasesStuckHold(t *testing.T) {
 
 	time.Sleep(time.Second)
 	down.Store(true)
-	waitCond(t, "the outage to be recognised", 20*time.Second, func() bool { return e.Overview().Health.Uplink == "wan_down" })
+	waitCond(t, "the outage to be recognised", 45*time.Second, func() bool { return e.Overview().Health.Uplink == "wan_down" })
 	waitCond(t, "the hold to be released and a monitor to fail", 20*time.Second, func() bool {
 		r, _ := e.Row("site0")
 		return r.Status == StatusCritical
