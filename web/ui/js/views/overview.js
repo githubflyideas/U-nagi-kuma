@@ -3,7 +3,7 @@
 import { html, useState } from '../lib.js';
 import { t, tn, dur, fmtNum } from '../i18n.js';
 import { get, post } from '../api.js';
-import { useFetch, useLive, Card, Loading, ErrorBox, Dot, Ago, Empty, Pill, Seg, msText, reasonText, quorumText, pct, openMonitor, enc, toast, toastError, useDocTitle } from '../ui.js';
+import { useFetch, useLive, Card, Loading, ErrorBox, Dot, Ago, Empty, Pill, Seg, msText, reasonText, quorumText, pct, openMonitor, enc, toast, toastError, useDocTitle, gwBad } from '../ui.js';
 import { IncidentList } from './problems.js';
 
 
@@ -44,7 +44,7 @@ export function HealthCard({ health }) {
           <span>${t('ui.health.uplink.' + up.state)}${up.suspected ? ' · ' + t('ui.health.suspected') : ''}</span>
           ${up.state === 'cannot_judge' && html`<span class="small"> · ${t('ui.health.need_anchors')}</span>`}
         </div></div>
-      <div class="hitem"><${Dot} status=${gw.addr ? (gw.ok ? 'ok' : 'critical') : 'pending'} />
+      <div class="hitem"><${Dot} status=${gw.addr ? (gw.ok ? 'ok' : gwBad(gw) ? 'critical' : 'pending') : 'pending'} />
         <div><b>${t('ui.health.gateway')}</b>
           <span class="ltr">${gw.addr || '–'}</span>
           ${gw.addr && gw.ok ? html` · <span class="ltr">${msText(gw.rtt_ms)}</span>` : gw.note ? ' · ' + t('ui.health.gw_note.' + gw.note) : ''}
@@ -90,7 +90,9 @@ const BAD_UPLINK = ['wan_down', 'lan_down', 'no_route'];
 function hopStates(p) {
   if (!p.online) return { gw: 'dead', up: 'dead', ex: 'dead', off: true };
   const g = p.gateway || {};
-  const gw = !g.addr || g.note === 'container' ? 'unk' : g.ok ? 'ok' : 'bad';
+  // A gateway that never answered ping (many routers ignore it) cannot be
+  // judged: grey, not red. Red only when it answered before and stopped.
+  const gw = !g.addr || g.note === 'container' ? 'unk' : g.ok ? 'ok' : gwBad(g) ? 'bad' : 'unk';
   const up = gw === 'bad' ? 'dead' : p.uplink === 'ok' ? 'ok' : BAD_UPLINK.includes(p.uplink) ? 'bad' : 'unk';
   const ex = up === 'dead' || up === 'bad' ? 'dead' : !p.exit ? 'none' : p.exit.idle ? 'idle' : p.exit.ok ? 'ok' : 'warn';
   return { gw, up, ex };
@@ -109,11 +111,11 @@ function countScope(rows) {
 
 const COLOR = { ok: 'var(--ok)', bad: 'var(--critical)', warn: 'var(--degraded)', dead: 'var(--border-strong)', unk: 'var(--faint)', none: 'var(--faint)', idle: 'color-mix(in srgb, var(--ok) 55%, transparent)' };
 
-function Break({ x, y, label, warn }) {
+function Break({ x, y, label, warn, below }) {
   return html`<g class="fp-break"><circle cx=${x} cy=${y} r="12" fill=${warn ? 'var(--degraded)' : 'var(--critical)'} />
     ${warn ? html`<text x=${x} y=${y + 4} text-anchor="middle" style="font:700 13px var(--sans);fill:#1a1206">!</text>`
       : html`<path d=${`M${x - 5},${y - 5} l10,10 m0,-10 l-10,10`} stroke="#fff" stroke-width="2.4" />`}</g>
-    <text class="fp-sub" x=${x} y=${y - 18} text-anchor="middle" style=${{ fill: warn ? 'var(--degraded)' : 'var(--critical)' }}>${label}</text>`;
+    <text class="fp-sub" x=${x} y=${below ? y + 30 : y - 18} text-anchor="middle" style=${{ fill: warn ? 'var(--degraded)' : 'var(--critical)' }}>${label}</text>`;
 }
 
 // exitText says what the internet gateway is doing.
@@ -167,7 +169,7 @@ function FaultPath({ paths, rows }) {
         ${line(xG + 12, xU - 12, y, s.up === 'ok' ? 'ok' : s.up === 'unk' && answer(wan) ? 'ok' : s.up)}
         ${curve(xG + 12, y, xB, yLan, lanCls)}
         ${curve(xU + 12, y, xB, yWan, wanCls)}
-        ${s.gw === 'bad' && html`<${Break} x=${(xN + xG) / 2} y=${y} label=${t('ui.ov.break_gateway')} />`}
+        ${s.gw === 'bad' && html`<${Break} below x=${(xN + xG) / 2} y=${y} label=${t('ui.ov.break_gateway')} />`}
         ${s.up === 'bad' && html`<${Break} x=${(xG + xU) / 2} y=${y} label=${t(p.self ? 'ui.ov.break_uplink_self' : 'ui.ov.break_uplink_node')} />`}
         ${s.ex === 'warn' && html`<${Break} warn x=${(xU + xB) / 2} y=${y + (yWan - y) / 2} label=${t('ui.ov.break_exit', { addr: p.exit.addr })} />`}
         <circle cx=${xN} cy=${y} r="15" fill="var(--panel)" stroke=${nodeCol} stroke-width="2.5" /><circle cx=${xN} cy=${y} r="5" fill=${nodeCol} />
@@ -347,7 +349,7 @@ export function Legend() {
 
 // ---- first run ----
 
-function onboardDismissed() { try { return localStorage.getItem('nk.onboard') === 'done'; } catch { return false; } }
+function onboardDismissed() { try { return localStorage.getItem('unagikuma.onboard') === 'done'; } catch { return false; } }
 
 // Onboarding walks a new installation through its first monitors, a
 // channel, the default policy, who receives alerts and a status page,
@@ -373,7 +375,7 @@ function Onboarding({ d, reload }) {
     } catch (e) { toastError(e); }
     setBusy(false);
   };
-  const dismiss = () => { try { localStorage.setItem('nk.onboard', 'done'); } catch { /* unavailable */ } setHidden(true); };
+  const dismiss = () => { try { localStorage.setItem('unagikuma.onboard', 'done'); } catch { /* unavailable */ } setHidden(true); };
   const step = (i, title, hint, body) => html`<div class=${'ob-step' + (steps[i] ? ' done' : '')}>
     <div class="ob-n">${steps[i] ? '✓' : i + 1}</div>
     <div class="ob-b"><b>${title}</b><p class="muted small">${hint}</p>${!steps[i] && body}</div></div>`;

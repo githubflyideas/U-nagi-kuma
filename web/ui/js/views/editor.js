@@ -1,6 +1,6 @@
 // Monitor editor and quick add. Both write records into monitors.bind.
 import { html, useState, useEffect } from '../lib.js';
-import { t } from '../i18n.js';
+import { t, detailText } from '../i18n.js';
 import { get, post, put, ifMatch, newKey } from '../api.js';
 import { useFetch, Loading, ErrorBox, Field, Modal, Pill, msText, reasonText, enc, go, toast, toastError, errText, useDocTitle } from '../ui.js';
 
@@ -76,7 +76,7 @@ function ProbeResult({ r }) {
   return html`<div class=${'banner ' + (st === 'ok' ? 'ok' : st === 'critical' ? 'error' : 'warning')}>
     <div class="col" style=${{ gap: '4px' }}>
       <div class="row"><${Pill} status=${st} /> <b>${reasonText(r.reason, r.detail)}</b> <span class="muted">${msText(r.latency_ms)} · ${r.depth}</span></div>
-      <div class="small ltr">${r.detail}</div>
+      <div class="small">${detailText(r.detail)}</div>
       ${ev.peer && html`<div class="small ltr">${t('ui.ev.peer')}: ${ev.peer}</div>`}
       ${(ev.decoded || []).map(f => html`<div class="small"><span class="muted">${f.name}:</span> <span class="ltr">${f.value}</span></div>`)}
       ${r.metrics && Object.entries(r.metrics).map(([k, v]) => html`<div class="small ltr"><span class="muted">${k}:</span> ${v}</div>`)}

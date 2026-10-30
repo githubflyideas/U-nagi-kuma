@@ -103,6 +103,8 @@ hr { border: 0; border-top: 1px solid var(--border); margin: 16px 0; }
 .verdict i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; box-shadow: 0 0 10px currentColor; }
 .verdict.critical { background: var(--critical-soft); color: var(--critical); } .verdict.warn { background: var(--degraded-soft); color: var(--degraded); }
 .verdict.held { background: var(--maint-soft); color: var(--maint); }
+.verdict.unknown { background: color-mix(in srgb, var(--faint) 18%, transparent); color: var(--muted); }
+.rdot.setup { background: var(--degraded); }
 .top-sub { color: var(--muted); font-size: 12.5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .search { display: flex; align-items: center; gap: 8px; width: 300px; max-width: 34vw; padding: 5px 10px; border-radius: 9px; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--muted); }
 .search input { border: 0 !important; outline: 0 !important; background: none !important; padding: 0 !important; color: var(--text); }

@@ -32,7 +32,7 @@ type pathView struct {
 func pathOf(n nodeView, h *engine.Health) pathView {
 	p := pathView{Name: n.Name, Title: n.Title, Region: n.Region, Self: n.Self, Online: n.Online, Uplink: "unknown"}
 	if h != nil && n.Online {
-		p.Gateway = map[string]any{"addr": h.Gateway, "ok": h.GatewayOK, "rtt_ms": float64(h.GatewayRTT) / 1e6, "note": h.GatewayNote}
+		p.Gateway = map[string]any{"addr": h.Gateway, "ok": h.GatewayOK, "state": h.GatewayState, "rtt_ms": float64(h.GatewayRTT) / 1e6, "note": h.GatewayNote}
 		p.Uplink = h.Uplink
 		p.Exit = exitJSON(*h)
 	}
@@ -59,7 +59,7 @@ func (s *Server) overview(w http.ResponseWriter, r *http.Request) (any, error) {
 	h := ov.Health
 	health := map[string]any{
 		"uplink":      map[string]any{"state": h.Uplink, "since": tp(h.UplinkSince), "suspected": h.Suspected, "wan_domains": h.WANDomains, "wan_anchors": h.WANAnchors},
-		"gateway":     map[string]any{"addr": h.Gateway, "ok": h.GatewayOK, "rtt_ms": float64(h.GatewayRTT) / 1e6, "note": h.GatewayNote},
+		"gateway":     map[string]any{"addr": h.Gateway, "ok": h.GatewayOK, "state": h.GatewayState, "rtt_ms": float64(h.GatewayRTT) / 1e6, "note": h.GatewayNote},
 		"exit":        exitJSON(h),
 		"dns_down":    h.DNSDown,
 		"heartbeat":   map[string]any{"configured": hb.Configured, "target": hb.Target, "last_ok": tp(hb.LastOK), "last_error": hb.LastError},

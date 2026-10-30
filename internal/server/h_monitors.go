@@ -413,7 +413,7 @@ func (s *Server) monitorDetail(w http.ResponseWriter, r *http.Request) (any, err
 	// The path from this host to the target, for the diagram: the gateway
 	// for every check, the internet exit only for internet targets.
 	h := s.app.Engine().Health()
-	path := map[string]any{"gateway": map[string]any{"addr": h.Gateway, "ok": h.GatewayOK, "rtt_ms": float64(h.GatewayRTT) / 1e6, "note": h.GatewayNote}}
+	path := map[string]any{"gateway": map[string]any{"addr": h.Gateway, "ok": h.GatewayOK, "state": h.GatewayState, "rtt_ms": float64(h.GatewayRTT) / 1e6, "note": h.GatewayNote}}
 	if row.Scope == "wan" {
 		path["exit"] = exitJSON(h)
 	}

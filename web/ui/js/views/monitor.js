@@ -1,8 +1,8 @@
 // Monitor detail: state, availability, latency chart, evidence, history.
 import { html, useState, useEffect, useRef } from '../lib.js';
-import { t, tn, dur, fmtTime, fmtNum, currentLang } from '../i18n.js';
+import { t, tn, dur, fmtTime, fmtNum, currentLang, detailText, axisTimes } from '../i18n.js';
 import { get, post, del, ifMatch } from '../api.js';
-import { useFetch, useLive, Card, Loading, ErrorBox, Empty, Pill, Dot, quorumText, Beats, Ago, Copy, Seg, pct, msText, reasonText, enc, go, toast, toastError, confirmDialog, useDocTitle } from '../ui.js';
+import { useFetch, useLive, Card, Loading, ErrorBox, Empty, Pill, Dot, quorumText, Beats, Ago, Copy, Seg, pct, msText, reasonText, enc, go, toast, toastError, confirmDialog, useDocTitle, gwBad } from '../ui.js';
 import { IncidentList } from './problems.js';
 import { EventRows } from './events.js';
 
@@ -15,7 +15,7 @@ export function Path({ row, path, bare }) {
   hops.push({
     label: t('ui.health.gateway'),
     addr: gw.addr,
-    status: gw.addr ? (gw.ok ? 'ok' : 'critical') : 'pending',
+    status: gw.addr ? (gw.ok ? 'ok' : gwBad(gw) ? 'critical' : 'pending') : 'pending',
     note: gw.addr && gw.ok ? msText(gw.rtt_ms) : gw.note ? t('ui.health.gw_note.' + gw.note) : '',
   });
   const ex = path.exit;
@@ -99,7 +99,7 @@ export function LatencyChart({ name, range }) {
         cursor: { drag: { x: true, y: false } },
         scales: { x: { time: true }, y: { range: (u, lo, hi) => [0, Math.max(1, hi * 1.15)] } },
         axes: [
-          { stroke: css('--muted'), grid: { stroke: css('--border') }, ticks: { stroke: css('--border') } },
+          { stroke: css('--muted'), grid: { stroke: css('--border') }, ticks: { stroke: css('--border') }, values: (u, v) => axisTimes(v) },
           { stroke: css('--muted'), grid: { stroke: css('--border') }, ticks: { stroke: css('--border') }, values: (u, v) => v.map(x => fmtNum(x) + ' ms'), size: 64 },
         ],
         series: [
@@ -152,7 +152,7 @@ function Evidence({ items }) {
       const st = r.vote === 'ok' ? (r.degraded ? 'degraded' : 'ok') : r.vote === 'fail' ? 'critical' : 'unknown';
       return html`<tr>
         <td class="nowrap small">${fmtTime(e.at)}${e.node && e.node !== 'local' ? html`<div class="sub">${e.node}</div>` : ''}</td>
-        <td><${Pill} status=${st} /> <span class="small">${reasonText(r.reason, '')}</span><div class="sub ltr">${r.detail}</div></td>
+        <td><${Pill} status=${st} /> <span class="small">${reasonText(r.reason, '')}</span><div class="sub">${detailText(r.detail)}</div></td>
         <td class="right nowrap">${msText(r.latency_ms)}</td>
         <td class="small">
           ${ev.peer && html`<div class="ltr">${t('ui.ev.peer')}: ${ev.peer}</div>`}
@@ -216,7 +216,7 @@ export function MonitorDetail({ name }) {
       </div>
       ${status !== 'ok' && status !== 'pending' && (row.reason || row.unknown_reason) && html`<div class=${'banner ' + (status === 'critical' ? 'error' : 'warning')} style=${{ marginTop: '12px' }}>
         <div><b>${reasonText(row.reason || row.unknown_reason, row.detail)}</b>
-          ${row.detail && html`<div class="small ltr">${row.detail}</div>`}
+          ${row.detail && html`<div class="small">${detailText(row.detail)}</div>`}
           ${status === 'unreachable' && html`<div class="small">${t('ui.mon.unreachable_hint', { parent: (row.parents || []).join(', ') })}</div>`}
           ${row.state_type === 'soft' && html`<div class="small">${t('ui.mon.soft_hint', { attempt: row.attempt, max: row.max_attempts })}</div>`}
           ${row.incident && html`<div class="small">${tn('ui.inc.notified', row.incident.notify_count)}${row.incident.notify_max ? ' / ' + row.incident.notify_max : ''}${row.incident.acked ? ' · ' + t('ui.inc.acked_by', { who: row.incident.acked_by }) : ''}</div>`}

@@ -83,6 +83,7 @@ func Catalog(code string) ([]byte, bool) {
 	for k, v := range catalogs[c] {
 		m[k] = v
 	}
+	m["_details"] = string(detailsJSON)
 	b, err := json.Marshal(m)
 	return b, err == nil
 }

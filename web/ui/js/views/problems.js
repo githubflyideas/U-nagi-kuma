@@ -1,6 +1,6 @@
 // Problems: open incidents split by whether someone is on them.
 import { html, useState } from '../lib.js';
-import { t, tn, dur } from '../i18n.js';
+import { t, tn, dur, detailText } from '../i18n.js';
 import { get, post, del } from '../api.js';
 import { useFetch, useLive, Loading, ErrorBox, Empty, Ago, Dot, Modal, Field, toast, toastError, reasonText, enc, href, useDocTitle } from '../ui.js';
 
@@ -117,7 +117,7 @@ export function IncidentList({ items, reload, compact, selectable, selected, set
             ${silenced && html`<span class="tag">${t('ui.inc.silenced_until')} <${Ago} at=${st.silenced_until} /></span>`}
             ${st.capped && html`<span class="tag warn">${t('ui.inc.capped')}</span>`}
           </div>
-          <div class="sub">${reasonText(inc.reason, inc.detail)}${inc.detail && inc.reason && inc.reason !== 'ok' ? html` · <span class="ltr">${inc.detail}</span>` : ''}</div>
+          <div class="sub">${reasonText(inc.reason, inc.detail)}${inc.detail && inc.reason && inc.reason !== 'ok' ? html` · <span>${detailText(inc.detail)}</span>` : ''}</div>
           <${AckTrail} inc=${inc} tag="div" cls="sub" />
         </td>
         <td class="nowrap small muted hide-sm">

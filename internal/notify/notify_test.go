@@ -47,9 +47,18 @@ func TestRenderZhEn(t *testing.T) {
 	m.Lang = "en"
 	m.Kind, m.Status, m.Body = "RECOVERY", "ok", ""
 	title, body = Render(m)
-	if !strings.Contains(title, "Recovered") || !strings.Contains(body, "Was down for 2m; 1 notifications sent") {
+	if !strings.Contains(title, "Recovered") || !strings.Contains(body, "Was down for 2m; 1 notification sent") {
 		t.Errorf("en recovery: %q / %q", title, body)
 	}
+	m.Title, m.Kind, m.Status = "core-ntp", "PROBLEM", "critical"
+	if title, _ = Render(m); strings.Contains(title, "(core-ntp)") || !strings.Contains(title, "Problem: core-ntp") {
+		t.Errorf("a monitor without its own title is named once: %q", title)
+	}
+	m.Lang, m.Detail = "zh", "connection refused"
+	if _, body = Render(m); !strings.Contains(body, "连接被拒绝") {
+		t.Errorf("zh detail not translated:\n%s", body)
+	}
+	m.Lang = "en"
 	m.Kind, m.Delayed, m.DryRun = "REPEAT", 12*time.Minute, true
 	if title, _ = Render(m); !strings.Contains(title, "[delayed 12 min] [DRILL]") {
 		t.Errorf("prefixes: %q", title)

@@ -1,6 +1,6 @@
 // Shared components and hooks.
 import { html, useState, useEffect, useRef, useCallback } from './lib.js';
-import { t, ago, fmtTime, fmtNum } from './i18n.js';
+import { t, ago, fmtTime, fmtNum, detailText } from './i18n.js';
 import { onLive } from './live.js';
 
 // ---- routing (hash based, so the server needs no fallback routes) ----
@@ -229,10 +229,10 @@ export function bytes(n) {
 }
 
 export function reasonText(reason, detail) {
-  if (!reason || reason === 'ok') return detail || '';
+  if (!reason || reason === 'ok') return detailText(detail);
   const k = 'reason.' + reason;
   const tr = t(k);
-  return tr === k ? (detail || reason) : tr;
+  return tr === k ? (detailText(detail) || reason) : tr;
 }
 
 export function useDocTitle(title) {
@@ -250,4 +250,9 @@ export function quorumText(q) {
 }
 
 // openMonitor shows a monitor in the side drawer without leaving the page.
-export function openMonitor(name) { dispatchEvent(new CustomEvent('nk:monitor', { detail: name })); }
+export function openMonitor(name) { dispatchEvent(new CustomEvent('unagikuma:monitor', { detail: name })); }
+
+// gwBad: the gateway answered ping before and is down now. One that never
+// answered (many routers ignore ping) is not a fault. Older nodes send no
+// state: then any failure counts.
+export function gwBad(g) { return g.state ? g.state === 'down' : !g.ok; }

@@ -1,6 +1,6 @@
 // Application shell: session, navigation and routing.
 import { html, render, useState, useEffect } from './lib.js';
-import { t, tn, setLang, detectLang, loadLanguages, langList, currentLang, fmtTime } from './i18n.js';
+import { t, tn, setLang, detectLang, loadLanguages, langList, currentLang, fmtTime, detailText } from './i18n.js';
 import { get, post, del, setCSRF, onUnauthorized } from './api.js';
 import { startLive, stopLive, onConnection } from './live.js';
 import { useRoute, href, Toasts, ConfirmHost, useFetch, useLive, errText, Field } from './ui.js';
@@ -134,8 +134,8 @@ function Shell({ user, onLogout, onLang }) {
   const route = useRoute();
   const [open, setOpen] = useState(false);
   const [live, setLive] = useState(false);
-  const [theme, setTheme] = useState(storage('nk.theme') || 'dark');
-  const [mini, setMini] = useState(storage('nk.side') === 'mini');
+  const [theme, setTheme] = useState(storage('unagikuma.theme') || 'dark');
+  const [mini, setMini] = useState(storage('unagikuma.side') === 'mini');
   const ov = useFetch(() => get('/overview'), []);
   useLive(['incident', 'state', 'serial', 'banner', 'directory'], ov.reload, 1500);
   useEffect(() => onConnection(setLive), []);
@@ -145,12 +145,12 @@ function Shell({ user, onLogout, onLang }) {
   const contactIssues = ov.data ? ov.data.contact_issues || 0 : 0;
   const setup = setupIssues(ov.data);
   const first = '/' + (route.parts[0] || '');
-  const changeTheme = (v) => { setTheme(v); storage('nk.theme', v); applyTheme(v); };
+  const changeTheme = (v) => { setTheme(v); storage('unagikuma.theme', v); applyTheme(v); };
   // On a wide screen the button folds the sidebar to icons; on a phone it
   // slides the sidebar in.
   const toggleSide = () => {
     if (matchMedia('(max-width: 860px)').matches) return setOpen(!open);
-    storage('nk.side', mini ? 'full' : 'mini');
+    storage('unagikuma.side', mini ? 'full' : 'mini');
     setMini(!mini);
   };
 
@@ -187,7 +187,7 @@ function Shell({ user, onLogout, onLang }) {
       <nav class="nav">
         ${nav.map(([path, key, ico]) => html`<a href=${href(path)} class=${first === path ? 'on' : ''}>
           <span class="ico" title=${mini ? t(key) : ''}>${ico}</span><span class="lbl">${t(key)}</span>
-          ${path === '/problems' && setup.length > 0 && html`<span class="rdot" style=${{ marginTop: 0, marginInlineStart: 'auto' }} title=${setup.map(x => x.n ? tn(x.key, x.n) : t(x.key)).join('\n')}></span>`}
+          ${path === '/problems' && setup.length > 0 && html`<span class="rdot setup" style=${{ marginTop: 0, marginInlineStart: 'auto' }} title=${setup.map(x => x.n ? tn(x.key, x.n) : t(x.key)).join('\n')}></span>`}
           ${path === '/problems' && unhandled > 0 && html`<span class="count">${unhandled}</span>`}
           ${path === '/settings' && scriptProblems > 0 && html`<span class="count" title=${t('ui.scripts.badge', { n: scriptProblems })}>${scriptProblems}</span>`}
           ${path === '/alerts' && contactIssues > 0 && html`<span class="rdot" style=${{ marginTop: 0, marginInlineStart: 'auto' }} title=${t('ui.dir.nav_dot', { n: contactIssues })}></span>`}
@@ -233,6 +233,7 @@ function Verdict({ ov }) {
   if (anomalies.length || nodeDown) { cls = 'held'; text = t('ui.top.held'); }
   else if (ov.unhandled > 0) { cls = 'critical'; text = t('ui.top.unhandled', { n: ov.unhandled }); }
   else if (ov.degraded > 0) { cls = 'warn'; text = t('ui.top.warn'); }
+  else if ((ov.counts.unknown || 0) > 0) { cls = 'unknown'; text = t('ui.top.unknown', { n: ov.counts.unknown }); }
   const week = ov.value_week || {};
   const saved = Object.values(week).reduce((a, n) => a + (n || 0), 0);
   const online = paths.filter(p => p.online).length;
@@ -253,7 +254,7 @@ export function ConfigBanner({ banner }) {
   const msg = t(k, { serial: banner.serial });
   return html`<div class=${'banner ' + banner.kind}>
     <div class="spacer">${msg === k ? banner.message : msg}
-      ${banner.diagnostics && banner.diagnostics.length > 0 && html`<ul class="small">${banner.diagnostics.slice(0, 5).map(d => html`<li class="ltr">${d.pos.line}:${d.pos.col} ${d.message}</li>`)}</ul>`}
+      ${banner.diagnostics && banner.diagnostics.length > 0 && html`<ul class="small">${banner.diagnostics.slice(0, 5).map(d => html`<li class="ltr">${d.pos.line}:${d.pos.col} ${detailText(d.message)}</li>`)}</ul>`}
     </div>
     <a class="btn sm" href="#/config">${t('ui.banner.open')}</a>
   </div>`;
@@ -310,7 +311,7 @@ function Root() {
 }
 
 (async () => {
-  applyTheme(storage('nk.theme'));
+  applyTheme(storage('unagikuma.theme'));
   await loadLanguages();
   await setLang(detectLang(), false);
   render(html`<${Root} />`, document.getElementById('app'));

@@ -1,6 +1,6 @@
 // monitors.bind: the file (read-only), its history and imports.
 import { html, useState } from '../lib.js';
-import { t, fmtTime } from '../i18n.js';
+import { t, fmtTime, detailText } from '../i18n.js';
 import { get, post, getCSRF } from '../api.js';
 import { useFetch, useLive, Loading, ErrorBox, Empty, Field, Modal, toast, toastError, confirmDialog, useDocTitle } from '../ui.js';
 
@@ -46,7 +46,7 @@ function EditTab() {
     </div>
     <div class="banner info small">${t('ui.config.readonly')}</div>
     ${diags.length > 0 && html`<div class=${'banner ' + (errors.length ? 'error' : 'warning')}><ul class="small" style=${{ margin: 0, paddingInlineStart: '18px' }}>
-      ${diags.slice(0, 20).map(d => html`<li class="ltr">${t('ui.config.line', { line: d.pos.line })}: ${d.message}</li>`)}
+      ${diags.slice(0, 20).map(d => html`<li class="ltr">${t('ui.config.line', { line: d.pos.line })}: ${detailText(d.message)}</li>`)}
     </ul></div>`}
     <${FileView} value=${cur.data.text} diags=${diags} />
     <p class="small muted">${t('ui.config.help_readonly')}</p>

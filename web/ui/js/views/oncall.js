@@ -3,7 +3,7 @@
 // A rotation is a contact group channel with rotate= set: it notifies the
 // member on call, and the others only if that member cannot be reached.
 import { html, useState } from '../lib.js';
-import { t, dur, fmtNum } from '../i18n.js';
+import { t, dur, fmtNum, currentLang } from '../i18n.js';
 import { get, post, del } from '../api.js';
 import { useFetch, useLive, Loading, ErrorBox, Empty, Field, Modal, Card, toast, toastError, errText, confirmDialog, useDocTitle } from '../ui.js';
 
@@ -14,7 +14,7 @@ function toLocal(d) {
 }
 function when(d) {
   d = new Date(d);
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', weekday: 'short' }) + ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleDateString(currentLang(), { month: 'short', day: 'numeric', weekday: 'short' }) + ' ' + d.toLocaleTimeString(currentLang(), { hour: '2-digit', minute: '2-digit' });
 }
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 // handoffText shows "mon 09:00" with the day in the UI language.

@@ -1,7 +1,7 @@
 // Expiry: every certificate and domain registration the checks watch,
 // soonest first.
 import { html } from '../lib.js';
-import { t, tn } from '../i18n.js';
+import { t, tn, currentLang } from '../i18n.js';
 import { get } from '../api.js';
 import { useFetch, useLive, Loading, ErrorBox, Empty, Dot, enc, useDocTitle } from '../ui.js';
 
@@ -12,7 +12,7 @@ export function Expiry() {
   if (!d.data) return html`<div class="page">${d.error ? html`<${ErrorBox} error=${d.error} retry=${d.reload} />` : html`<${Loading} />`}</div>`;
   const items = d.data.items;
   const cls = (days) => days < 7 ? 'err-text' : days < 30 ? 'warn-text' : '';
-  const day = (days) => new Date(Date.now() + days * 864e5).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  const day = (days) => new Date(Date.now() + days * 864e5).toLocaleDateString(currentLang(), { year: 'numeric', month: 'short', day: 'numeric' });
   return html`<div class="page">
     <div class="row"><a href="#/monitors" class="muted">← ${t('ui.nav.monitors')}</a></div>
     <h1>${t('ui.exp.title')}</h1>

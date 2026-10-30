@@ -2,7 +2,7 @@
 // starts, a maintenance window for the monitors it touches, and the
 // receipt (done, rolled back, cancelled) when it ends.
 import { html, useState } from '../lib.js';
-import { t } from '../i18n.js';
+import { t, currentLang } from '../i18n.js';
 import { get, post, put, qs } from '../api.js';
 import { useFetch, useLive, Loading, ErrorBox, Empty, Field, Modal, toast, errText } from '../ui.js';
 
@@ -14,8 +14,8 @@ function toLocal(d) {
 }
 function when(c) {
   const s = new Date(c.start), e = new Date(c.end);
-  const day = (d) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  const hm = (d) => d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  const day = (d) => d.toLocaleDateString(currentLang(), { month: 'short', day: 'numeric' });
+  const hm = (d) => d.toLocaleTimeString(currentLang(), { hour: '2-digit', minute: '2-digit' });
   return day(s) + ' ' + hm(s) + ' – ' + (s.toDateString() === e.toDateString() ? '' : day(e) + ' ') + hm(e);
 }
 const STATE_CLS = { planned: 'tag', running: 'tag warn-text', done: 'tag ok-text', rolled_back: 'tag err-text', cancelled: 'tag muted' };

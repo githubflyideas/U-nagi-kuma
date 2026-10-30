@@ -714,13 +714,16 @@ func (d *LocalNet) GateTargets(fam Family, exclude string, n int, now time.Time)
 
 // Health is the "本机健康" card model (overview health card).
 type Health struct {
-	Uplink         string // ok | wan_down | lan_down | no_route | cannot_judge | unknown
-	UplinkSince    time.Time
-	Suspected      bool // wan_down judged without wan anchors
-	Gateway        string
-	GatewayOK      bool
-	GatewayRTT     time.Duration
-	GatewayNote    string // container | unresponsive | no_route | ""
+	Uplink      string // ok | wan_down | lan_down | no_route | cannot_judge | unknown
+	UplinkSince time.Time
+	Suspected   bool // wan_down judged without wan anchors
+	Gateway     string
+	GatewayOK   bool
+	GatewayRTT  time.Duration
+	GatewayNote string // container | unresponsive | no_route | ""
+	// GatewayState: ok | down (answered before, stopped) | silent (never
+	// answered ping: many routers ignore it, which is fine) | unsure.
+	GatewayState   string
 	WANDomains     int
 	WANAnchors     int
 	DNSDown        bool
@@ -745,6 +748,16 @@ func (d *LocalNet) Health(now time.Time) Health {
 	if g := s.autoGateway; g != nil {
 		h.Gateway, h.GatewayRTT = g.addr, g.rtt
 		h.GatewayOK = g.answered && !g.down && g.fails == 0
+		switch {
+		case h.GatewayOK:
+			h.GatewayState = "ok"
+		case !g.answered || g.container:
+			h.GatewayState = "silent"
+		case g.down:
+			h.GatewayState = "down"
+		default:
+			h.GatewayState = "unsure"
+		}
 		switch {
 		case g.noRoute:
 			h.GatewayNote = "no_route"
