@@ -1288,5 +1288,6 @@
 "detail.w_unlimited": "max=0 gửi thông báo không giới hạn",
 "detail.w_stateful": "{kw} tạo trạng thái trên đích: chu kỳ tăng lên {i}",
 "detail.w_empty_select": "MAINT {name} không chọn giám sát nào",
-"msg.title_plain": "[Unagikuma] {kind}: {title} {status}"
+"msg.title_plain": "[Unagikuma] {kind}: {title} {status}",
+"ui.uptime.so_far": "Mới theo dõi được {pct} của khoảng thời gian này: con số chỉ tính phần đó."
 }

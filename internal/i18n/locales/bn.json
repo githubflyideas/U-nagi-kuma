@@ -1288,5 +1288,6 @@
 "detail.w_unlimited": "max=0 সীমাহীন বিজ্ঞপ্তি পাঠায়",
 "detail.w_stateful": "{kw} লক্ষ্যে অবস্থা তৈরি করে: ব্যবধান {i} করা হয়েছে",
 "detail.w_empty_select": "MAINT {name} কোনো মনিটর বাছাই করে না",
-"msg.title_plain": "[Unagikuma] {kind}: {title} {status}"
+"msg.title_plain": "[Unagikuma] {kind}: {title} {status}",
+"ui.uptime.so_far": "এখন পর্যন্ত এই সময়ের মাত্র {pct} দেখা হয়েছে: সংখ্যাটি শুধু সেই অংশের।"
 }

@@ -1288,5 +1288,6 @@
 "detail.w_unlimited": "max=0 mengirim notifikasi tanpa batas",
 "detail.w_stateful": "{kw} membuat status di target: interval dinaikkan ke {i}",
 "detail.w_empty_select": "MAINT {name} tidak memilih monitor apa pun",
-"msg.title_plain": "[Unagikuma] {kind}: {title} {status}"
+"msg.title_plain": "[Unagikuma] {kind}: {title} {status}",
+"ui.uptime.so_far": "Baru {pct} dari periode ini yang dipantau: angka ini hanya mencakup bagian itu."
 }

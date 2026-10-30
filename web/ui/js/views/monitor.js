@@ -226,10 +226,12 @@ export function MonitorDetail({ name }) {
 
     <div class="tiles">
       ${['24h', '7d', '30d', '90d'].map(k => {
-        // Too little of the window watched yet: no figure, but say how much.
+        // Too little of the window watched yet: the figure so far, and how
+        // much of the window it covers.
         const cov = (d.data.coverage || {})[k];
         const short = uptime[k] == null && cov > 0;
-        return html`<div class="tile" title=${short ? t('ui.uptime.coverage', { pct: pct(cov, 0) }) : ''}><b>${pct(uptime[k])}</b><span>${t('ui.uptime')} ${k}${short ? html` <span class="muted">· ${t('ui.uptime.coverage_short', { pct: pct(cov, 0) })}</span>` : ''}</span></div>`;
+        const so = short ? (d.data.uptime_partial || {})[k] : null;
+        return html`<div class="tile" title=${short ? t(so != null ? 'ui.uptime.so_far' : 'ui.uptime.coverage', { pct: pct(cov, 0) }) : ''}><b class=${so != null ? 'muted' : ''}>${pct(uptime[k] != null ? uptime[k] : so)}</b><span>${t('ui.uptime')} ${k}${short ? html` <span class="muted">· ${t('ui.uptime.coverage_short', { pct: pct(cov, 0) })}</span>` : ''}</span></div>`;
       })}
       <div class="tile"><b>${msText(row.latency_ms)}</b><span>${t('ui.latency')}</span></div>
       <div class="tile"><b>${d.data.downtime_30d_s ? dur(d.data.downtime_30d_s) : '0'}</b><span>${t('ui.mon.downtime30d')}</span></div>

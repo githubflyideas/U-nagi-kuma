@@ -1298,5 +1298,6 @@
 "detail.w_stateful": "{kw} creates state on the target: interval raised to {i}",
 "detail.w_empty_select": "MAINT {name} selects no monitor",
 "msg.title_plain": "[Unagikuma] {kind}: {title} {status}",
-"msg.down_for_one": "Was down for {duration}; {count} notification sent"
+"msg.down_for_one": "Was down for {duration}; {count} notification sent",
+"ui.uptime.so_far": "Watched for only {pct} of this window so far: the figure covers that part only."
 }

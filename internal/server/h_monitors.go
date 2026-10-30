@@ -437,6 +437,7 @@ func (s *Server) monitorDetail(w http.ResponseWriter, r *http.Request) (any, err
 	now := s.now()
 	up := map[string]*float64{}
 	cov := map[string]float64{}
+	partial := map[string]*float64{}
 	var down float64
 	for _, k := range []string{"24h", "7d", "30d", "90d"} {
 		u, err := s.app.Store().UptimeOf(name, now.Add(-ranges[k]), now)
@@ -444,12 +445,16 @@ func (s *Server) monitorDetail(w http.ResponseWriter, r *http.Request) (any, err
 			return nil, err
 		}
 		up[k], cov[k] = s.shownRatio(u), u.Coverage
+		if up[k] == nil && u.Ratio != nil {
+			partial[k] = u.Ratio
+		}
 		if k == "30d" {
 			down = u.DownS
 		}
 	}
 	out["uptime"] = up
 	out["coverage"] = cov
+	out["uptime_partial"] = partial // the figure so far, for windows watched too briefly
 	out["downtime_30d_s"] = down
 	ev, _ := s.app.Store().EvidenceOf(name, 5)
 	type evRow struct {

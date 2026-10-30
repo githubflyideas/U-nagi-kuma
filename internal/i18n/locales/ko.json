@@ -1288,5 +1288,6 @@
 "detail.w_unlimited": "max=0이면 알림이 무제한으로 발송됩니다",
 "detail.w_stateful": "{kw}은(는) 대상에 상태를 만듭니다: 간격을 {i}(으)로 늘림",
 "detail.w_empty_select": "MAINT {name}이(가) 선택한 모니터 없음",
-"msg.title_plain": "[Unagikuma] {kind}: {title} {status}"
+"msg.title_plain": "[Unagikuma] {kind}: {title} {status}",
+"ui.uptime.so_far": "이 기간 중 아직 {pct}만 감시했습니다. 수치는 감시한 부분만 나타냅니다."
 }

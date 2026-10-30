@@ -1297,5 +1297,6 @@
 "detail.w_stateful": "{kw} crea estado en el destino: intervalo aumentado a {i}",
 "detail.w_empty_select": "MAINT {name} no selecciona ningún monitor",
 "msg.title_plain": "[Unagikuma] {kind}: {title} {status}",
-"msg.down_for_one": "Estuvo caído {duration}; se envió {count} notificación"
+"msg.down_for_one": "Estuvo caído {duration}; se envió {count} notificación",
+"ui.uptime.so_far": "Solo se ha vigilado el {pct} de este periodo: la cifra cubre solo esa parte."
 }

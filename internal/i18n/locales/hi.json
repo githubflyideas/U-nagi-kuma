@@ -1293,5 +1293,6 @@
 "detail.w_unlimited": "max=0 बिना सीमा के सूचनाएँ भेजता है",
 "detail.w_stateful": "{kw} लक्ष्य पर स्थिति बनाता है: अंतराल {i} किया गया",
 "detail.w_empty_select": "MAINT {name} कोई मॉनिटर नहीं चुनता",
-"msg.title_plain": "[Unagikuma] {kind}: {title} {status}"
+"msg.title_plain": "[Unagikuma] {kind}: {title} {status}",
+"ui.uptime.so_far": "अब तक इस अवधि का केवल {pct} देखा गया है: यह आँकड़ा सिर्फ़ उसी हिस्से का है।"
 }

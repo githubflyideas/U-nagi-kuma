@@ -1328,5 +1328,6 @@
 "detail.w_unlimited": "max=0 يرسل الإشعارات بلا حد",
 "detail.w_stateful": "{kw} ينشئ حالة على الهدف: رُفع الفاصل إلى {i}",
 "detail.w_empty_select": "MAINT {name} لا يحدد أي مراقبة",
-"msg.title_plain": "[Unagikuma] {kind}: {title} {status}"
+"msg.title_plain": "[Unagikuma] {kind}: {title} {status}",
+"ui.uptime.so_far": "لم تتم مراقبة سوى {pct} من هذه الفترة حتى الآن: الرقم يخص هذا الجزء فقط."
 }

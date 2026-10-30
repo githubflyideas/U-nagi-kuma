@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/githubflyideas/unagikuma/internal/app"
 	"github.com/githubflyideas/unagikuma/internal/config"
@@ -18,6 +19,19 @@ type maintJSON struct {
 	ETag     string `json:"etag,omitempty"`
 	Notify   bool   `json:"notify"`
 	Line     int    `json:"line"`
+	// The times are null when not known (a window that is not open has
+	// no start), not "0001-01-01".
+	Start   *time.Time `json:"start"`
+	End     *time.Time `json:"end"`
+	Next    *time.Time `json:"next"`
+	NextEnd *time.Time `json:"next_end"`
+}
+
+func timeOrNull(t time.Time) *time.Time {
+	if t.IsZero() {
+		return nil
+	}
+	return &t
 }
 
 func (s *Server) maintList(w http.ResponseWriter, r *http.Request) (any, error) {
@@ -28,7 +42,7 @@ func (s *Server) maintList(w http.ResponseWriter, r *http.Request) (any, error) 
 	}
 	out := []maintJSON{}
 	for _, v := range s.app.Engine().Maintenance() {
-		j := maintJSON{MaintView: v}
+		j := maintJSON{MaintView: v, Start: timeOrNull(v.Start), End: timeOrNull(v.End), Next: timeOrNull(v.Next), NextEnd: timeOrNull(v.NextEnd)}
 		if mt := byName[v.Name]; mt != nil {
 			j.Select, j.Notify, j.Line = mt.Select.String(), mt.Notify, mt.Pos.Line
 			j.Duration = mt.Schedule.Duration.String()

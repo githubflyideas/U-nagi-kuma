@@ -1297,5 +1297,6 @@
 "detail.w_stateful": "{kw} cria estado no alvo: intervalo aumentado para {i}",
 "detail.w_empty_select": "MAINT {name} não seleciona nenhum monitor",
 "msg.title_plain": "[Unagikuma] {kind}: {title} {status}",
-"msg.down_for_one": "Ficou fora do ar por {duration}; {count} notificação enviada"
+"msg.down_for_one": "Ficou fora do ar por {duration}; {count} notificação enviada",
+"ui.uptime.so_far": "Apenas {pct} deste período foi monitorado até agora: o valor cobre só essa parte."
 }

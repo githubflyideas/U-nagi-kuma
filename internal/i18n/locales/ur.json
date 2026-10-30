@@ -1296,5 +1296,6 @@
 "detail.w_unlimited": "max=0 بغیر حد کے اطلاعات بھیجتا ہے",
 "detail.w_stateful": "{kw} ہدف پر حالت بناتا ہے: وقفہ {i} کر دیا گیا",
 "detail.w_empty_select": "MAINT {name} کوئی مانیٹر منتخب نہیں کرتا",
-"msg.title_plain": "[Unagikuma] {kind}: {title} {status}"
+"msg.title_plain": "[Unagikuma] {kind}: {title} {status}",
+"ui.uptime.so_far": "اب تک اس مدت کا صرف {pct} دیکھا گیا ہے: یہ عدد صرف اسی حصے کا ہے۔"
 }

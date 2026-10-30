@@ -1297,5 +1297,6 @@
 "detail.w_stateful": "{kw} erzeugt Zustand auf dem Ziel: Intervall auf {i} erhöht",
 "detail.w_empty_select": "MAINT {name} wählt keinen Monitor aus",
 "msg.title_plain": "[Unagikuma] {kind}: {title} {status}",
-"msg.down_for_one": "War {duration} ausgefallen; {count} Benachrichtigung gesendet"
+"msg.down_for_one": "War {duration} ausgefallen; {count} Benachrichtigung gesendet",
+"ui.uptime.so_far": "Bisher erst {pct} dieses Zeitraums beobachtet: der Wert gilt nur für diesen Teil."
 }

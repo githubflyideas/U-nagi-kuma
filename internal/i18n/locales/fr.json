@@ -1297,5 +1297,6 @@
 "detail.w_stateful": "{kw} crée un état sur la cible : intervalle porté à {i}",
 "detail.w_empty_select": "MAINT {name} ne sélectionne aucun moniteur",
 "msg.title_plain": "[Unagikuma] {kind} : {title} {status}",
-"msg.down_for_one": "En panne pendant {duration} ; {count} notification envoyée"
+"msg.down_for_one": "En panne pendant {duration} ; {count} notification envoyée",
+"ui.uptime.so_far": "Seulement {pct} de cette période observée pour l’instant : le chiffre ne porte que sur cette partie."
 }

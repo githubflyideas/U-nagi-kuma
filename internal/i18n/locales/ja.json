@@ -1288,5 +1288,6 @@
 "detail.w_unlimited": "max=0 では通知が無制限に送られます",
 "detail.w_stateful": "{kw} は対象に状態を作ります: 間隔を {i} に延長しました",
 "detail.w_empty_select": "MAINT {name} はどの監視も選択していません",
-"msg.title_plain": "[Unagikuma] {kind}: {title}{status}"
+"msg.title_plain": "[Unagikuma] {kind}: {title}{status}",
+"ui.uptime.so_far": "この期間のうち、まだ {pct} しか監視していません。数値は監視した部分だけのものです。"
 }

@@ -1312,5 +1312,6 @@
 "detail.w_unlimited": "max=0 отправляет оповещения без ограничений",
 "detail.w_stateful": "{kw} создаёт состояние на цели: интервал увеличен до {i}",
 "detail.w_empty_select": "MAINT {name} не выбирает ни одного монитора",
-"msg.title_plain": "[Unagikuma] {kind}: {title} {status}"
+"msg.title_plain": "[Unagikuma] {kind}: {title} {status}",
+"ui.uptime.so_far": "Пока отслежено только {pct} этого периода: значение относится только к этой части."
 }

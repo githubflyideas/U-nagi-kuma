@@ -1288,5 +1288,6 @@
 "detail.w_unlimited": "max=0 会不限次数地发送通知",
 "detail.w_stateful": "{kw} 会在目标上产生状态：检测间隔已提高到 {i}",
 "detail.w_empty_select": "MAINT {name} 没有选中任何监控",
-"msg.title_plain": "[Unagikuma] {kind}：{title}{status}"
+"msg.title_plain": "[Unagikuma] {kind}：{title}{status}",
+"ui.uptime.so_far": "目前只观测了这个时间窗的 {pct}：数值只代表已观测的部分。"
 }

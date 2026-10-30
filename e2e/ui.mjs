@@ -207,11 +207,18 @@ await step('phones get no sideways scrolling', async () => {
   const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'en-US', storageState: state, isMobile: true });
   const p = await phone.newPage();
   watch(p);
-  for (const route of ['#/', '#/monitors', '#/alerts/channels', '#/alerts/contacts', '#/oncall', '#/notices/changes', '#/notices/pages', '#/settings']) {
+  const mon = (await api('/monitors')).items.find((m) => m.target === '127.0.0.1:1').name;
+  for (const route of ['#/', '#/monitors', '#/monitors/' + encodeURIComponent(mon), '#/alerts/channels', '#/alerts/contacts', '#/oncall', '#/notices/changes', '#/notices/pages', '#/settings']) {
     await p.goto(base + '/' + route);
     await p.waitForTimeout(800);
     const w = await p.evaluate(() => document.documentElement.scrollWidth);
-    if (w > 392) throw new Error(`${route} is ${w}px wide`);
+    if (w > 392) {
+      // Name the widest elements so the fix is easy to find.
+      const wide = await p.evaluate(() => [...document.querySelectorAll('body *')]
+        .filter((e) => e.getBoundingClientRect().right > 392)
+        .slice(0, 6).map((e) => `${e.tagName.toLowerCase()}.${[...e.classList].join('.')} ${Math.round(e.getBoundingClientRect().right)}`).join(', '));
+      throw new Error(`${route} is ${w}px wide: ${wide}`);
+    }
   }
   await phone.close();
 });
