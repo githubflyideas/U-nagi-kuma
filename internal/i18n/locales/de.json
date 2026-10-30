@@ -1394,5 +1394,8 @@
 "sys.dns_summary_ok": "Der DNS-Resolver dieses Hosts antwortete {from}–{to} ({duration}) nicht; die {paused} per Name geprüften Monitore warteten. Seitdem erneut geprüft: alles in Ordnung.",
 "sys.dns_summary_failing": "Der DNS-Resolver dieses Hosts antwortete {from}–{to} ({duration}) nicht; die {paused} per Name geprüften Monitore warteten. Seitdem erneut geprüft: {failing} weiterhin fehlerhaft — {names}",
 "ui.ob.done": "Erledigt",
-"ui.ob.todo": "Noch offen"
+"ui.ob.todo": "Noch offen",
+"ui.mon.paused_n": "Pausierte Monitore: {n}",
+"ui.mon.resumed_n": "Fortgesetzte Monitore: {n}",
+"ui.mon.resume_skipped": "Nicht fortgesetzt, weil ihr Skript auf einigen Knoten fehlt: {names}. Setzen Sie sie einzeln auf ihrer Seite fort."
 }

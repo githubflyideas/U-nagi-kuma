@@ -1385,5 +1385,8 @@
 "sys.dns_summary_ok": "このホストの DNS リゾルバーが {from}–{to}（{duration}）応答しませんでした。名前で監視している {paused} 件は判定を保留しました。再チェックの結果：すべて正常。",
 "sys.dns_summary_failing": "このホストの DNS リゾルバーが {from}–{to}（{duration}）応答しませんでした。名前で監視している {paused} 件は判定を保留しました。再チェックの結果：{failing} 件がまだ異常 — {names}",
 "ui.ob.done": "完了",
-"ui.ob.todo": "未完了"
+"ui.ob.todo": "未完了",
+"ui.mon.paused_n": "一時停止した監視：{n}",
+"ui.mon.resumed_n": "再開した監視：{n}",
+"ui.mon.resume_skipped": "一部のノードでスクリプトが見つからないため再開しませんでした：{names}。各監視のページから個別に再開してください。"
 }

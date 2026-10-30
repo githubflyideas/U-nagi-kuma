@@ -1,6 +1,6 @@
 // Monitor list: dense table with heartbeat bars, or the honeycomb, with
 // search and status chips. A row opens the monitor's page; ticked rows can
-// be checked now or deleted together.
+// be checked now, paused, resumed or deleted together.
 import { html, useState, useEffect, useMemo } from '../lib.js';
 import { t, tn, fmtNum } from '../i18n.js';
 import { get, post } from '../api.js';
@@ -98,6 +98,19 @@ export function Monitors({ query }) {
     }
     toast(t('ui.mon.checks_queued', { n }));
   };
+  // Pause or resume every ticked monitor in one change to the file.
+  const pauseAll = async (paused) => {
+    const names = picked.map(r => r.name);
+    const etags = {};
+    for (const r of picked) if (r.etag) etags[r.name] = r.etag;
+    try {
+      const res = await post('/monitors/bulk-pause', { names, paused, etags });
+      toast(t(paused ? 'ui.mon.paused_n' : 'ui.mon.resumed_n', { n: fmtNum(res.changed) }));
+      if (res.skipped && res.skipped.length) toast(t('ui.mon.resume_skipped', { names: res.skipped.join(', ') }), 'error');
+      list.reload();
+    } catch (e) { toastError(e); }
+  };
+  const nPaused = picked.filter(r => r.status === 'paused').length;
   const remove = async () => {
     const names = picked.map(r => r.name);
     if (!await confirmDialog(tn('ui.mon.delete_selected_confirm', names.length, { names: names.slice(0, 8).join(', ') + (names.length > 8 ? ' …' : '') }), { danger: true, ok: t('ui.delete') })) return;
@@ -121,6 +134,8 @@ export function Monitors({ query }) {
       </select>
       <${Seg} value=${view} onChange=${changeView} options=${[['list', t('ui.mon.view_list')], ['hive', t('ui.ov.view_hive')]]} />
       <div class="spacer"></div>
+      <button class="btn" onClick=${() => pauseAll(true)} disabled=${picked.length === nPaused} title=${picked.length ? '' : t('ui.mon.select_first')}>${t('ui.mon.pause')}${picked.length > nPaused ? ' (' + fmtNum(picked.length - nPaused) + ')' : ''}</button>
+      <button class="btn" onClick=${() => pauseAll(false)} disabled=${!nPaused} title=${picked.length ? '' : t('ui.mon.select_first')}>${t('ui.mon.resume')}${nPaused ? ' (' + fmtNum(nPaused) + ')' : ''}</button>
       <a class="btn" href="#/expiry">${t('ui.exp.title')}</a>
       <a class="btn primary" href="#/monitors/new">${t('ui.mon.add')}</a>
       <button class="btn" onClick=${() => setQuick(true)}>${t('ui.mon.quick_add')}</button>

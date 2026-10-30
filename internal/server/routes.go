@@ -29,6 +29,7 @@ func (s *Server) routes() {
 	s.handle("POST /api/v1/monitors/{name}/push/rotate", "write", s.monitorPushRotate)
 	s.handle("POST /api/v1/monitors", "write", s.monitorCreate)
 	s.handle("POST /api/v1/monitors/bulk-delete", "write", s.monitorBulkDelete)
+	s.handle("POST /api/v1/monitors/bulk-pause", "write", s.monitorBulkPause)
 	s.handle("PUT /api/v1/monitors/{name}", "write", s.monitorUpdate)
 	s.handle("DELETE /api/v1/monitors/{name}", "write", s.monitorDelete)
 	s.handle("POST /api/v1/monitors/{name}/check", "ack", s.monitorCheck)

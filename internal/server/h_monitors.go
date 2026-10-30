@@ -726,6 +726,96 @@ func (s *Server) monitorBulkDelete(w http.ResponseWriter, r *http.Request) (any,
 	return s.saved(st), nil
 }
 
+// monitorBulkPause pauses or resumes several monitors in one edit of the
+// file. Monitors already in the wanted state are left alone; when resuming,
+// a script check whose script is missing on some node is skipped unless
+// force is set, and its name is returned in "skipped".
+func (s *Server) monitorBulkPause(w http.ResponseWriter, r *http.Request) (any, error) {
+	var req struct {
+		Names  []string          `json:"names"`
+		Paused bool              `json:"paused"`
+		Force  bool              `json:"force"`
+		ETags  map[string]string `json:"etags"`
+	}
+	if err := decodeJSON(r, s.maxBody(), &req); err != nil {
+		return nil, err
+	}
+	if len(req.Names) == 0 {
+		return nil, Errorf(http.StatusBadRequest, CodeInvalid, "no monitors given")
+	}
+	cfg := s.app.Config().Config
+	var names, skipped []string
+	seen := map[string]bool{}
+	for _, name := range req.Names {
+		m := cfg.FindMonitor(name)
+		if m == nil {
+			return nil, notFound("monitor")
+		}
+		if !s.allowsMonitor(authOf(r), name) {
+			return nil, errOutsideAreas
+		}
+		if seen[name] {
+			continue
+		}
+		seen[name] = true
+		if m.Disabled == req.Paused {
+			continue
+		}
+		if !req.Paused && m.Type == "EXEC" && !req.Force && len(s.scriptProblems(name)) > 0 {
+			skipped = append(skipped, name)
+			continue
+		}
+		names = append(names, name)
+	}
+	if skipped == nil {
+		skipped = []string{}
+	}
+	verb := "resume"
+	if req.Paused {
+		verb = "pause"
+	}
+	if len(names) == 0 {
+		return map[string]any{"serial": s.app.Config().Serial, "etag": s.app.Config().ETag(), "changed": 0, "skipped": skipped}, nil
+	}
+	auditOf(r).target = strings.Join(names, ", ")
+	changed := 0
+	st, err := s.app.EditConfig(authOf(r).user, verb+" "+strings.Join(names, ", "), func(f *config.File) error {
+		for _, name := range names {
+			if want := req.ETags[name]; want != "" {
+				if cur := f.RecordETag(name); cur == "" || !etagListHas(want, cur) {
+					return errPrecondition{cur}
+				}
+			}
+			rec, err := recordFromFile(f, name)
+			if err != nil {
+				return err
+			}
+			var opts []config.Opt
+			for _, o := range rec.Opts {
+				if o.Key != "disabled" {
+					opts = append(opts, o)
+				}
+			}
+			if req.Paused {
+				opts = append(opts, config.Opt{Key: "disabled", Value: "yes"})
+			}
+			rec.Opts = opts
+			if err := f.UpsertRecord(rec); err != nil {
+				return err
+			}
+			changed++
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, s.configError(err)
+	}
+	out := s.saved(st)
+	out["changed"] = changed
+	out["skipped"] = skipped
+	return out, nil
+}
+
 // monitorPause toggles disabled=yes on the record (pausing is configuration).
 func (s *Server) monitorPause(w http.ResponseWriter, r *http.Request) (any, error) {
 	name := s.monitorParam(r)

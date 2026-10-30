@@ -1395,5 +1395,8 @@
 "sys.dns_summary_ok": "This host's DNS resolver did not answer {from}–{to} ({duration}); the {paused} monitors checked by name waited. Re-checked since: all fine.",
 "sys.dns_summary_failing": "This host's DNS resolver did not answer {from}–{to} ({duration}); the {paused} monitors checked by name waited. Re-checked since: {failing} still failing — {names}",
 "ui.ob.done": "Done",
-"ui.ob.todo": "Not done yet"
+"ui.ob.todo": "Not done yet",
+"ui.mon.paused_n": "Monitors paused: {n}",
+"ui.mon.resumed_n": "Monitors resumed: {n}",
+"ui.mon.resume_skipped": "Not resumed because their script is missing on some nodes: {names}. Resume them one by one from their page."
 }

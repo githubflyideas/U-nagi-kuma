@@ -1385,5 +1385,8 @@
 "sys.dns_summary_ok": "이 호스트의 DNS 리졸버가 {from}–{to}({duration}) 동안 응답하지 않았습니다. 이름으로 검사하는 모니터 {paused}개는 판정을 보류했습니다. 다시 검사한 결과: 모두 정상.",
 "sys.dns_summary_failing": "이 호스트의 DNS 리졸버가 {from}–{to}({duration}) 동안 응답하지 않았습니다. 이름으로 검사하는 모니터 {paused}개는 판정을 보류했습니다. 다시 검사한 결과: {failing}개 아직 실패 — {names}",
 "ui.ob.done": "완료",
-"ui.ob.todo": "아직 안 함"
+"ui.ob.todo": "아직 안 함",
+"ui.mon.paused_n": "일시 중지된 모니터: {n}",
+"ui.mon.resumed_n": "재개된 모니터: {n}",
+"ui.mon.resume_skipped": "일부 노드에 스크립트가 없어 재개하지 않았습니다: {names}. 각 모니터 페이지에서 하나씩 재개하세요."
 }

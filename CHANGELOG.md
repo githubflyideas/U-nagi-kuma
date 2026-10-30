@@ -15,6 +15,7 @@
 - A channel sends at most 3 alerts a minute (`notify.backstop-max`, `notify.backstop-window`); the rest come as one summary at the end of the minute. Escalations and system notices always go out; new problems have a share of their own.
 - The audit log is tamper-evident: `unagikuma audit verify` and **Check integrity** find changed, inserted or removed entries. It also records sign-ins, backups, restores, imports, password resets and what the system did by itself, highlights high-risk entries, filters by risk, address and time, and exports CSV or JSON (`unagikuma audit export`).
 - `unagikuma reset-password --revoke-tokens` also revokes that user's API tokens.
+- Monitors: tick monitors and **Pause** or **Resume** them together (`POST /api/v1/monitors/bulk-pause`, one change to the file).
 - Certificates now warn 62 days before they expire (`probe.cert-warn-days`, was 21), also for monitors imported from Uptime Kuma; thresholds you set yourself are kept. The overview lists certificates inside that window, and the expiry list is now called **Certificate validity**.
 
 **Fixed**

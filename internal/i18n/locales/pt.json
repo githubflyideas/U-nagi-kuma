@@ -1394,5 +1394,8 @@
 "sys.dns_summary_ok": "O resolvedor DNS deste host não respondeu de {from} a {to} ({duration}); os {paused} monitores verificados por nome aguardaram. Verificados de novo: tudo bem.",
 "sys.dns_summary_failing": "O resolvedor DNS deste host não respondeu de {from} a {to} ({duration}); os {paused} monitores verificados por nome aguardaram. Verificados de novo: {failing} ainda com falha — {names}",
 "ui.ob.done": "Concluído",
-"ui.ob.todo": "Ainda não feito"
+"ui.ob.todo": "Ainda não feito",
+"ui.mon.paused_n": "Monitores pausados: {n}",
+"ui.mon.resumed_n": "Monitores retomados: {n}",
+"ui.mon.resume_skipped": "Não retomados porque o script falta em alguns nós: {names}. Retome-os um a um na página de cada um."
 }

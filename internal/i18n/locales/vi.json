@@ -1385,5 +1385,8 @@
 "sys.dns_summary_ok": "Trình phân giải DNS của máy này không trả lời từ {from} đến {to} ({duration}); {paused} giám sát kiểm tra theo tên đã chờ. Kiểm tra lại: tất cả ổn.",
 "sys.dns_summary_failing": "Trình phân giải DNS của máy này không trả lời từ {from} đến {to} ({duration}); {paused} giám sát kiểm tra theo tên đã chờ. Kiểm tra lại: {failing} vẫn lỗi — {names}",
 "ui.ob.done": "Đã xong",
-"ui.ob.todo": "Chưa xong"
+"ui.ob.todo": "Chưa xong",
+"ui.mon.paused_n": "Đã tạm dừng giám sát: {n}",
+"ui.mon.resumed_n": "Đã tiếp tục giám sát: {n}",
+"ui.mon.resume_skipped": "Không tiếp tục vì thiếu script trên một số nút: {names}. Hãy tiếp tục từng cái trên trang của nó."
 }
