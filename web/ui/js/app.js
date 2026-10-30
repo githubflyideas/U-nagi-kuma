@@ -17,6 +17,7 @@ import { OnCall } from './views/oncall.js';
 import { Settings } from './views/settings.js';
 import { Nodes } from './views/nodes.js';
 import { Expiry } from './views/expiry.js';
+import { IncidentReport } from './views/incident.js';
 import { DrawerHost } from './views/drawer.js';
 import { PaletteHost, openPalette } from './views/palette.js';
 
@@ -167,6 +168,7 @@ function Shell({ user, onLogout, onLang }) {
       break;
     case 'events': view = html`<${Events} tab=${p[1] || 'events'} />`; break;
     case 'expiry': view = html`<${Expiry} />`; break;
+    case 'incidents': view = p[1] ? html`<${IncidentReport} id=${p[1]} />` : html`<${Problems} tab="all" />`; break;
     // Changes, status pages and the report used to live under Alerting;
     // their old addresses still open them.
     case 'alerts': view = OLD_ALERT_TABS[p[1]] ? html`<${Notices} tab=${OLD_ALERT_TABS[p[1]]} />` : html`<${Alerts} tab=${p[1] || 'channels'} />`; break;

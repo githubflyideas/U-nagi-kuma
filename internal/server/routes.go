@@ -38,6 +38,7 @@ func (s *Server) routes() {
 
 	// Incidents, events, notifications.
 	s.handle("GET /api/v1/incidents", "read", s.incidents)
+	s.handle("GET /api/v1/incidents/{id}/report", "read", s.incidentReport)
 	s.handle("POST /api/v1/incidents/{id}/ack", "ack", s.incidentAck)
 	s.handle("DELETE /api/v1/incidents/{id}/ack", "ack", s.incidentUnack)
 	s.handle("POST /api/v1/incidents/{id}/silence", "ack", s.incidentSilence)

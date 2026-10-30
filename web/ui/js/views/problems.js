@@ -89,7 +89,7 @@ export function IncidentList({ items, reload, compact, selectable, selected, set
           ${inc.system && html` <span class="tag">${t('ui.inc.system')}</span>`}
           <p>${reasonText(inc.reason, inc.detail)}</p>
           <${AckTrail} inc=${inc} tag="p" />
-          <p class="faint">${meta}</p>
+          <p class="faint">${meta} · <a href=${href('/incidents/' + inc.id)}>${t('ui.inc.report')}</a></p>
         </div>
         ${open && html`<div class="acts">
           ${!st.acked ? html`<button class="btn sm primary" onClick=${() => setAcking(inc)}>${t('ui.inc.ack')}</button>`
@@ -123,6 +123,7 @@ export function IncidentList({ items, reload, compact, selectable, selected, set
         <td class="nowrap small muted hide-sm">
           ${open ? html`${t('ui.inc.open_for')} ${dur((Date.now() - new Date(st.opened_at)) / 1000)}` : html`${t('ui.inc.lasted')} ${dur((new Date(st.resolved_at) - new Date(st.opened_at)) / 1000)}`}
           <div>${tn('ui.inc.notified', st.notify_count || 0)}</div>
+          <div><a href=${href('/incidents/' + inc.id)}>${t('ui.inc.report')}</a></div>
         </td>
         ${!compact || open ? html`<td class="right nowrap">
           ${open && !st.acked && html`<button class="btn sm primary" onClick=${() => setAcking(inc)}>${t('ui.inc.ack')}</button>`}

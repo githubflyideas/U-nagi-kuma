@@ -519,3 +519,9 @@ button.search { cursor: text; font: inherit; text-align: start; }
 /* Audit log: high-risk actions stand out. */
 tr.risk-high td { background: color-mix(in srgb, var(--degraded) 9%, transparent); }
 tr.risk-high td:first-child { box-shadow: inset 3px 0 0 var(--degraded); }
+
+/* Incident report */
+.pm .pm-concl { font-size: 1.05rem; margin: 0; }
+.pm .pm-list { margin: 0; padding-inline-start: 1.2rem; }
+.pm .pm-list li { margin: .25rem 0; overflow-wrap: anywhere; }
+.pm .pm-list time { margin-inline-end: .4rem; white-space: nowrap; }

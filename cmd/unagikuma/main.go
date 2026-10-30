@@ -60,6 +60,7 @@ Usage:
                                   run unagikuma as a Windows service
   unagikuma reset-password [user]  set a new password for a user (default admin); --generate makes one
   unagikuma audit verify|export   check the audit log for tampering, or export it (CSV/JSON)
+  unagikuma report incident ID     write an incident's report (Markdown, JSON or HTML)
   unagikuma promote [--data DIR]   make this stopped standby the master at its next start
   unagikuma version
 
@@ -129,6 +130,8 @@ func dispatch(cmd string, args []string) error {
 		err = runPromote(args)
 	case "audit":
 		err = runAudit(args)
+	case "report":
+		err = runReport(args)
 	case "version", "-v", "-version", "--version":
 		fmt.Println("unagikuma", version)
 	case "help", "-h", "-help", "--help":

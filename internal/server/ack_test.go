@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 )
@@ -53,5 +54,36 @@ func TestAckHistoryIsAppendOnly(t *testing.T) {
 	}
 	if first == nil || it.State["first_acked_at"] != first {
 		t.Fatalf("first ack time moved: %v → %v", first, it.State["first_acked_at"])
+	}
+
+	// The incident's report tells the story, with both acknowledgements.
+	var rep struct {
+		Conclusion string
+		Segments   []struct {
+			Key     string
+			Entries []struct{ What string }
+		}
+		CoverageText []string `json:"coverage_text"`
+	}
+	if code := e.do("GET", fmt.Sprintf("/api/v1/incidents/%d/report?lang=en", id), nil, &rep); code != 200 {
+		t.Fatalf("report: %d", code)
+	}
+	if len(rep.Segments) != 4 || rep.Conclusion == "" || len(rep.CoverageText) == 0 || !strings.Contains(rep.CoverageText[0], "127.0.0.1:1") {
+		t.Fatalf("report: %+v", rep)
+	}
+	acks := 0
+	for _, en := range rep.Segments[2].Entries {
+		if strings.Contains(en.What, "acknowledged by") {
+			acks++
+		}
+	}
+	if acks != 2 {
+		t.Errorf("notification segment: %+v", rep.Segments[2])
+	}
+	if code := e.do("GET", fmt.Sprintf("/api/v1/incidents/%d/report?format=pdf", id), nil, nil); code != 400 {
+		t.Errorf("unknown format: %d", code)
+	}
+	if code := e.do("GET", "/api/v1/incidents/99999/report", nil, nil); code != 404 {
+		t.Errorf("unknown incident: %d", code)
 	}
 }
