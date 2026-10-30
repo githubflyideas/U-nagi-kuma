@@ -830,7 +830,7 @@
 "ui.drawer.single": "Verificado apenas a partir deste host.",
 "ui.drawer.timeline": "O que aconteceu",
 "ui.drawer.record": "monitors.bind, linha {line}",
-"ui.mon.view_list": "Lista",
+"ui.mon.view_list": "Vista em lista",
 "ev.unreachable": "inacessível: o pai {parent} está fora do ar",
 "ev.maint_failure": "falha durante a manutenção: sem notificação",
 "ev.maint_started": "manutenção iniciada: {title}",
@@ -1397,5 +1397,6 @@
 "ui.ob.todo": "Ainda não feito",
 "ui.mon.paused_n": "Monitores pausados: {n}",
 "ui.mon.resumed_n": "Monitores retomados: {n}",
-"ui.mon.resume_skipped": "Não retomados porque o script falta em alguns nós: {names}. Retome-os um a um na página de cada um."
+"ui.mon.resume_skipped": "Não retomados porque o script falta em alguns nós: {names}. Retome-os um a um na página de cada um.",
+"ui.mon.view_hive": "Vista em favo"
 }

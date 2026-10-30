@@ -862,7 +862,7 @@
 "ui.drawer.single": "يُفحص من هذا المضيف فقط.",
 "ui.drawer.timeline": "ماذا حدث",
 "ui.drawer.record": "monitors.bind، السطر {line}",
-"ui.mon.view_list": "قائمة",
+"ui.mon.view_list": "عرض القائمة",
 "ev.unreachable": "تعذّر الوصول: الأصل {parent} متوقف",
 "ev.maint_failure": "فشل أثناء الصيانة: بلا إشعار",
 "ev.maint_started": "بدأت الصيانة: {title}",
@@ -1428,5 +1428,6 @@
 "ui.ob.todo": "لم يكتمل بعد",
 "ui.mon.paused_n": "المراقبات الموقوفة مؤقتًا: {n}",
 "ui.mon.resumed_n": "المراقبات المستأنفة: {n}",
-"ui.mon.resume_skipped": "لم تُستأنف لأن البرنامج النصي مفقود على بعض العُقد: {names}. استأنفها واحدة تلو الأخرى من صفحتها."
+"ui.mon.resume_skipped": "لم تُستأنف لأن البرنامج النصي مفقود على بعض العُقد: {names}. استأنفها واحدة تلو الأخرى من صفحتها.",
+"ui.mon.view_hive": "عرض خلية النحل"
 }

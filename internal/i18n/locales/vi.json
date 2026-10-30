@@ -822,7 +822,7 @@
 "ui.drawer.single": "Chỉ kiểm tra từ máy này.",
 "ui.drawer.timeline": "Đã xảy ra gì",
 "ui.drawer.record": "monitors.bind, dòng {line}",
-"ui.mon.view_list": "Danh sách",
+"ui.mon.view_list": "Dạng danh sách",
 "ev.unreachable": "không tới được: cấp trên {parent} đang sập",
 "ev.maint_failure": "lỗi trong lúc bảo trì: không thông báo",
 "ev.maint_started": "bắt đầu bảo trì: {title}",
@@ -1388,5 +1388,6 @@
 "ui.ob.todo": "Chưa xong",
 "ui.mon.paused_n": "Đã tạm dừng giám sát: {n}",
 "ui.mon.resumed_n": "Đã tiếp tục giám sát: {n}",
-"ui.mon.resume_skipped": "Không tiếp tục vì thiếu script trên một số nút: {names}. Hãy tiếp tục từng cái trên trang của nó."
+"ui.mon.resume_skipped": "Không tiếp tục vì thiếu script trên một số nút: {names}. Hãy tiếp tục từng cái trên trang của nó.",
+"ui.mon.view_hive": "Dạng tổ ong"
 }

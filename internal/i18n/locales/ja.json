@@ -822,7 +822,7 @@
 "ui.drawer.single": "このホストからのみ検査しています。",
 "ui.drawer.timeline": "経緯",
 "ui.drawer.record": "monitors.bind {line} 行目",
-"ui.mon.view_list": "一覧",
+"ui.mon.view_list": "リスト表示",
 "ev.unreachable": "到達不可：親 {parent} がダウン",
 "ev.maint_failure": "メンテナンス中の障害：通知なし",
 "ev.maint_started": "メンテナンス開始：{title}",
@@ -1388,5 +1388,6 @@
 "ui.ob.todo": "未完了",
 "ui.mon.paused_n": "一時停止した監視：{n}",
 "ui.mon.resumed_n": "再開した監視：{n}",
-"ui.mon.resume_skipped": "一部のノードでスクリプトが見つからないため再開しませんでした：{names}。各監視のページから個別に再開してください。"
+"ui.mon.resume_skipped": "一部のノードでスクリプトが見つからないため再開しませんでした：{names}。各監視のページから個別に再開してください。",
+"ui.mon.view_hive": "ハニカム表示"
 }

@@ -830,7 +830,7 @@
 "ui.drawer.single": "صرف اس ہوسٹ سے جانچا جاتا ہے۔",
 "ui.drawer.timeline": "کیا ہوا",
 "ui.drawer.record": "monitors.bind، سطر {line}",
-"ui.mon.view_list": "فہرست",
+"ui.mon.view_list": "فہرست منظر",
 "ev.unreachable": "رسائی نہیں: پیرنٹ {parent} بند ہے",
 "ev.maint_failure": "دیکھ بھال کے دوران ناکامی: اطلاع نہیں دی",
 "ev.maint_started": "دیکھ بھال شروع: {title}",
@@ -1396,5 +1396,6 @@
 "ui.ob.todo": "ابھی باقی ہے",
 "ui.mon.paused_n": "روکے گئے مانیٹر: {n}",
 "ui.mon.resumed_n": "دوبارہ شروع کیے گئے مانیٹر: {n}",
-"ui.mon.resume_skipped": "کچھ نوڈز پر اسکرپٹ نہ ہونے کی وجہ سے دوبارہ شروع نہیں ہوئے: {names}۔ انہیں ان کے صفحے سے ایک ایک کر کے شروع کریں۔"
+"ui.mon.resume_skipped": "کچھ نوڈز پر اسکرپٹ نہ ہونے کی وجہ سے دوبارہ شروع نہیں ہوئے: {names}۔ انہیں ان کے صفحے سے ایک ایک کر کے شروع کریں۔",
+"ui.mon.view_hive": "شہد کے چھتے کا منظر"
 }

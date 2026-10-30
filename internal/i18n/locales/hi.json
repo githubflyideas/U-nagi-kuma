@@ -827,7 +827,7 @@
 "ui.drawer.single": "केवल इस होस्ट से जाँचा गया।",
 "ui.drawer.timeline": "क्या हुआ",
 "ui.drawer.record": "monitors.bind, पंक्ति {line}",
-"ui.mon.view_list": "सूची",
+"ui.mon.view_list": "सूची दृश्य",
 "ev.unreachable": "पहुँच से बाहर: पैरेंट {parent} बंद है",
 "ev.maint_failure": "रखरखाव के दौरान विफलता: सूचना नहीं भेजी",
 "ev.maint_started": "रखरखाव शुरू: {title}",
@@ -1393,5 +1393,6 @@
 "ui.ob.todo": "अभी बाकी है",
 "ui.mon.paused_n": "रोके गए मॉनिटर: {n}",
 "ui.mon.resumed_n": "फिर शुरू किए गए मॉनिटर: {n}",
-"ui.mon.resume_skipped": "कुछ नोड पर स्क्रिप्ट न होने से फिर शुरू नहीं किए गए: {names}। इन्हें इनके पेज से एक-एक करके शुरू करें।"
+"ui.mon.resume_skipped": "कुछ नोड पर स्क्रिप्ट न होने से फिर शुरू नहीं किए गए: {names}। इन्हें इनके पेज से एक-एक करके शुरू करें।",
+"ui.mon.view_hive": "मधुकोश दृश्य"
 }

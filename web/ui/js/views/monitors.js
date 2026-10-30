@@ -132,7 +132,7 @@ export function Monitors({ query }) {
       <select style=${{ width: 'auto' }} value=${sort} onChange=${(e) => setSort(e.target.value)} aria-label=${t('ui.mon.sort')}>
         ${['status', 'name', 'last_change', 'latency', 'uptime'].map(s => html`<option value=${s}>${t('ui.mon.sort.' + s)}</option>`)}
       </select>
-      <${Seg} value=${view} onChange=${changeView} options=${[['list', t('ui.mon.view_list')], ['hive', t('ui.ov.view_hive')]]} />
+      <${Seg} value=${view} onChange=${changeView} options=${[['list', t('ui.mon.view_list')], ['hive', t('ui.mon.view_hive')]]} />
       <div class="spacer"></div>
       <button class="btn" onClick=${() => pauseAll(true)} disabled=${picked.length === nPaused} title=${picked.length ? '' : t('ui.mon.select_first')}>${t('ui.mon.pause')}${picked.length > nPaused ? ' (' + fmtNum(picked.length - nPaused) + ')' : ''}</button>
       <button class="btn" onClick=${() => pauseAll(false)} disabled=${!nPaused} title=${picked.length ? '' : t('ui.mon.select_first')}>${t('ui.mon.resume')}${nPaused ? ' (' + fmtNum(nPaused) + ')' : ''}</button>

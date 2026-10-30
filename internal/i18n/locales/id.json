@@ -822,7 +822,7 @@
 "ui.drawer.single": "Diperiksa hanya dari host ini.",
 "ui.drawer.timeline": "Apa yang terjadi",
 "ui.drawer.record": "monitors.bind, baris {line}",
-"ui.mon.view_list": "Daftar",
+"ui.mon.view_list": "Tampilan daftar",
 "ev.unreachable": "tidak terjangkau: induk {parent} mati",
 "ev.maint_failure": "gagal saat pemeliharaan: tidak diberitahukan",
 "ev.maint_started": "pemeliharaan dimulai: {title}",
@@ -1388,5 +1388,6 @@
 "ui.ob.todo": "Belum selesai",
 "ui.mon.paused_n": "Monitor dijeda: {n}",
 "ui.mon.resumed_n": "Monitor dilanjutkan: {n}",
-"ui.mon.resume_skipped": "Tidak dilanjutkan karena skripnya tidak ada di beberapa node: {names}. Lanjutkan satu per satu dari halamannya."
+"ui.mon.resume_skipped": "Tidak dilanjutkan karena skripnya tidak ada di beberapa node: {names}. Lanjutkan satu per satu dari halamannya.",
+"ui.mon.view_hive": "Tampilan sarang lebah"
 }

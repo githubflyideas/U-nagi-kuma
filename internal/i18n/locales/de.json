@@ -830,7 +830,7 @@
 "ui.drawer.single": "Nur von diesem Host geprüft.",
 "ui.drawer.timeline": "Was passiert ist",
 "ui.drawer.record": "monitors.bind, Zeile {line}",
-"ui.mon.view_list": "Liste",
+"ui.mon.view_list": "Listenansicht",
 "ev.unreachable": "nicht erreichbar: übergeordneter {parent} ausgefallen",
 "ev.maint_failure": "Ausfall während der Wartung: nicht benachrichtigt",
 "ev.maint_started": "Wartung begonnen: {title}",
@@ -1397,5 +1397,6 @@
 "ui.ob.todo": "Noch offen",
 "ui.mon.paused_n": "Pausierte Monitore: {n}",
 "ui.mon.resumed_n": "Fortgesetzte Monitore: {n}",
-"ui.mon.resume_skipped": "Nicht fortgesetzt, weil ihr Skript auf einigen Knoten fehlt: {names}. Setzen Sie sie einzeln auf ihrer Seite fort."
+"ui.mon.resume_skipped": "Nicht fortgesetzt, weil ihr Skript auf einigen Knoten fehlt: {names}. Setzen Sie sie einzeln auf ihrer Seite fort.",
+"ui.mon.view_hive": "Wabenansicht"
 }

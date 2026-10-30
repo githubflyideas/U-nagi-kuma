@@ -830,7 +830,7 @@
 "ui.drawer.single": "Vérifié depuis cet hôte uniquement.",
 "ui.drawer.timeline": "Ce qui s'est passé",
 "ui.drawer.record": "monitors.bind, ligne {line}",
-"ui.mon.view_list": "Liste",
+"ui.mon.view_list": "Vue en liste",
 "ev.unreachable": "injoignable : le parent {parent} est en panne",
 "ev.maint_failure": "panne pendant la maintenance : pas de notification",
 "ev.maint_started": "maintenance commencée : {title}",
@@ -1397,5 +1397,6 @@
 "ui.ob.todo": "Pas encore fait",
 "ui.mon.paused_n": "Moniteurs mis en pause : {n}",
 "ui.mon.resumed_n": "Moniteurs relancés : {n}",
-"ui.mon.resume_skipped": "Non relancés car leur script manque sur certains nœuds : {names}. Relancez-les un par un depuis leur page."
+"ui.mon.resume_skipped": "Non relancés car leur script manque sur certains nœuds : {names}. Relancez-les un par un depuis leur page.",
+"ui.mon.view_hive": "Vue en nid d'abeille"
 }

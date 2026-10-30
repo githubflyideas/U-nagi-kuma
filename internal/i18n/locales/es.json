@@ -830,7 +830,7 @@
 "ui.drawer.single": "Comprobado solo desde este equipo.",
 "ui.drawer.timeline": "Qué pasó",
 "ui.drawer.record": "monitors.bind, línea {line}",
-"ui.mon.view_list": "Lista",
+"ui.mon.view_list": "Vista de lista",
 "ev.unreachable": "inalcanzable: el padre {parent} está caído",
 "ev.maint_failure": "fallo durante mantenimiento: sin aviso",
 "ev.maint_started": "mantenimiento iniciado: {title}",
@@ -1397,5 +1397,6 @@
 "ui.ob.todo": "Pendiente",
 "ui.mon.paused_n": "Monitores pausados: {n}",
 "ui.mon.resumed_n": "Monitores reanudados: {n}",
-"ui.mon.resume_skipped": "No se reanudaron porque falta su script en algunos nodos: {names}. Reanúdalos uno a uno desde su página."
+"ui.mon.resume_skipped": "No se reanudaron porque falta su script en algunos nodos: {names}. Reanúdalos uno a uno desde su página.",
+"ui.mon.view_hive": "Vista de panal"
 }

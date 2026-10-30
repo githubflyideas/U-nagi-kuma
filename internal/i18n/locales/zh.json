@@ -822,7 +822,7 @@
 "ui.drawer.single": "只由本机检查。",
 "ui.drawer.timeline": "发生了什么",
 "ui.drawer.record": "monitors.bind 第 {line} 行",
-"ui.mon.view_list": "列表",
+"ui.mon.view_list": "列表视图",
 "ev.unreachable": "不可达：上级 {parent} 故障",
 "ev.maint_failure": "维护期间发生故障：未通知",
 "ev.maint_started": "维护开始：{title}",
@@ -1388,5 +1388,6 @@
 "ui.ob.todo": "尚未完成",
 "ui.mon.paused_n": "已暂停监控：{n}",
 "ui.mon.resumed_n": "已恢复监控：{n}",
-"ui.mon.resume_skipped": "以下监控的脚本在部分节点上缺失，未恢复：{names}。请到各自页面单独恢复。"
+"ui.mon.resume_skipped": "以下监控的脚本在部分节点上缺失，未恢复：{names}。请到各自页面单独恢复。",
+"ui.mon.view_hive": "蜂巢视图"
 }

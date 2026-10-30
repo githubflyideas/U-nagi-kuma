@@ -822,7 +822,7 @@
 "ui.drawer.single": "শুধু এই হোস্ট থেকে পরীক্ষা করা হয়।",
 "ui.drawer.timeline": "কী ঘটেছে",
 "ui.drawer.record": "monitors.bind, লাইন {line}",
-"ui.mon.view_list": "তালিকা",
+"ui.mon.view_list": "তালিকা ভিউ",
 "ev.unreachable": "পৌঁছানো যাচ্ছে না: প্যারেন্ট {parent} বন্ধ",
 "ev.maint_failure": "রক্ষণাবেক্ষণের সময় ব্যর্থতা: জানানো হয়নি",
 "ev.maint_started": "রক্ষণাবেক্ষণ শুরু: {title}",
@@ -1388,5 +1388,6 @@
 "ui.ob.todo": "এখনও বাকি",
 "ui.mon.paused_n": "বিরতি দেওয়া মনিটর: {n}",
 "ui.mon.resumed_n": "আবার চালু করা মনিটর: {n}",
-"ui.mon.resume_skipped": "কিছু নোডে স্ক্রিপ্ট না থাকায় আবার চালু হয়নি: {names}। এগুলোর পাতা থেকে একটি একটি করে চালু করুন।"
+"ui.mon.resume_skipped": "কিছু নোডে স্ক্রিপ্ট না থাকায় আবার চালু হয়নি: {names}। এগুলোর পাতা থেকে একটি একটি করে চালু করুন।",
+"ui.mon.view_hive": "মৌচাক ভিউ"
 }

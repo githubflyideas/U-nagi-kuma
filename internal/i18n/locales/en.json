@@ -831,7 +831,7 @@
 "ui.drawer.single": "Checked from this host only.",
 "ui.drawer.timeline": "What happened",
 "ui.drawer.record": "monitors.bind, line {line}",
-"ui.mon.view_list": "List",
+"ui.mon.view_list": "List view",
 "ev.unreachable": "unreachable: parent {parent} is down",
 "ev.maint_failure": "failure during maintenance: not notified",
 "ev.maint_started": "maintenance started: {title}",
@@ -1398,5 +1398,6 @@
 "ui.ob.todo": "Not done yet",
 "ui.mon.paused_n": "Monitors paused: {n}",
 "ui.mon.resumed_n": "Monitors resumed: {n}",
-"ui.mon.resume_skipped": "Not resumed because their script is missing on some nodes: {names}. Resume them one by one from their page."
+"ui.mon.resume_skipped": "Not resumed because their script is missing on some nodes: {names}. Resume them one by one from their page.",
+"ui.mon.view_hive": "Honeycomb view"
 }
