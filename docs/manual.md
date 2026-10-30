@@ -162,7 +162,27 @@ default   IN POLICY chain=team,night-sms mode=all repeat=30m max=3 escalate=30m:
   - an address that is not in the directory is still sent to, but the channel, the policies using it and the **Alerting** menu get a red dot saying what to check.
 
   Write `to=@li` or `phones=@li,@oncall` to use a person's addresses instead of typing them. Saving a channel with new addresses offers to add them to the directory; **Import them** adds every address your channels already use. `unagikuma check` reports the same problems when it can read the data directory.
+- **Every alert says what kind of failure it is.** A problem notice carries one line: a service failing on its own ("the service itself"), several monitors of one IP segment failing together ("probably that segment, its switch or uplink"), a single network-level failure that cannot be told apart yet ("uncertain"), or this host's own network. Webhooks get the same as `"class"`: `business`, `network`, `uncertain`, `channel_down` or `system`.
+- **No more than three alerts a minute.** A channel sends at most `notify.backstop-max` (3) alerts in `notify.backstop-window` (1 minute); further repeats and reminders are held and sent as one summary at the end of the minute, worst first. A brand-new problem, an escalation and system notices always go out. `notify.backstop-max=0` turns it off. Held alerts are kept in memory: after a restart they are not sent, but the incident report shows them.
 - **Why was I (not) notified?** The monitor drawer's **Notifications** section says it in words: maintenance, a parent is down, this host's own outage, only some nodes failing, still SOFT, acknowledged, silenced, the notification limit, or a policy without channels. **Alerting › Policies › Predict** simulates an outage against a policy.
+
+### Incident reports
+
+Every decision about an alert is recorded: queued, sent or failed (and on which channel), held during a local outage and released, merged into a summary, dropped, suppressed by maintenance, acknowledged. From that record each incident gets a report, a postmortem you can hand on:
+
+- **What led up to it** — configuration changes and system events of the day before;
+- **Detection** — the first failing check, how it was confirmed, and the evidence;
+- **Notification** — who was told, when, on which channel, what was held or merged and why, how long until someone was told and until it was acknowledged;
+- **Recovery** — when it was fine again and how long it lasted;
+- whether this host was watching all along (gaps in the checks, restarts, local outages), so a quiet stretch is not mistaken for an all-clear.
+
+Open it from the incident's **Report** link on the Problems page and download it as Markdown, HTML or JSON, or write it from the command line:
+
+```text
+unagikuma report incident 42 --format md|html|json [--lang zh] [-o report.md]
+```
+
+`GET /api/v1/incidents/ID/report?format=md|json|html` serves the same to anyone who may read it. The report uses only what was recorded; history pruned after its retention is gone from it too.
 
 ### Announced changes
 
@@ -269,7 +289,9 @@ The service starts automatically and is restarted if it stops. Agents install th
 
 **Settings › Users** manages accounts: administrators do everything; operators acknowledge problems and edit monitors and maintenance windows; viewers only read. An operator can be limited to some `$SCOPE` sections (`region:north`, `bj`): they then change only what is written in those sections and not the shared configuration (channels, policies, the raw file).
 
-**Settings › Audit** lists every change to accounts, roles and sections (before and after), tokens, secrets (names only), nodes and the configuration, with the person or token, the section, and the source address; configuration edits made in the file on disk are listed too, and so are failed logins. `GET /api/v1/audit?actor=&action=&area=` serves the same to administrators; entries are kept for `retention.audit` (two years).
+**Settings › Audit** lists every change to accounts, roles and sections (before and after), tokens, secrets (names only), nodes and the configuration, with the person or token, the section, and the source address; configuration edits made in the file on disk are listed too (each record as it was and as it is now), and so are sign-ins and failed logins, backups, restores, imports, password resets, and what the system did by itself (holds during a local outage and their release, restarts, crashes, clock jumps, upgrades). High-risk entries are highlighted and can be filtered by risk, person, source address and time. `GET /api/v1/audit?actor=&action=&area=` serves the same to administrators; entries are kept for `retention.audit` (two years).
+
+The log cannot be changed quietly: each entry carries the hash of the one before it. The page's **Check integrity** button and `unagikuma audit verify` say whether an entry was changed, inserted or removed, and which. `verify` prints the newest entry's hash; keep it elsewhere and pass it later with `--head HASH` to prove nothing was cut off the end. `unagikuma audit export --format csv|json [--since 30d] [--high]` (or the page's export buttons) writes the log out.
 
 Reading the audit log needs a registered installation; see [Registration and quotas](#registration-and-quotas).
 
@@ -328,6 +350,8 @@ unagikuma backup [--passphrase-file F] [--history]
                                 write a backup archive
 unagikuma restore ARCHIVE        restore a backup
 unagikuma reset-password [user]  set a new password (--generate makes one)
+unagikuma audit verify|export   check the audit log for tampering, or export it
+unagikuma report incident ID     write an incident's report (Markdown, HTML or JSON)
 unagikuma version
 ```
 

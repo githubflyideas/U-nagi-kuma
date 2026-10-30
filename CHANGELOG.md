@@ -9,7 +9,17 @@
 - The imported records go in one tidy block at the end of `monitors.bind`, in sections headed by where they came from, aligned like `unagikuma fmt`.
 - `unagikuma reset-password` asks for the new password twice without showing it, lists the users when the name is wrong, and `--generate` makes a random one.
 
+- Incident reports: each incident has a report of what led up to it, how it was detected, who was told when and on which channel (and what was held or merged, and why), and how it recovered, with whether this host was watching all along. Open it from **Report** on the Problems page, download it as Markdown, HTML or JSON, or write it with `unagikuma report incident ID`.
+- Every decision about an alert (queued, sent, failed, held, released, merged, dropped, suppressed, acknowledged) is recorded, so a missing or late alert can be explained afterwards.
+- Problem notices say what kind of failure it is: the service itself, a network segment, not certain yet, or this host's network. Webhooks get it as `class`.
+- A channel sends at most 3 alerts a minute (`notify.backstop-max`, `notify.backstop-window`); the rest come as one summary at the end of the minute. New problems, escalations and system notices always go out.
+- The audit log is tamper-evident: `unagikuma audit verify` and **Check integrity** find changed, inserted or removed entries. It also records sign-ins, backups, restores, imports, password resets and what the system did by itself, highlights high-risk entries, filters by risk, address and time, and exports CSV or JSON (`unagikuma audit export`).
+- `unagikuma reset-password --revoke-tokens` also revokes that user's API tokens.
+
 **Fixed**
+- A local outage whose last reply and first failure came at the same instant was not recognised, and its failures were alerted.
+- A problem that began while the disk was full got no recovery notice.
+- The local-outage summary gives the time the network came back, not the time that was confirmed a minute later.
 - `unagikuma check` now finds channel settings the server would refuse.
 - A monitor added to a group from the web UI is aligned like that group's records.
 
