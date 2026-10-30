@@ -22,6 +22,7 @@
 - A service that failed on its own shortly before this host lost its network was taken back as part of the outage.
 - When this host's DNS resolver stopped answering while targets checked by address still answered, it was taken for a lost uplink; it is now recognised as the resolver, and its summary says so. An HTTP check that runs out of time before its name resolves says the name could not be resolved.
 - A crash notice that could not be sent during a local outage was lost; the outage summary now names what could not be sent.
+- After the process was stopped or the VM paused for a while, "Host overloaded" was reported on resume.
 - A notice no longer repeats its reason ("No response within the timeout — no response within the timeout").
 - The local-outage summary gives the time the network came back, not the time that was confirmed a minute later.
 - `unagikuma check` now finds channel settings the server would refuse.

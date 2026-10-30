@@ -177,11 +177,20 @@ func TestHTTPErrors(t *testing.T) {
 	want(t, run(t, Spec{Type: "HTTP", Target: "http://name.invalid/"}), VoteFail, ReasonDNSNXDomain)
 	// The resolver never answers: out of time before there was an address
 	// is the resolver failing, not the target timing out.
+	// (The transport dials in a goroutine of its own that outlives the
+	// request: let it go and wait for it before lookupNetIP is put back.)
+	release, looked := make(chan struct{}), make(chan struct{})
 	lookupNetIP = func(ctx context.Context, _, _ string) ([]netip.Addr, error) {
-		<-ctx.Done()
-		return nil, ctx.Err()
+		defer close(looked)
+		select {
+		case <-ctx.Done():
+		case <-release:
+		}
+		return nil, context.DeadlineExceeded
 	}
 	want(t, run(t, Spec{Type: "HTTP", Target: "http://name.invalid/", Timeout: 200 * time.Millisecond}), VoteFail, ReasonDNSResolve)
+	close(release)
+	<-looked
 	want(t, run(t, Spec{Type: "HTTP", Target: "http://169.254.169.254/"}), VoteAbstain, ReasonConfig)
 	want(t, run(t, Spec{Type: "HTTP", Target: "ftp://x/"}), VoteAbstain, ReasonConfig)
 }
