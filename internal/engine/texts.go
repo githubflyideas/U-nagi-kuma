@@ -90,14 +90,18 @@ func (e *Engine) text(id string, args ...any) string {
 	case id == "outage_summary":
 		from, to := args[0].(time.Time), args[1].(time.Time)
 		failing := args[3].([]string)
+		key := "sys.outage_summary_"
+		if len(args) > 4 && args[4] == true {
+			key = "sys.dns_summary_" // only the resolver failed
+		}
 		if len(failing) == 0 {
-			return i18n.T(lang, "sys.outage_summary_ok", "from", hm(0), "to", hm(1), "duration", dur(to.Sub(from)), "paused", args[2])
+			return i18n.T(lang, key+"ok", "from", hm(0), "to", hm(1), "duration", dur(to.Sub(from)), "paused", args[2])
 		}
 		names := strings.Join(failing[:min(len(failing), 10)], ", ")
 		if len(failing) > 10 {
 			names += ", …"
 		}
-		return i18n.T(lang, "sys.outage_summary_failing", "from", hm(0), "to", hm(1), "duration", dur(to.Sub(from)), "paused", args[2], "failing", len(failing), "names", names)
+		return i18n.T(lang, key+"failing", "from", hm(0), "to", hm(1), "duration", dur(to.Sub(from)), "paused", args[2], "failing", len(failing), "names", names)
 	case id == "outage_unsent":
 		return i18n.T(lang, "sys.outage_unsent", "items", args[0])
 	case id == "hold_released":

@@ -83,6 +83,7 @@ func (e *Engine) onLocalNet(ev LocalNetEvent, now time.Time) {
 	if ev.Enter {
 		e.event(Event{Type: EventSystem, Severity: "warning", Message: e.text("anomaly_"+a.Kind, a.Detail, a.Suspected),
 			Data: map[string]any{"kind": a.Kind, "family": int(a.Family), "since": a.Since, "domains": a.Domains, "suspected": a.Suspected}})
+		e.outageDNS = len(e.localnet.Active()) == 1 && a.Kind == AnomalyDNS
 		if len(e.localnet.Active()) == 1 {
 			e.outage = nil // a relapse: the summary covers the whole of it later
 			if e.outageSeen == nil {
@@ -142,7 +143,7 @@ func (e *Engine) onLocalNet(ev LocalNetEvent, now time.Time) {
 	if !ev.Back.IsZero() && ev.Back.Before(now) && ev.Back.After(since) {
 		back = ev.Back
 	}
-	e.outage = &outageEnd{since: since, end: now, back: back, names: names, deadline: now.Add(wait), dropped: dropped}
+	e.outage = &outageEnd{since: since, end: now, back: back, dnsOnly: e.outageDNS, names: names, deadline: now.Add(wait), dropped: dropped}
 }
 
 // releaseHold fails open: a local outage has lasted longer than
@@ -175,6 +176,7 @@ func (e *Engine) releaseHold(since, now time.Time) {
 type outageEnd struct {
 	since, end, deadline time.Time
 	back                 time.Time // when the network was back (end less the exit confirmation)
+	dnsOnly              bool      // only the resolver failed
 	names                []string
 	dropped              int
 }
@@ -208,7 +210,7 @@ func (e *Engine) finishOutage(now time.Time) {
 		}
 		e.decide(Decision{At: now, Monitor: name, Step: LedHeld, Class: ClassNetwork, HoldStart: o.since, HoldEnd: o.back, Note: note})
 	}
-	summary := e.text("outage_summary", o.since, o.back, len(o.names), failing)
+	summary := e.text("outage_summary", o.since, o.back, len(o.names), failing, o.dnsOnly)
 	lost := e.takeUnsent(o.since.Add(-e.cfg.Tunables.Duration("localnet.backdate")))
 	if lost != "" {
 		summary += "\n" + e.text("outage_unsent", lost) // e.g. a crash during the outage

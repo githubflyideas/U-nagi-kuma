@@ -174,6 +174,7 @@ type domainState struct {
 	lastAt        time.Time
 	reachable     bool // last result proved reachability
 	networkFail   bool // last result was a network-class failure
+	resolver      bool // last result was the resolver failing for the name (no address known)
 	lastReachable time.Time
 	recheck       string
 }
@@ -245,7 +246,21 @@ func (d *LocalNet) Observe(o Observation) {
 		if !o.NetworkFail || o.Scope != netscope.WAN || o.Domain == "" {
 			return
 		}
-		fams := d.families()
+		// Only the families this host really reaches the internet over:
+		// a family known only from its gateway (IPv6 on a v4 network) would
+		// otherwise see nothing but these failures and call its uplink dead.
+		var fams []Family
+		for _, f := range d.families() {
+			for _, ds := range d.fam[f].domains {
+				if !ds.resolver {
+					fams = append(fams, f)
+					break
+				}
+			}
+		}
+		if len(fams) == 0 {
+			fams = d.families()
+		}
 		if len(fams) == 0 {
 			fams = []Family{FamilyV4}
 		}
@@ -272,6 +287,7 @@ func (d *LocalNet) Observe(o Observation) {
 	ds.lastAt = o.At
 	ds.reachable = o.Reachable
 	ds.networkFail = o.NetworkFail
+	ds.resolver = o.DNSFail
 	if o.Recheck != "" {
 		ds.recheck = o.Recheck
 	}
@@ -518,12 +534,23 @@ func (d *LocalNet) evalUplink(fam Family, s *famState, now time.Time) []LocalNet
 		case !s.episodeStart.IsZero() && !s.lastReachWAN.After(s.episodeStart):
 			// A reply stamped the same instant as the first failure (rounds
 			// started together) is not a reply after it.
+			addrKnown, addrFailing := false, 0
 			for k, ds := range s.domains {
+				if !ds.resolver && !s.preDead[k] && now.Sub(ds.lastAt) <= d.cfg.DomainTTL {
+					addrKnown = true
+				}
 				if ds.networkFail && !ds.lastAt.Before(s.episodeStart) && !s.preDead[k] {
 					failing++
+					if !ds.resolver {
+						addrFailing++
+					}
 				}
 			}
-			enter = failing >= max(2, d.cfg.MinDomains)
+			// Only names failing to resolve while the targets checked by
+			// address are not failing: that is the resolver (see evalDNS),
+			// not the uplink. Without such targets the resolver's failures
+			// are all the evidence there is.
+			enter = failing >= max(2, d.cfg.MinDomains) && (!addrKnown || addrFailing > 0)
 		}
 		if !enter {
 			return nil
@@ -567,9 +594,13 @@ func (d *LocalNet) evalUplink(fam Family, s *famState, now time.Time) []LocalNet
 
 func (d *LocalNet) evalDNS(now time.Time) []LocalNetEvent {
 	failing := 0
+	var first time.Time
 	for _, at := range d.dnsFail {
 		if now.Sub(at) <= d.cfg.Window {
 			failing++
+			if first.IsZero() || at.Before(first) {
+				first = at
+			}
 		}
 	}
 	// The resolver is the problem only if the network itself works: an
@@ -580,7 +611,9 @@ func (d *LocalNet) evalDNS(now time.Time) []LocalNetEvent {
 			netOK = true
 		}
 	}
-	nameOK := !d.dnsOK.IsZero() && now.Sub(d.dnsOK) <= d.cfg.Window
+	// A name resolved since the failures began: the resolver works. (A
+	// name resolved just before them says nothing.)
+	nameOK := !d.dnsOK.IsZero() && now.Sub(d.dnsOK) <= d.cfg.Window && (first.IsZero() || d.dnsOK.After(first))
 	switch {
 	case d.dns == nil && netOK && !nameOK && failing >= max(1, d.cfg.DNSMinNames):
 		a := Anomaly{Kind: AnomalyDNS, Since: now, Domains: failing}

@@ -1389,5 +1389,7 @@
 "ui.pm.download_md": "Markdown ڈاؤن لوڈ کریں",
 "ui.pm.download_html": "HTML ڈاؤن لوڈ کریں",
 "ui.pm.download_json": "JSON ڈاؤن لوڈ کریں",
-"sys.outage_unsent": "اس دوران بھیجا نہ جا سکا: {items}"
+"sys.outage_unsent": "اس دوران بھیجا نہ جا سکا: {items}",
+"sys.dns_summary_ok": "اس ہوسٹ کا DNS ریزولور {from}–{to} ({duration}) جواب نہیں دے رہا تھا؛ نام سے جانچے جانے والے {paused} مانیٹر رکے رہے۔ دوبارہ جانچ: سب ٹھیک۔",
+"sys.dns_summary_failing": "اس ہوسٹ کا DNS ریزولور {from}–{to} ({duration}) جواب نہیں دے رہا تھا؛ نام سے جانچے جانے والے {paused} مانیٹر رکے رہے۔ دوبارہ جانچ: {failing} اب بھی ناکام — {names}"
 }

@@ -536,3 +536,45 @@ func TestUplinkFailureObservedAfterALaterReply(t *testing.T) {
 		t.Fatalf("uplink cut not recognised: %+v", evs)
 	}
 }
+
+// The resolver stops answering while the targets checked by address keep
+// answering: names failing in several zones between two replies are the
+// resolver (dns_down), not the uplink. It used to be taken for an uplink
+// outage in the seconds before the next reply.
+func TestResolverFailuresAreNotAnUplinkCut(t *testing.T) {
+	d, _ := defaultLocalNet(t)
+	for _, dm := range []string{"4:a", "4:b", "4:c"} {
+		d.Observe(wanOK(t0, dm))
+	}
+	// A name resolved just before the resolver stopped: no veto.
+	d.Observe(Observation{At: t0, Scope: netscope.WAN, Family: FamilyV4, ByName: true, Domain: "4:d", Reachable: true})
+	var evs []LocalNetEvent
+	for i, zone := range []string{"n:zone1.test", "n:zone2.test", "n:zone3.test", "n:zone4.test"} {
+		d.Observe(Observation{At: t0.Add(sec(1 + i)), Scope: netscope.WAN, ByName: true, DNSFail: true, NetworkFail: true, Domain: zone})
+		evs = append(evs, d.Evaluate(t0.Add(sec(1+i)))...)
+	}
+	if enters(evs, AnomalyUplink) {
+		t.Fatalf("resolver failures taken for an uplink cut: %+v", evs)
+	}
+	if !enters(evs, AnomalyDNS) {
+		t.Fatalf("dns down not recognised: %+v", evs)
+	}
+}
+
+// The same with an IPv6 family known only from its gateway: the resolver's
+// failures are not evidence against an uplink this host never used.
+func TestResolverFailuresAndAnUnusedFamily(t *testing.T) {
+	d, _ := defaultLocalNet(t)
+	d.f(FamilyV6) // e.g. an IPv6 default route, no IPv6 target
+	for _, dm := range []string{"4:a", "4:b", "4:c"} {
+		d.Observe(wanOK(t0, dm))
+	}
+	var evs []LocalNetEvent
+	for i, zone := range []string{"zone1.test", "zone2.test", "zone3.test", "zone4.test"} {
+		d.Observe(Observation{At: t0.Add(sec(1 + i)), Scope: netscope.WAN, ByName: true, DNSFail: true, NetworkFail: true, Domain: zone})
+		evs = append(evs, d.Evaluate(t0.Add(sec(1+i)))...)
+	}
+	if enters(evs, AnomalyUplink) {
+		t.Fatalf("an unused family's uplink called dead: %+v", evs)
+	}
+}

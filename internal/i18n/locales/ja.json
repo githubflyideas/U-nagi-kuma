@@ -1381,5 +1381,7 @@
 "ui.pm.download_md": "Markdown をダウンロード",
 "ui.pm.download_html": "HTML をダウンロード",
 "ui.pm.download_json": "JSON をダウンロード",
-"sys.outage_unsent": "この間に送れなかった通知: {items}"
+"sys.outage_unsent": "この間に送れなかった通知: {items}",
+"sys.dns_summary_ok": "このホストの DNS リゾルバーが {from}–{to}（{duration}）応答しませんでした。名前で監視している {paused} 件は判定を保留しました。再チェックの結果：すべて正常。",
+"sys.dns_summary_failing": "このホストの DNS リゾルバーが {from}–{to}（{duration}）応答しませんでした。名前で監視している {paused} 件は判定を保留しました。再チェックの結果：{failing} 件がまだ異常 — {names}"
 }

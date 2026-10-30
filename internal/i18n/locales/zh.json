@@ -1381,5 +1381,7 @@
 "ui.pm.download_md": "下载 Markdown",
 "ui.pm.download_html": "下载 HTML",
 "ui.pm.download_json": "下载 JSON",
-"sys.outage_unsent": "期间未能发出的通知：{items}"
+"sys.outage_unsent": "期间未能发出的通知：{items}",
+"sys.dns_summary_ok": "监控主机的 DNS 解析器 {from}–{to}（{duration}）无响应，{paused} 个按域名检测的监控暂停判定。恢复后已重新检测：全部正常。",
+"sys.dns_summary_failing": "监控主机的 DNS 解析器 {from}–{to}（{duration}）无响应，{paused} 个按域名检测的监控暂停判定。恢复后已重新检测：{failing} 个仍异常——{names}"
 }

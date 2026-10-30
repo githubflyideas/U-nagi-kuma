@@ -1405,5 +1405,7 @@
 "ui.pm.download_md": "Скачать Markdown",
 "ui.pm.download_html": "Скачать HTML",
 "ui.pm.download_json": "Скачать JSON",
-"sys.outage_unsent": "Не удалось отправить за это время: {items}"
+"sys.outage_unsent": "Не удалось отправить за это время: {items}",
+"sys.dns_summary_ok": "DNS-резолвер этого хоста не отвечал {from}–{to} ({duration}); {paused} мониторов, проверяемых по имени, ждали. Повторная проверка: всё в порядке.",
+"sys.dns_summary_failing": "DNS-резолвер этого хоста не отвечал {from}–{to} ({duration}); {paused} мониторов, проверяемых по имени, ждали. Повторная проверка: всё ещё не работают {failing} — {names}"
 }

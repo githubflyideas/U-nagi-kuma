@@ -1391,5 +1391,7 @@
 "ui.pm.download_md": "Download Markdown",
 "ui.pm.download_html": "Download HTML",
 "ui.pm.download_json": "Download JSON",
-"sys.outage_unsent": "Could not be sent meanwhile: {items}"
+"sys.outage_unsent": "Could not be sent meanwhile: {items}",
+"sys.dns_summary_ok": "This host's DNS resolver did not answer {from}–{to} ({duration}); the {paused} monitors checked by name waited. Re-checked since: all fine.",
+"sys.dns_summary_failing": "This host's DNS resolver did not answer {from}–{to} ({duration}); the {paused} monitors checked by name waited. Re-checked since: {failing} still failing — {names}"
 }

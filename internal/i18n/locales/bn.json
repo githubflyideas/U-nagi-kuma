@@ -1381,5 +1381,7 @@
 "ui.pm.download_md": "Markdown ডাউনলোড করুন",
 "ui.pm.download_html": "HTML ডাউনলোড করুন",
 "ui.pm.download_json": "JSON ডাউনলোড করুন",
-"sys.outage_unsent": "এর মধ্যে পাঠানো যায়নি: {items}"
+"sys.outage_unsent": "এর মধ্যে পাঠানো যায়নি: {items}",
+"sys.dns_summary_ok": "এই হোস্টের DNS রিজলভার {from}–{to} ({duration}) সাড়া দেয়নি; নাম দিয়ে পরীক্ষা করা {paused}টি মনিটর অপেক্ষা করেছে। আবার পরীক্ষা: সব ঠিক।",
+"sys.dns_summary_failing": "এই হোস্টের DNS রিজলভার {from}–{to} ({duration}) সাড়া দেয়নি; নাম দিয়ে পরীক্ষা করা {paused}টি মনিটর অপেক্ষা করেছে। আবার পরীক্ষা: {failing}টি এখনও ব্যর্থ — {names}"
 }

@@ -1381,5 +1381,7 @@
 "ui.pm.download_md": "Unduh Markdown",
 "ui.pm.download_html": "Unduh HTML",
 "ui.pm.download_json": "Unduh JSON",
-"sys.outage_unsent": "Tidak dapat dikirim selama itu: {items}"
+"sys.outage_unsent": "Tidak dapat dikirim selama itu: {items}",
+"sys.dns_summary_ok": "Resolver DNS host ini tidak menjawab {from}–{to} ({duration}); {paused} monitor yang diperiksa lewat nama menunggu. Diperiksa ulang: semua baik.",
+"sys.dns_summary_failing": "Resolver DNS host ini tidak menjawab {from}–{to} ({duration}); {paused} monitor yang diperiksa lewat nama menunggu. Diperiksa ulang: {failing} masih gagal — {names}"
 }

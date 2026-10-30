@@ -1421,5 +1421,7 @@
 "ui.pm.download_md": "تنزيل Markdown",
 "ui.pm.download_html": "تنزيل HTML",
 "ui.pm.download_json": "تنزيل JSON",
-"sys.outage_unsent": "تعذّر إرساله خلال ذلك: {items}"
+"sys.outage_unsent": "تعذّر إرساله خلال ذلك: {items}",
+"sys.dns_summary_ok": "لم يستجب محلّل DNS على هذا المضيف من {from} إلى {to} ({duration})؛ وانتظرت {paused} من المراقبات التي تُفحص بالاسم. أعيد الفحص بعدها: كل شيء سليم.",
+"sys.dns_summary_failing": "لم يستجب محلّل DNS على هذا المضيف من {from} إلى {to} ({duration})؛ وانتظرت {paused} من المراقبات التي تُفحص بالاسم. أعيد الفحص بعدها: {failing} ما زالت تفشل — {names}"
 }

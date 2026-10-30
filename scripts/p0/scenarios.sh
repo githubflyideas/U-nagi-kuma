@@ -32,12 +32,17 @@ conf() {
 mon() { echo "$1 IN HTTP $2" >> "$D/monitors.bind"; }
 sites() { for k in $(seq 0 $(( $1 - 1 ))); do mon site$k "http://198.51.$((100 + k)).10:8080/ok?i=site$k"; done; }
 start() {
+  [ -n "$(sudo -n ip netns pids ukp0)" ] && { echo "a server is still running in ukp0" >&2; exit 1; }
   nsx "$BIN" server --data "$D" --listen 10.99.0.2:$P >>"$D/server.log" 2>&1 &
   for _ in $(seq 100); do api /healthz >/dev/null && break; sleep 0.2; done
   SP=$(sudo -n ip netns pids ukp0 | head -1)
   say "server up (pid $SP)"
 }
-stop() { for p in $(sudo -n ip netns pids ukp0); do sudo -n kill "${1:--TERM}" "$p" 2>/dev/null; done; sleep 1; }
+stop() {
+  for p in $(sudo -n ip netns pids ukp0); do sudo -n kill "${1:--TERM}" "$p" 2>/dev/null; done
+  case ${1:--TERM} in -STOP|-CONT) return ;; esac
+  for _ in $(seq 30); do [ -z "$(sudo -n ip netns pids ukp0)" ] && return; sleep 0.5; done
+}
 show() {
   python3 - "$HOOK" "$t0" <<'PY'
 import json, sys, datetime
@@ -106,7 +111,7 @@ case $1 in
     $H cut; say cut; sleep 120; $H restore; say restored; sleep 120; $H gw-ping on; finish ;;
 10) say "DNS-only failure: the resolver is unreachable for 2 minutes; 6 monitors by name, 9 by address"
     conf "$SHORT" '$SET localnet.notify-after=0s'; sites 9
-    for k in 1 2 3 4 5 6; do mon name$k "http://svc$k.p0.test:8080/ok?i=name$k"; done
+    for k in 1 2 3 4 5 6; do mon name$k "http://svc.zone$k.test:8080/ok?i=name$k"; done
     start; sleep 30; $H dns-cut; say "dns cut"; sleep 120; $H dns-restore; say "dns back"; sleep 120; finish ;;
 11) say "SIGSTOP for 90s (a suspended host), then SIGCONT"
     conf "$SHORT" '$SET localnet.notify-after=0s'; sites 9; start; sleep 30

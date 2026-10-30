@@ -1381,5 +1381,7 @@
 "ui.pm.download_md": "Tải Markdown",
 "ui.pm.download_html": "Tải HTML",
 "ui.pm.download_json": "Tải JSON",
-"sys.outage_unsent": "Không gửi được trong thời gian đó: {items}"
+"sys.outage_unsent": "Không gửi được trong thời gian đó: {items}",
+"sys.dns_summary_ok": "Trình phân giải DNS của máy này không trả lời từ {from} đến {to} ({duration}); {paused} giám sát kiểm tra theo tên đã chờ. Kiểm tra lại: tất cả ổn.",
+"sys.dns_summary_failing": "Trình phân giải DNS của máy này không trả lời từ {from} đến {to} ({duration}); {paused} giám sát kiểm tra theo tên đã chờ. Kiểm tra lại: {failing} vẫn lỗi — {names}"
 }

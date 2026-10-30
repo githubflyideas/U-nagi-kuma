@@ -227,6 +227,8 @@ type Engine struct {
 	// outage is the local outage that just ended, until the monitors it
 	// hid have been re-checked and its summary is sent.
 	outage *outageEnd
+	// outageDNS: the running local outage is only the resolver's.
+	outageDNS bool
 	// outageSeen are the monitors a running local outage has held.
 	outageSeen map[string]bool
 

@@ -10,6 +10,7 @@ import (
 	"math"
 	"net"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -165,6 +166,12 @@ func runHTTP(ctx context.Context, s Spec) Result {
 		r := httpError(err, o)
 		if p := getPeer(); p != "" {
 			r.Evidence = &Evidence{Peer: p}
+		} else if r.Reason == ReasonTimeout && o.str("proxy", "") == "" {
+			// Out of time before the name had an address: the resolver
+			// never answered (the request itself never started).
+			if _, perr := netip.ParseAddr(strings.Trim(u.Hostname(), "[]")); perr != nil {
+				r = fail(ReasonDNSResolve, "cannot resolve %s: no answer within the timeout", u.Hostname())
+			}
 		}
 		return r
 	}

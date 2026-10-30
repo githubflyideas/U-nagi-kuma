@@ -175,6 +175,13 @@ func TestHTTPErrors(t *testing.T) {
 		return nil, &net.DNSError{Err: "no such host", Name: host, IsNotFound: true}
 	}
 	want(t, run(t, Spec{Type: "HTTP", Target: "http://name.invalid/"}), VoteFail, ReasonDNSNXDomain)
+	// The resolver never answers: out of time before there was an address
+	// is the resolver failing, not the target timing out.
+	lookupNetIP = func(ctx context.Context, _, _ string) ([]netip.Addr, error) {
+		<-ctx.Done()
+		return nil, ctx.Err()
+	}
+	want(t, run(t, Spec{Type: "HTTP", Target: "http://name.invalid/", Timeout: 200 * time.Millisecond}), VoteFail, ReasonDNSResolve)
 	want(t, run(t, Spec{Type: "HTTP", Target: "http://169.254.169.254/"}), VoteAbstain, ReasonConfig)
 	want(t, run(t, Spec{Type: "HTTP", Target: "ftp://x/"}), VoteAbstain, ReasonConfig)
 }

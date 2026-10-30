@@ -290,3 +290,22 @@ func TestOutageSummaryTellsWhatCouldNotBeSent(t *testing.T) {
 		t.Fatalf("summary %q", body)
 	}
 }
+
+// When only the resolver failed, the summary says so rather than "this
+// host lost its network".
+func TestDNSOutageSummary(t *testing.T) {
+	e, _ := ledgerEngine(t, nil)
+	now := t0.Add(time.Hour)
+	e.openSystem(SystemLocalNetwork, now, "dns")
+	e.outage = &outageEnd{since: now, end: now.Add(10 * time.Minute), back: now.Add(10 * time.Minute), deadline: now, dnsOnly: true}
+	e.finishOutage(now.Add(11 * time.Minute))
+	var body string
+	for _, in := range e.intents {
+		if in.Kind == "SYSTEM" {
+			body = in.Message.Body
+		}
+	}
+	if !strings.HasPrefix(body, "This host's DNS resolver did not answer") {
+		t.Fatalf("summary %q", body)
+	}
+}
