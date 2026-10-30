@@ -85,8 +85,23 @@ func runImport(args []string) error {
 		*cfgPath = filepath.Join(*data, "monitors.bind")
 	}
 	src, err := os.ReadFile(*cfgPath)
+	fresh := false
 	if errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("%s does not exist: start Unagikuma once (or pass --data DIR) so it creates its data directory", *cfgPath)
+		if _, cerr := os.Stat(filepath.Join(*data, "core.db")); cerr == nil {
+			return fmt.Errorf("%s does not exist: start Unagikuma once so it restores it, or pass --config FILE", *cfgPath)
+		}
+		// Never started: import into a new installation, so moving over
+		// is one command. The data directory is created by the real import.
+		src, fresh = app.Starter(time.Now()), true
+		if !*dry {
+			if err := os.MkdirAll(filepath.Dir(*cfgPath), 0o700); err != nil {
+				return fmt.Errorf("data directory: %w", err)
+			}
+			if err := os.WriteFile(*cfgPath, src, 0o600); err != nil {
+				return err
+			}
+			fmt.Fprintf(os.Stderr, "Created a new installation in %s.\n", *data)
+		}
 	} else if err != nil {
 		return err
 	}
@@ -102,6 +117,11 @@ func runImport(args []string) error {
 			return err
 		}
 		defer st.Close()
+		if fresh || st.FirstRun {
+			// The first server start is still a first start (no "restarted"
+			// or "exited abnormally").
+			_ = st.SetSetting("never_started", "1")
+		}
 	}
 	var sec *store.Secrets
 	if st != nil {

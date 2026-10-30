@@ -102,7 +102,9 @@ func (s *Store) migrateHistoryV2() error {
 	if err := tx.Commit(); err != nil {
 		return err
 	}
-	s.log.Info("history moved to the per-monitor-id tables", "monitors", len(ids))
+	if len(ids) > 0 {
+		s.log.Info("history moved to the per-monitor-id tables", "monitors", len(ids))
+	}
 	return s.initAgg5mSince()
 }
 

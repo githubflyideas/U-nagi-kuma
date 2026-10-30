@@ -104,10 +104,24 @@ func runRestore(args []string) error {
 	if err != nil {
 		return err
 	}
+	markRestored(*data)
 	fmt.Printf("Restored %s (%s, made %s by %s %s) into %s.\n", strings.Join(m.Files, ", "), map[bool]string{true: "with keys", false: "without keys"}[m.Keys],
 		m.Created.Local().Format("2006-01-02 15:04"), "unagikuma", m.Version, *data)
 	if !m.Keys {
 		fmt.Println("Put unagikuma.key back (or set UNAGIKUMA_SECRET_KEY) so stored secrets can be read; without the old cluster CA agents must be added again.")
 	}
 	return nil
+}
+
+// markRestored records that a restored copy did not crash: a backup taken
+// from a running server carries its "still running" marker, which would
+// otherwise be reported as an abnormal exit on the first start.
+func markRestored(dir string) {
+	st, err := store.Open(dir, store.Options{Tool: true})
+	if err != nil {
+		return
+	}
+	defer st.Close()
+	_ = st.SetSetting("clean_shutdown", "1")
+	_ = st.SetSetting("last_beat", "")
 }

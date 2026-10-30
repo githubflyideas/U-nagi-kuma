@@ -72,8 +72,10 @@ func shaOf(b []byte) string {
 	return hex.EncodeToString(h[:])
 }
 
-// starter is written on first run: SOA only; monitors come from the
-// setup wizard or the editor.
+// Starter is the monitors.bind written on first run: SOA only; monitors
+// come from the setup wizard, the editor or an import.
+func Starter(now time.Time) []byte { return starter(now) }
+
 func starter(now time.Time) []byte {
 	serial, _, _ := config.NextSerial(0, now)
 	return []byte(fmt.Sprintf(`; unagikuma monitors.bind

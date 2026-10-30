@@ -192,6 +192,15 @@ func runServer(args []string) error {
 	if err != nil {
 		return err
 	}
+	// Take the port first: when it is busy, nothing is created yet.
+	raw, err := net.Listen("tcp", *listen)
+	if err != nil {
+		if errors.Is(err, syscall.EADDRINUSE) {
+			return fmt.Errorf("port %s is already in use (is Unagikuma already running?): stop the other program or choose another address with --listen", *listen)
+		}
+		return err
+	}
+	defer raw.Close()
 	setScriptDirs(*scripts, filepath.Join(*data, "check-scripts"), log)
 	var env []string
 	if *allowEnv != "" {
@@ -237,10 +246,6 @@ func runServer(args []string) error {
 	hs := &http.Server{
 		Addr: *listen, Handler: handler, ReadHeaderTimeout: 10 * time.Second, IdleTimeout: 120 * time.Second,
 		ErrorLog: slog.NewLogLogger(log.Handler(), slog.LevelWarn),
-	}
-	raw, err := net.Listen("tcp", *listen)
-	if err != nil {
-		return err
 	}
 	ln := cluster.SniffListener(raw, a.PKI().TLSConfig(uiCert), 10*time.Second)
 	log.Info("unagikuma started", "version", version, "listen", raw.Addr().String(), "data", *data, "config", a.ConfigPath(),

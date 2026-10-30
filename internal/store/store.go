@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	_ "modernc.org/sqlite" // pure-Go SQLite driver
@@ -85,15 +86,23 @@ func Open(dir string, o Options) (*Store, error) {
 	s.FirstRun = errors.Is(statErr, os.ErrNotExist)
 	var err error
 	if s.core, err = openDB(filepath.Join(dir, "core.db")); err != nil {
-		return nil, err
+		return nil, openError(dir, err)
 	}
 	if s.hist, err = openDB(filepath.Join(dir, "history.db")); err != nil {
 		s.core.Close()
-		return nil, err
+		return nil, openError(dir, err)
 	}
 	if err := s.migrate(); err != nil {
 		s.Close()
 		return nil, err
+	}
+	if v, _ := s.Setting("never_started"); v == "1" {
+		// Made by a tool (an import into a new directory): the first
+		// server start is still the first run.
+		s.FirstRun = true
+		if !s.tool {
+			_ = s.SetSetting("never_started", "")
+		}
 	}
 	clean, _ := s.Setting("clean_shutdown")
 	s.PrevClean = clean == "1" || s.FirstRun
@@ -246,4 +255,29 @@ func fromMS(v int64) time.Time {
 		return time.Time{}
 	}
 	return time.UnixMilli(v)
+}
+
+// openError explains a database that cannot be opened. SQLite says "out
+// of memory" or "unable to open database file" when the real cause is a
+// data directory this user may not write to.
+func openError(dir string, err error) error {
+	f, werr := os.CreateTemp(dir, ".write-test-*")
+	if werr == nil {
+		name := f.Name()
+		f.Close()
+		os.Remove(name)
+		return err
+	}
+	if errors.Is(werr, os.ErrPermission) || errors.Is(werr, syscall.EROFS) {
+		return fmt.Errorf("the data directory %s is not writable for this user (%v): fix its owner or permissions, or pass another one with --data", dir, rootCause(werr))
+	}
+	return fmt.Errorf("cannot write in the data directory %s: %v", dir, rootCause(werr))
+}
+
+func rootCause(err error) error {
+	var pe *os.PathError
+	if errors.As(err, &pe) {
+		return pe.Err
+	}
+	return err
 }

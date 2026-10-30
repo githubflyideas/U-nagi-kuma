@@ -167,7 +167,10 @@ func New(o Options) (*App, error) {
 	intents, _ := st.PendingIntents()
 	a.engine.Restore(states, incidents, intents)
 	a.applyConfig(a.cfg.current().Config)
-	a.engine.StartupNotice(st.PrevClean, st.PrevBeat)
+	if !st.FirstRun {
+		// A brand-new installation was not "restarted".
+		a.engine.StartupNotice(st.PrevClean, st.PrevBeat)
+	}
 	a.heartbeat = &engine.Heartbeat{
 		Client:    &http.Client{Transport: &http.Transport{Proxy: http.ProxyFromEnvironment}},
 		URL:       a.heartbeatURL,
