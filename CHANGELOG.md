@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.5.6 — 2026-10-30
 
 **New**
 - Moving from Uptime Kuma or Nagios is no longer a preview. `unagikuma import kuma|nagios` prints a clear report (imported / needs a look / not imported, each with what to do) and saves it as text and Markdown in `<data>/import-reports/`. `--dry-run` checks everything without changing anything; running it again adds only what is new.
