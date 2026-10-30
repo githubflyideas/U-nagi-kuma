@@ -19,6 +19,7 @@
 - Certificates now warn 62 days before they expire (`probe.cert-warn-days`, was 21), also for monitors imported from Uptime Kuma; thresholds you set yourself are kept. The overview lists certificates inside that window, and the expiry list is now called **Certificate validity**.
 
 **Fixed**
+- On call: the recovery of a problem went to whoever was on call when it recovered, so a stand-in (or the person before a handoff) who was told about the problem never heard that it was over, and the next person got a recovery for a problem they never saw. It now goes to the person who was told.
 - A local outage whose last reply and first failure came at the same instant was not recognised, and its failures were alerted.
 - A problem that began while the disk was full got no recovery notice.
 - A service that failed on its own shortly before this host lost its network was taken back as part of the outage.

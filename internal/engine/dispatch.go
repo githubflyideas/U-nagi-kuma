@@ -113,7 +113,7 @@ func (e *Engine) dispatchIntents(ctx context.Context, wg *sync.WaitGroup) {
 			msg := in.Message
 			msg.Delayed = LateBy(in.DueAt, now, late)
 			id, step := in.ID, i
-			members := e.groupMembers(ch, now)
+			members := e.rotationMembers(ch, in, now)
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
@@ -163,6 +163,9 @@ func (e *Engine) onAttempt(a attemptResult) {
 		retries = ch.Retries
 	}
 	in.Delivery.Finish(a.step, a.att.OK, a.att.Error, now, retries, e.cfg.Tunables.Duration("notify.retry-backoff"))
+	if a.att.OK {
+		e.noteResponder(in, in.Delivery.Steps[a.step].Channel, a.more)
+	}
 	in.UpdatedAt = now
 	in.Attempts = append(in.Attempts, a.more...)
 	if len(a.more) == 0 {

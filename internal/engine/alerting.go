@@ -55,6 +55,68 @@ func (e *Engine) groupMembers(ch ChannelSpec, now time.Time) []ChannelSpec {
 	return out
 }
 
+// rotationMembers is groupMembers for a delivery of intent in: a
+// recovery (or any follow-up that is not a problem notice) of an incident
+// goes first to the member who was told about the problem, then to whoever
+// is on call now. Problem notices always follow the current shift.
+func (e *Engine) rotationMembers(ch ChannelSpec, in *Intent, now time.Time) []ChannelSpec {
+	members := e.groupMembers(ch, now)
+	if ch.Rotation == nil || in == nil || problemNotice(in.Kind) {
+		return members
+	}
+	inc := e.incidents[in.IncidentID]
+	who := ""
+	if inc != nil {
+		who = inc.State.Responder(ch.Name)
+	}
+	if who == "" {
+		return members
+	}
+	m, ok := e.cfg.Channels[who]
+	if !ok || !e.inPeriod(m, now) {
+		return members
+	}
+	out := []ChannelSpec{m}
+	for _, x := range members {
+		if x.Name != who {
+			out = append(out, x)
+		}
+	}
+	return out
+}
+
+// problemNotice reports whether a notice kind tells of a problem (rather
+// than its recovery or another follow-up).
+func problemNotice(kind string) bool {
+	switch NoticeKind(kind) {
+	case NoticeProblem, NoticeRepeat, NoticeReopen, NoticeEscalate:
+		return true
+	}
+	return false
+}
+
+// noteResponder remembers which member of a rotation took a problem
+// notice of an incident.
+func (e *Engine) noteResponder(in *Intent, channel string, more []notify.Attempt) {
+	ch, ok := e.cfg.Channels[channel]
+	if !ok || ch.Rotation == nil || !problemNotice(in.Kind) || in.Message.DryRun {
+		return
+	}
+	inc := e.incidents[in.IncidentID]
+	if inc == nil {
+		return
+	}
+	for i := len(more) - 1; i >= 0; i-- {
+		if more[i].OK {
+			if inc.State.Responder(channel) != more[i].Channel {
+				inc.State.setResponder(channel, more[i].Channel)
+				e.saveIncident(inc)
+			}
+			return
+		}
+	}
+}
+
 // sendRotation tries the members one after another, whoever is on call
 // first, and stops at the first that delivers: the others are only woken
 // when the person on call cannot be reached. Runs outside the engine loop.
