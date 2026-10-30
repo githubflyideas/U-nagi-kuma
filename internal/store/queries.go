@@ -604,7 +604,7 @@ func (s *Store) Prune(r Retention) error {
 	_, err7 := s.core.Exec(`DELETE FROM sessions WHERE expires_at<?`, ms(now))
 	var err8 error
 	if r.Audit > 0 {
-		_, err8 = s.core.Exec(`DELETE FROM audit WHERE at<?`, ms(now.Add(-r.Audit)))
+		err8 = s.pruneAudit(ms(now.Add(-r.Audit)))
 	}
 	s.wmu.Unlock()
 	for _, err := range []error{err1, err2, err3, err4, err5, err6, err7, err8} {

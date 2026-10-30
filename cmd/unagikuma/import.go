@@ -298,6 +298,9 @@ func runImport(args []string) error {
 	} else {
 		fmt.Printf("Report saved to %s\n", saved)
 	}
+	if !*dry && (changed || len(newUsers) > 0) {
+		cliAudit(st, "import."+source, strings.Join(fs.Args(), " "), map[string]any{"serial": next, "accounts": len(newUsers)})
+	}
 	switch {
 	case !changed && len(newUsers) == 0:
 		fmt.Println("Nothing new to import: everything is already here.")

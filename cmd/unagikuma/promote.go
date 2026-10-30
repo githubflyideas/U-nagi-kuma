@@ -18,6 +18,7 @@ func runPromote(args []string) error {
 	if err != nil {
 		return err
 	}
+	cliAuditDir(*data, "cluster.promote", "", map[string]any{"term": term})
 	fmt.Printf("At its next start this server takes over as master (term %d) with the master's state copied %s.\n",
 		term, st.Fetched.Local().Format("2006-01-02 15:04:05"))
 	fmt.Println("Start it now. Nodes move to it once they cannot reach the old master; keep the old master stopped:")

@@ -93,6 +93,15 @@ var coreMigrations = []string{
 	// restart, so a delivered digest still credits its incidents.
 	`ALTER TABLE intents ADD COLUMN covers TEXT NOT NULL DEFAULT '';
 	ALTER TABLE intents ADD COLUMN chain TEXT NOT NULL DEFAULT '';`,
+	// The audit log is a hash chain: every entry carries the hash of the
+	// one before it, so an edited, inserted or removed entry shows up in
+	// "unagikuma audit verify". Entries cannot be updated once chained.
+	`ALTER TABLE audit ADD COLUMN risk TEXT NOT NULL DEFAULT '';
+	ALTER TABLE audit ADD COLUMN prev TEXT NOT NULL DEFAULT '';
+	ALTER TABLE audit ADD COLUMN hash TEXT NOT NULL DEFAULT '';
+	CREATE INDEX audit_action ON audit(action);
+	CREATE TRIGGER audit_append_only BEFORE UPDATE ON audit WHEN OLD.hash != ''
+	BEGIN SELECT RAISE(ABORT, 'the audit log is append-only'); END;`,
 }
 
 var historyMigrations = []string{

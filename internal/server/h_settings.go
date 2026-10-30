@@ -17,6 +17,7 @@ import (
 	"github.com/githubflyideas/unagikuma/internal/keywords"
 	"github.com/githubflyideas/unagikuma/internal/notify"
 	"github.com/githubflyideas/unagikuma/internal/probe"
+	"github.com/githubflyideas/unagikuma/internal/store"
 	"github.com/githubflyideas/unagikuma/internal/tunables"
 )
 
@@ -513,6 +514,12 @@ func (s *Server) backup(w http.ResponseWriter, r *http.Request) (any, error) {
 	if err != nil {
 		s.log.Error("backup failed", "err", err)
 	}
+	actor := ""
+	if ai := authOf(r); ai != nil {
+		actor = ai.user
+	}
+	_ = s.app.Store().Audit(store.AuditEntry{Actor: actor, Action: "backup.download", Addr: s.ip(r),
+		Detail: map[string]any{"encrypted": req.Passphrase != "", "history": req.History, "ok": err == nil}})
 	return nil, errHandled
 }
 

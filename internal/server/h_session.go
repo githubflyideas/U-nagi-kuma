@@ -112,6 +112,9 @@ func (s *Server) sessionLogout(w http.ResponseWriter, r *http.Request) (any, err
 	if c, err := r.Cookie(sessionCookie); err == nil {
 		_ = s.app.Store().DeleteSession(c.Value)
 	}
+	if ai := authOf(r); ai != nil {
+		_ = s.app.Store().Audit(store.AuditEntry{Actor: ai.user, Action: "session.logout", Addr: s.ip(r)})
+	}
 	http.SetCookie(w, &http.Cookie{Name: sessionCookie, Value: "", Path: "/", MaxAge: -1, HttpOnly: true, SameSite: http.SameSiteStrictMode})
 	return nil, nil
 }

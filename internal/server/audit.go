@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -139,8 +140,18 @@ func withAudit(r *http.Request) (*http.Request, *auditRec) {
 
 // auditLog lists the audit log for administrators.
 func (s *Server) auditLog(w http.ResponseWriter, r *http.Request) (any, error) {
+	aq := s.auditQuery(r)
+	items, err := s.app.Store().AuditLog(aq)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{"items": items}, nil
+}
+
+func (s *Server) auditQuery(r *http.Request) store.AuditQuery {
 	q := r.URL.Query()
-	aq := store.AuditQuery{Actor: q.Get("actor"), Action: q.Get("action"), Target: q.Get("target"), Area: q.Get("area")}
+	aq := store.AuditQuery{Actor: q.Get("actor"), Action: q.Get("action"), Target: q.Get("target"), Area: q.Get("area"),
+		Addr: q.Get("addr"), Risk: q.Get("risk")}
 	aq.Before, _ = strconv.ParseInt(q.Get("before"), 10, 64)
 	aq.Limit, _ = strconv.Atoi(q.Get("limit"))
 	if _, d := rangeOf(r); q.Get("range") != "" {
@@ -151,9 +162,49 @@ func (s *Server) auditLog(w http.ResponseWriter, r *http.Request) (any, error) {
 			aq.From = t
 		}
 	}
+	if v := q.Get("to"); v != "" {
+		if t, err := time.Parse(time.RFC3339, v); err == nil {
+			aq.To = t
+		}
+	}
+	return aq
+}
+
+// auditExport downloads the filtered log as CSV or JSON (up to 10000
+// entries, newest first). The download itself is recorded.
+func (s *Server) auditExport(w http.ResponseWriter, r *http.Request) (any, error) {
+	aq := s.auditQuery(r)
+	aq.Export, aq.Limit = true, 0
 	items, err := s.app.Store().AuditLog(aq)
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{"items": items}, nil
+	format := r.URL.Query().Get("format")
+	if format != "json" {
+		format = "csv"
+	}
+	actor := ""
+	if ai := authOf(r); ai != nil {
+		actor = ai.user
+	}
+	_ = s.app.Store().Audit(store.AuditEntry{Actor: actor, Action: "audit.export", Addr: s.ip(r), Detail: map[string]any{"format": format, "entries": len(items)}})
+	ct := map[string]string{"csv": "text/csv; charset=utf-8", "json": "application/json"}[format]
+	w.Header().Set("Content-Type", ct)
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="unagikuma-audit-%s.%s"`, s.now().Format("20060102-150405"), format))
+	if err := store.WriteAudit(w, format, items); err != nil {
+		s.log.Error("audit export", "err", err)
+	}
+	return nil, errHandled
+}
+
+// auditVerify checks the hash chain.
+func (s *Server) auditVerify(w http.ResponseWriter, r *http.Request) (any, error) {
+	c, err := s.app.Store().VerifyAudit()
+	if err != nil {
+		return nil, err
+	}
+	if h := r.URL.Query().Get("head"); h != "" && c.OK && !s.app.Store().AuditContains(h) {
+		c.OK, c.Problem = false, "the entry noted earlier is gone: entries were removed from the end"
+	}
+	return c, nil
 }

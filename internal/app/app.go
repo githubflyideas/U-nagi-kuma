@@ -171,6 +171,14 @@ func New(o Options) (*App, error) {
 		// A brand-new installation was not "restarted".
 		a.engine.StartupNotice(st.PrevClean, st.PrevBeat)
 	}
+	if v := a.opts.Version; v != "" {
+		if prev, _ := st.Setting("version"); prev != v {
+			if prev != "" {
+				_ = st.Audit(store.AuditEntry{Actor: "system", Action: "system.upgrade", Detail: map[string]any{"from": prev, "to": v}})
+			}
+			_ = st.SetSetting("version", v)
+		}
+	}
 	a.heartbeat = &engine.Heartbeat{
 		Client:    &http.Client{Transport: &http.Transport{Proxy: http.ProxyFromEnvironment}},
 		URL:       a.heartbeatURL,

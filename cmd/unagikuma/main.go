@@ -59,6 +59,7 @@ Usage:
   unagikuma service install|uninstall [--name N] [-- COMMAND ARGS]
                                   run unagikuma as a Windows service
   unagikuma reset-password [user]  set a new password for a user (default admin); --generate makes one
+  unagikuma audit verify|export   check the audit log for tampering, or export it (CSV/JSON)
   unagikuma promote [--data DIR]   make this stopped standby the master at its next start
   unagikuma version
 
@@ -126,6 +127,8 @@ func dispatch(cmd string, args []string) error {
 		err = runResetPassword(args)
 	case "promote":
 		err = runPromote(args)
+	case "audit":
+		err = runAudit(args)
 	case "version", "-v", "-version", "--version":
 		fmt.Println("unagikuma", version)
 	case "help", "-h", "-help", "--help":

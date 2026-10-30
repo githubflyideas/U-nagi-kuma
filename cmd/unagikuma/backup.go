@@ -71,6 +71,7 @@ func runBackup(args []string) error {
 		os.Remove(*out)
 		return err
 	}
+	cliAudit(st, "backup.create", *out, map[string]any{"encrypted": pass != "", "history": *history})
 	fmt.Printf("%s: %s\n", *out, strings.Join(m.Files, ", "))
 	if !m.Keys {
 		fmt.Println("Not included: unagikuma.key and the cluster CA. Keep them separately, or back up with --passphrase-file.")
@@ -104,7 +105,7 @@ func runRestore(args []string) error {
 	if err != nil {
 		return err
 	}
-	markRestored(*data)
+	markRestored(*data, m.Created, m.Version)
 	fmt.Printf("Restored %s (%s, made %s by %s %s) into %s.\n", strings.Join(m.Files, ", "), map[bool]string{true: "with keys", false: "without keys"}[m.Keys],
 		m.Created.Local().Format("2006-01-02 15:04"), "unagikuma", m.Version, *data)
 	if !m.Keys {
@@ -116,7 +117,7 @@ func runRestore(args []string) error {
 // markRestored records that a restored copy did not crash: a backup taken
 // from a running server carries its "still running" marker, which would
 // otherwise be reported as an abnormal exit on the first start.
-func markRestored(dir string) {
+func markRestored(dir string, made time.Time, ver string) {
 	st, err := store.Open(dir, store.Options{Tool: true})
 	if err != nil {
 		return
@@ -124,4 +125,5 @@ func markRestored(dir string) {
 	defer st.Close()
 	_ = st.SetSetting("clean_shutdown", "1")
 	_ = st.SetSetting("last_beat", "")
+	cliAudit(st, "backup.restore", "", map[string]any{"made": made, "version": ver})
 }

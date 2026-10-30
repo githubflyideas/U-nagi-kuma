@@ -167,7 +167,7 @@ func (cm *configManager) apply(text []byte, f *config.File, cfg *config.Config, 
 	if old.Config != nil {
 		changes := config.Diff(old.Config, cfg)
 		summary = config.Summarize(changes)
-		cm.audit(old.Config, cfg, changes, source, author, message)
+		cm.audit(old, cm.cur, changes, source, author, message)
 	}
 	cm.banner = nil
 	cm.app.emit("serial", map[string]any{"serial": cfg.Serial, "source": source, "message": message,
@@ -339,10 +339,11 @@ func writeAtomic(path string, data []byte) error {
 
 // audit records what a configuration change did, by record and section,
 // whoever made it: the web, the API, or an edit of the file.
-func (cm *configManager) audit(old, cfg *config.Config, changes []config.Change, source, author, message string) {
+func (cm *configManager) audit(oldState, newState ConfigState, changes []config.Change, source, author, message string) {
 	if len(changes) == 0 {
 		return
 	}
+	old, cfg := oldState.Config, newState.Config
 	areaOf := func(name string) string {
 		if m := cfg.FindMonitor(name); m != nil {
 			return m.Area
@@ -371,6 +372,23 @@ func (cm *configManager) audit(old, cfg *config.Config, changes []config.Change,
 	for k, v := range byKind {
 		detail[k] = v
 	}
+	// Each record as it was and as it is now, so the log alone answers
+	// "who changed what from what to what".
+	var diff []map[string]string
+	for _, c := range changes {
+		if len(diff) == 50 {
+			break
+		}
+		d := map[string]string{"record": c.Record, "type": strings.ToLower(c.Type), "kind": c.Kind}
+		if b := recordText(oldState, c.Record); b != "" {
+			d["before"] = b
+		}
+		if a := recordText(newState, c.Record); a != "" {
+			d["after"] = a
+		}
+		diff = append(diff, d)
+	}
+	detail["diff"] = diff
 	area := ""
 	if len(areas) == 1 {
 		for a := range areas {
@@ -383,4 +401,26 @@ func (cm *configManager) audit(old, cfg *config.Config, changes []config.Change,
 	if err := cm.app.store.Audit(store.AuditEntry{Actor: author, Action: "config.apply", Target: "monitors.bind", Area: area, Detail: detail}); err != nil {
 		cm.app.log.Error("audit", "err", err)
 	}
+}
+
+// recordText is a record as written in a configuration, at most 2000
+// characters.
+func recordText(st ConfigState, name string) string {
+	if st.File == nil {
+		return ""
+	}
+	r, ok := st.File.Record(name)
+	if !ok || r.Stmt == nil {
+		return ""
+	}
+	lines := strings.Split(st.Text, "\n")
+	from, to := r.Stmt.StartLine-1, r.Stmt.EndLine
+	if from < 0 || to > len(lines) || from >= to {
+		return ""
+	}
+	t := strings.TrimSpace(strings.Join(lines[from:to], "\n"))
+	if len(t) > 2000 {
+		t = t[:2000] + "…"
+	}
+	return t
 }

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/githubflyideas/unagikuma/internal/license"
@@ -74,6 +75,40 @@ func TestAuditLog(t *testing.T) {
 	admin.do("GET", "/api/v1/audit?area=region:north&actor=bjops", nil, &log)
 	if len(log.Items) != 2 {
 		t.Fatalf("filter area+actor: %+v", log.Items)
+	}
+	// The configuration change carries the record before and after.
+	admin.do("GET", "/api/v1/audit?action=config.apply&actor=bjops", nil, &log)
+	diff, _ := log.Items[0].Detail["diff"].([]any)
+	if len(diff) != 1 || diff[0].(map[string]any)["after"] == nil || !strings.Contains(diff[0].(map[string]any)["after"].(string), "10.10.0.2") {
+		t.Fatalf("diff: %+v", log.Items[0].Detail)
+	}
+	// High-risk filter, verify, export.
+	admin.do("GET", "/api/v1/audit?risk=high", nil, &log)
+	for _, e := range log.Items {
+		if e.Action == "monitor.create" {
+			t.Fatalf("monitor.create is not high-risk: %+v", log.Items)
+		}
+	}
+	var v struct {
+		OK      bool
+		Entries int
+		Head    string
+	}
+	if c := admin.do("GET", "/api/v1/audit/verify", nil, &v); c != 200 || !v.OK || v.Entries < 5 || v.Head == "" {
+		t.Fatalf("verify: %d %+v", c, v)
+	}
+	var rows []map[string]any
+	if c := admin.do("GET", "/api/v1/audit/export?format=json&action=user", nil, &rows); c != 200 || len(rows) != 2 {
+		t.Fatalf("export: %d %+v", c, rows)
+	}
+	ops.do("DELETE", "/api/v1/session", nil, nil)
+	admin.do("GET", "/api/v1/audit?action=session.logout", nil, &log)
+	if len(log.Items) != 1 || log.Items[0].Actor != "bjops" {
+		t.Fatalf("logout: %+v", log.Items)
+	}
+	admin.do("GET", "/api/v1/audit?action=audit", nil, &log)
+	if len(log.Items) != 1 || log.Items[0].Action != "audit.export" {
+		t.Fatalf("the export itself is recorded: %+v", log.Items)
 	}
 }
 

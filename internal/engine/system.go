@@ -56,7 +56,7 @@ func (e *Engine) openSystemAs(key, policy, title, detail string, now time.Time) 
 	}
 	e.saveIncident(inc)
 	e.system[key] = inc
-	e.event(Event{Type: EventSystem, Severity: "critical", Message: inc.Title, Data: map[string]any{"incident_id": inc.ID, "detail": detail}})
+	e.event(Event{Type: EventSystem, Severity: "critical", Message: inc.Title, Data: map[string]any{"audit": "system_opened", "system": key, "incident_id": inc.ID, "detail": detail}})
 	e.notices(inc, notices, now)
 	return inc
 }
@@ -350,7 +350,7 @@ func (e *Engine) StartupNotice(clean bool, lastBeat time.Time) {
 			down = now.Sub(lastBeat)
 		}
 		msg := e.text("abnormal_exit", lastBeat, down)
-		e.event(Event{Type: EventSystem, Severity: "critical", Message: msg})
+		e.event(Event{Type: EventSystem, Severity: "critical", Message: msg, Data: map[string]any{"msg": "abnormal_exit", "down_s": int(down.Seconds())}})
 		e.systemNotice(now, msg)
 	}
 	if !e.started.Load() {

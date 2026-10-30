@@ -112,6 +112,7 @@ func runResetPassword(args []string) error {
 			fmt.Fprintf(os.Stderr, "Note: %s is disabled, so it still cannot sign in. An administrator can enable it again under Settings.\n", user)
 		}
 	}
+	cliAudit(st, "user.password_reset", user, map[string]any{"revoke_tokens": *revoke, "created": found == nil})
 	if *generate {
 		fmt.Fprintln(os.Stderr, "New password (shown only now):")
 		fmt.Println(pw)

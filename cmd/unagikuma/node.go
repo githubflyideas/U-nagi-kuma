@@ -81,6 +81,7 @@ func runNode(args []string, out io.Writer) error {
 		if err := st.DeleteAgentToken(name); err != nil {
 			return err
 		}
+		cliAudit(st, "node.token.delete", name, nil)
 		fmt.Fprintf(out, "Token of node %s revoked. A running server ends its session within one ping interval.\n", name)
 		return nil
 	}
@@ -162,6 +163,7 @@ func nodeIssue(out io.Writer, data, name, server string) error {
 	if err != nil {
 		return err
 	}
+	cliAudit(st, "node.token", name, nil)
 	pki, err := cluster.LoadOrCreatePKI(data, time.Now())
 	if err != nil {
 		return err

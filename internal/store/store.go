@@ -96,6 +96,10 @@ func Open(dir string, o Options) (*Store, error) {
 		s.Close()
 		return nil, err
 	}
+	if err := s.chainAudit(); err != nil {
+		s.Close()
+		return nil, fmt.Errorf("audit log: %w", err)
+	}
 	if v, _ := s.Setting("never_started"); v == "1" {
 		// Made by a tool (an import into a new directory): the first
 		// server start is still the first run.

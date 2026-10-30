@@ -180,7 +180,45 @@ func (s *Store) Evidence(name, node string, at time.Time, r probe.Result) {
 }
 
 // Event records an event (batched).
-func (s *Store) Event(ev engine.Event) { s.batch.add(item{event: &ev}) }
+func (s *Store) Event(ev engine.Event) {
+	s.batch.add(item{event: &ev})
+	s.auditSystem(ev)
+}
+
+// systemAudited are the system events the audit log keeps: what the
+// monitor itself decided or suffered (holding alerts during a local
+// outage, releasing them, restarts, crashes, clock jumps).
+var systemAudited = map[string]bool{
+	"system_opened": true, "system_resolved": true, "hold_released": true, "outage_summary": true,
+	"outage_backdated": true, "restarted": true, "abnormal_exit": true, "clock_changed": true,
+}
+
+func (s *Store) auditSystem(ev engine.Event) {
+	if ev.Type != engine.EventSystem {
+		return
+	}
+	code, _ := ev.Data["msg"].(string)
+	if c, ok := ev.Data["audit"].(string); ok {
+		code = c // audited, but shown by its own message
+	}
+	if !systemAudited[code] {
+		return
+	}
+	d := map[string]any{"message": ev.Message}
+	target := ""
+	for k, v := range ev.Data {
+		switch k {
+		case "msg", "audit":
+		case "system":
+			target, _ = v.(string)
+		default:
+			d[k] = v
+		}
+	}
+	if err := s.Audit(AuditEntry{At: ev.At, Actor: "system", Action: "system." + code, Target: target, Detail: d}); err != nil && s.log != nil {
+		s.log.Error("audit", "err", err)
+	}
+}
 
 // Counter adds to a daily value counter.
 func (s *Store) Counter(name string, n int) { s.batch.add(item{counter: name, n: n}) }
