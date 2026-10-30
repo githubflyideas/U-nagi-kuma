@@ -220,7 +220,7 @@ func (e *Engine) finishOutage(now time.Time) {
 		return
 	}
 	e.event(Event{Type: EventSystem, Severity: "info", Message: summary,
-		Data: map[string]any{"msg": "outage_summary", "duration_s": int(o.back.Sub(o.since).Seconds()), "affected": len(o.names), "failing": len(failing), "dropped": o.dropped}})
+		Data: map[string]any{"msg": "outage_summary", "duration_s": int(o.back.Sub(o.since).Seconds()), "affected": len(o.names), "failing": len(failing), "dropped": o.dropped, "dns_only": o.dnsOnly}})
 	if inc.State.told() || o.back.Sub(o.since) < e.cfg.Tunables.Duration("localnet.notify-after") && lost == "" {
 		// Told at the start (a channel that still worked): the recovery
 		// carries the summary. A short outage ends quietly, unless a
