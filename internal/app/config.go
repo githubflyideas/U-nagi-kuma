@@ -251,7 +251,10 @@ func (cm *configManager) check() {
 	}
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
-	if fi.Size() == cm.stat.size && fi.ModTime().Equal(cm.stat.mod) {
+	// File times are coarse (a few ms on many file systems): a same-size
+	// edit right after our own write can keep the old stamp, so a recent
+	// file is compared by content as well.
+	if fi.Size() == cm.stat.size && fi.ModTime().Equal(cm.stat.mod) && time.Since(fi.ModTime()) > 3*time.Second {
 		return
 	}
 	cm.stat = fileStamp{fi.Size(), fi.ModTime()}
