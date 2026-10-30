@@ -56,7 +56,7 @@ AmbientCapabilities=CAP_NET_RAW
 WantedBy=multi-user.target
 ```
 
-只有在系统禁用了非特权 ping（`net.ipv4.ping_group_range`）时才需要 `CAP_NET_RAW`。两者都没有时，ping 检查会报告“本机权限不足”，而不会把目标判为故障。
+只有在系统禁用了非特权 ping（`net.ipv4.ping_group_range`）时才需要 `CAP_NET_RAW`。两者都没有时（例如默认安装的 Debian 或 Ubuntu），ping 检查会改为连接 TCP 443、80、22 端口：对方接受或拒绝连接都说明它在线，结果会注明“通过 TCP 检查”。三个端口都没有回应时，检查会报告“本机权限不足”，而不会把目标判为故障。`fallback=off` 可以关闭 TCP 检查。
 
 ## monitors.bind
 
@@ -322,14 +322,14 @@ unagikuma version
 ```sh
 unagikuma backup --history                         # 数据库和 monitors.bind
 unagikuma backup --passphrase-file pass.txt        # 加密，并包含密钥和集群 CA
-unagikuma restore --passphrase-file pass.txt unagikuma-20261101-0300.nkbackup
+unagikuma restore --passphrase-file pass.txt unagikuma-20261101-0300.ukbackup
 ```
 
 设置口令时归档会加密（argon2id、AES-256-GCM），恢复后的 master 仍然能读取密钥，agent 也继续信任它。不设口令时，请另外保管 `unagikuma.key`（或 `UNAGIKUMA_SECRET_KEY`）。请恢复到已停止的实例；`--force` 会覆盖已有的安装。
 
 ## API
 
-界面的所有操作都通过 `/api/v1` 下的 REST API 完成。在 **设置 › API 令牌** 中创建令牌，以 `Authorization: Bearer nk_…` 发送；令牌权限分为只读、确认、写入和管理。
+界面的所有操作都通过 `/api/v1` 下的 REST API 完成。在 **设置 › API 令牌** 中创建令牌，以 `Authorization: Bearer uk_…` 发送；令牌权限分为只读、确认、写入和管理。
 
 - **并发修改。** API 返回的每个监控、通知通道、策略、节点和维护窗口都带有 `etag`。修改或删除时把它放在 `If-Match` 头里带回：如果这期间别人改过这一项，请求会以 `412`、错误码 `record_changed` 失败，不会覆盖别人的修改。改动其他项不会冲突。不带 `If-Match` 时以最后一次写入为准。
 - **安全重试。** 带 `Idempotency-Key` 头（任意唯一字符串，最长 255 个字符）的 `POST` 只执行一次；在 `api.idempotency-ttl`（24 小时）内重复发送，会返回第一次的结果并带 `Idempotent-Replayed: true`。失败的请求不会被记住，可以用同一个 key 重试。
@@ -341,7 +341,7 @@ unagikuma restore --passphrase-file pass.txt unagikuma-20261101-0300.nkbackup
 
 - **所有监控同时变红。** 看总览里的“故障在哪一段”：如果本机网关或出口不通，问题在本机这一侧，对各目标的告警会暂缓，直到恢复。外网目标下方的外网网关（`localnet.exit-target`，8.8.8.8）只在有外网目标失败时才去 ping，用来区分是对方站点坏了还是本机出不去；外网目标都正常时显示为未检查。地址可在 **设置 › 常规** 中修改（留空关闭）。
 - **监控项故障了但没人收到通知。** 打开它，看抽屉中的“通知情况”；事件日志里有每次投递及其错误，**告警 › 通知通道 › 发送测试** 可以发一条测试消息。
-- **Ping 检查提示权限不足。** 允许非特权 ping（`net.ipv4.ping_group_range`）或给程序 `CAP_NET_RAW` 权限，见快速开始。
+- **Ping 检查提示“通过 TCP 检查”或权限不足。** 本机不允许 Unagikuma 发送 ping。允许非特权 ping（`sudo sysctl -w net.ipv4.ping_group_range="0 2147483647"`）或给程序 `CAP_NET_RAW` 权限，见快速开始。
 - **脚本检查一直是暂停状态。** 启用时会列出缺少脚本的节点；**设置 › 检查脚本** 显示每个节点上的脚本情况。
 - **"监控数据无法写入"。** 数据目录持续 `storage.write-alert`（1 分钟）以上无法写入（磁盘已满、文件系统只读）。期间检查结果和事件暂存在内存中，空间恢复后会补写；界面顶部会显示红色横幅，`/healthz` 也会返回 `"status": "degraded"`。清理磁盘空间后，故障会自动恢复。
 - **改了 monitors.bind 但没生效。** 请增大序列号；有错误的文件不会生效，界面会显示错误所在的行。

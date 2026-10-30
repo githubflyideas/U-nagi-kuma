@@ -285,7 +285,7 @@ var coarseClock = runtime.GOOS == "windows"
 // ---- PING ----
 
 func TestPingLoopback(t *testing.T) {
-	r := run(t, Spec{Type: "PING", Target: "127.0.0.1", Opts: map[string]string{"count": "2", "interval": "50ms"}})
+	r := run(t, Spec{Type: "PING", Target: "127.0.0.1", Opts: map[string]string{"count": "2", "interval": "50ms", "fallback": "off"}})
 	switch {
 	case r.Vote == VoteAbstain && (r.Reason == ReasonPrivilege || r.Reason == ReasonPlatform):
 		t.Skipf("ICMP not available in this sandbox: %s", r.Detail)
@@ -294,6 +294,35 @@ func TestPingLoopback(t *testing.T) {
 	}
 	if r.Metrics["ping.loss"] != 0 || r.Metrics["ping.rtt_avg_ms"] < 0 || !coarseClock && r.Metrics["ping.rtt_avg_ms"] == 0 {
 		t.Fatalf("metrics %v", r.Metrics)
+	}
+}
+
+// Without ping permission a host that accepts or refuses a TCP connection
+// is up; the result says it was checked over TCP.
+func TestPingTCPFallback(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln.Close()
+	open := uint16(ln.Addr().(*net.TCPAddr).Port)
+	closed, _ := net.Listen("tcp", "127.0.0.1:0")
+	refused := uint16(closed.Addr().(*net.TCPAddr).Port)
+	closed.Close()
+	saved := tcpReachPorts
+	defer func() { tcpReachPorts = saved }()
+	ip := netip.MustParseAddr("127.0.0.1")
+	for _, ports := range [][]uint16{{open}, {refused}} {
+		tcpReachPorts = ports
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		r := tcpReach(ctx, ip)
+		cancel()
+		if r.Vote != VoteOK || !strings.Contains(r.Detail, "checked over TCP") {
+			t.Fatalf("ports %v: %+v", ports, r)
+		}
+	}
+	if err := validatePing(opts{"fallback": "bogus"}); err == nil {
+		t.Fatal("fallback=bogus accepted")
 	}
 }
 

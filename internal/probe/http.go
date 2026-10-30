@@ -226,14 +226,49 @@ func httpError(err error, o opts) Result {
 	var he x509.HostnameError
 	var ie x509.CertificateInvalidError
 	switch {
-	case errors.As(err, &ce), errors.As(err, &ue), errors.As(err, &he), errors.As(err, &ie):
-		return fail(ReasonTLS, "certificate rejected: %v", rootErr(err))
+	case errors.As(err, &ue):
+		return fail(ReasonTLS, "certificate rejected: not issued by a trusted authority (self-signed?)")
+	case errors.As(err, &he):
+		return fail(ReasonTLS, "certificate rejected: issued for another name (%s)", certNames(he.Certificate))
+	case errors.As(err, &ie):
+		switch ie.Reason {
+		case x509.Expired:
+			if c := ie.Cert; c != nil && time.Now().Before(c.NotBefore) {
+				return fail(ReasonTLS, "certificate rejected: not valid yet")
+			}
+			return fail(ReasonTLS, "certificate rejected: expired")
+		default:
+			return fail(ReasonTLS, "certificate rejected: not valid for this use")
+		}
+	case errors.As(err, &ce):
+		return fail(ReasonTLS, "certificate rejected")
 	case strings.Contains(err.Error(), "tls:"), strings.Contains(err.Error(), "remote error"):
-		return fail(ReasonTLS, "TLS handshake failed: %v", rootErr(err))
+		return fail(ReasonTLS, "TLS handshake failed (no common protocol or the server refused)")
 	case strings.Contains(err.Error(), "redirects"):
-		return fail(ReasonProtoError, "%v", rootErr(err))
+		return fail(ReasonProtoError, "too many redirects (more than 10)")
 	}
 	return classify(err, false, o)
+}
+
+// certNames lists the names a certificate is for, briefly.
+func certNames(c *x509.Certificate) string {
+	if c == nil {
+		return "?"
+	}
+	names := c.DNSNames
+	if len(names) == 0 && c.Subject.CommonName != "" {
+		names = []string{c.Subject.CommonName}
+	}
+	for _, ip := range c.IPAddresses {
+		names = append(names, ip.String())
+	}
+	if len(names) > 3 {
+		names = append(names[:3], "…")
+	}
+	if len(names) == 0 {
+		return "?"
+	}
+	return strings.Join(names, ", ")
 }
 
 // certDays fails the check when the certificate is inside the critical

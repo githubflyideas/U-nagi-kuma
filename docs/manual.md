@@ -56,7 +56,7 @@ AmbientCapabilities=CAP_NET_RAW
 WantedBy=multi-user.target
 ```
 
-`CAP_NET_RAW` is only needed for ICMP ping on systems where unprivileged ping sockets are disabled (`net.ipv4.ping_group_range`). Without either, ping checks report that this host lacks the privilege rather than marking targets down.
+`CAP_NET_RAW` is only needed for ICMP ping on systems where unprivileged ping sockets are disabled (`net.ipv4.ping_group_range`). Without either (as on a stock Debian or Ubuntu), a ping check knocks on TCP ports 443, 80 and 22 instead: a host that accepts or refuses the connection is up, and the result says it was checked over TCP. If all three ports stay silent, the check reports that this host lacks the privilege rather than marking the target down. `fallback=off` turns the TCP knock off.
 
 ## monitors.bind
 
@@ -339,14 +339,14 @@ A backup is an archive made while the server runs, from **Settings › System** 
 ```sh
 unagikuma backup --history                         # databases and monitors.bind
 unagikuma backup --passphrase-file pass.txt        # encrypted, also the key and the cluster CA
-unagikuma restore --passphrase-file pass.txt unagikuma-20261101-0300.nkbackup
+unagikuma restore --passphrase-file pass.txt unagikuma-20261101-0300.ukbackup
 ```
 
 With a passphrase the archive is encrypted (argon2id, AES-256-GCM) and a restored master keeps its secrets and its agents. Without one, keep `unagikuma.key` (or `UNAGIKUMA_SECRET_KEY`) separately. Restore into a stopped installation; `--force` replaces an existing one.
 
 ## API
 
-Everything the UI does goes through a REST API under `/api/v1`. Create a token under **Settings › API tokens** and send it as `Authorization: Bearer nk_…`; tokens are scoped to read, ack, write or admin.
+Everything the UI does goes through a REST API under `/api/v1`. Create a token under **Settings › API tokens** and send it as `Authorization: Bearer uk_…`; tokens are scoped to read, ack, write or admin.
 
 - **Concurrent edits.** Every monitor, channel, policy, node and maintenance window the API returns carries an `etag`. Send it back as `If-Match` when changing or deleting the record: if someone changed that record in the meantime the request fails with `412` and code `record_changed`, and nothing is overwritten. Changes to other records never conflict. Without `If-Match` the last write wins.
 - **Safe retries.** A `POST` with an `Idempotency-Key` header (any unique string, at most 255 characters) is applied once; repeating it within `api.idempotency-ttl` (24 hours) returns the first answer with `Idempotent-Replayed: true`. Failed requests are not remembered, so they can be retried with the same key.
@@ -358,7 +358,7 @@ Everything the UI does goes through a REST API under `/api/v1`. Create a token u
 
 - **Everything turned red at once.** Look at *Where it breaks* on the overview: if this host's gateway or uplink fails, the problem is on this side, and alerts for the targets are held until it is back. The Internet gateway under the internet targets (`localnet.exit-target`, 8.8.8.8) is pinged only once an internet target fails, to tell a broken site from a broken way out; while they all answer it shows as not checked. Change its address under **Settings › General** (empty turns it off).
 - **A monitor is down but nobody was told.** Open it and read *Notifications* in the drawer; the event log shows each delivery with its error, and **Alerting › Channels › Test** sends a test message.
-- **Ping checks say "privilege".** Allow unprivileged ping (`net.ipv4.ping_group_range`) or give the binary `CAP_NET_RAW`; see Quick start.
+- **Ping checks say "checked over TCP" or "privilege".** This host does not allow ping for Unagikuma. Allow unprivileged ping (`sudo sysctl -w net.ipv4.ping_group_range="0 2147483647"`) or give the binary `CAP_NET_RAW`; see Quick start.
 - **A script check stays paused.** Enabling it lists the nodes that lack the script; **Settings › Check scripts** shows each node's copy.
 - **"Monitoring data cannot be written".** The data directory refuses writes (full disk, read-only file system) for longer than `storage.write-alert` (1 minute). Results and events are kept in memory and written once space is back; a red banner in the UI and `/healthz` (`"status": "degraded"`) say so meanwhile. Free disk space; the incident resolves itself.
 - **An edit to monitors.bind is ignored.** Increase the serial; a file with errors is never applied, and the UI shows the error with its line.

@@ -19,7 +19,7 @@ import (
 	"golang.org/x/net/ipv6"
 )
 
-var pingOpts = map[string]bool{"count": true, "interval": true, "loss": true, "rtt": true, "size": true}
+var pingOpts = map[string]bool{"count": true, "interval": true, "loss": true, "rtt": true, "size": true, "fallback": true}
 
 func validatePing(o opts) error {
 	if err := rejectUnknown(o, pingOpts); err != nil {
@@ -36,6 +36,9 @@ func validatePing(o opts) error {
 	}
 	if _, err := o.durOpt("rtt", 0); err != nil {
 		return err
+	}
+	if f := o.str("fallback", "tcp"); f != "tcp" && f != "off" {
+		return fmt.Errorf("fallback=%s: use tcp or off", f)
 	}
 	_, err := o.percent("loss", 0)
 	return err
@@ -81,7 +84,10 @@ func runPing(ctx context.Context, s Spec) Result {
 	conn, dgram, err := listenICMP(v6)
 	if err != nil {
 		if errors.Is(err, errNoICMP) {
-			return abstain(ReasonPrivilege, "ICMP needs privileges here: allow unprivileged ping (sysctl net.ipv4.ping_group_range=\"0 2147483647\") or grant CAP_NET_RAW")
+			if o.str("fallback", "tcp") == "tcp" {
+				return tcpReach(ctx, ip)
+			}
+			return abstain(ReasonPrivilege, privilegeHint)
 		}
 		return abstain(ReasonPlatform, "ICMP unavailable: %v", rootErr(err))
 	}
@@ -226,4 +232,60 @@ func jitter(rtts []time.Duration) float64 {
 		sum += math.Abs(ms(rtts[i]) - ms(rtts[i-1]))
 	}
 	return sum / float64(len(rtts)-1)
+}
+
+// privilegeHint says how to allow ping for this process.
+const privilegeHint = "ping is not allowed for this process: allow unprivileged ping (sysctl net.ipv4.ping_group_range=\"0 2147483647\") or grant CAP_NET_RAW (setcap cap_net_raw+ep, or AmbientCapabilities=CAP_NET_RAW in the systemd unit)"
+
+// tcpReachPorts are knocked when ICMP is not allowed: a host that accepts
+// or refuses a connection on any of them is up.
+var tcpReachPorts = []uint16{443, 80, 22}
+
+// tcpReach checks that a host is up without ICMP (no ping permission, as
+// on a stock Debian or Ubuntu): a connection accepted or refused (TCP RST)
+// on a common port proves it answers. A host that says "unreachable" is
+// down. When every port stays silent (a firewall drops them) nothing can
+// be concluded: the check abstains with a hint rather than raising a false
+// alarm.
+func tcpReach(ctx context.Context, ip netip.Addr) Result {
+	type out struct {
+		port uint16
+		err  error
+		rtt  time.Duration
+	}
+	ch := make(chan out, len(tcpReachPorts))
+	var d net.Dialer
+	for _, p := range tcpReachPorts {
+		go func(p uint16) {
+			t0 := time.Now()
+			c, err := d.DialContext(ctx, "tcp", netip.AddrPortFrom(ip, p).String())
+			if err == nil {
+				c.Close()
+			}
+			ch <- out{p, err, time.Since(t0)}
+		}(p)
+	}
+	peer := ip.String()
+	var unreachable error
+	for range tcpReachPorts {
+		o := <-ch
+		if o.err == nil || isConnRefused(o.err) {
+			r := Result{Vote: VoteOK, Reason: ReasonOK, Latency: o.rtt, Evidence: &Evidence{Peer: peer},
+				Metrics: map[string]float64{"latency_ms": ms(o.rtt)}}
+			r.Detail = fmt.Sprintf("answered on TCP port %d in %.1f ms (checked over TCP: ping is not allowed for this process)", o.port, ms(o.rtt))
+			return r
+		}
+		if errors.Is(o.err, syscall.EHOSTUNREACH) || errors.Is(o.err, syscall.EHOSTDOWN) {
+			unreachable = o.err
+		}
+		if errors.Is(o.err, syscall.ENETUNREACH) {
+			return abstain(ReasonNoRoute, "no route from this host (%v)", rootErr(o.err))
+		}
+	}
+	if unreachable != nil {
+		r := fail(ReasonHostUnreachable, "host unreachable (checked over TCP: ping is not allowed for this process)")
+		r.Evidence = &Evidence{Peer: peer}
+		return r
+	}
+	return abstain(ReasonPrivilege, privilegeHint)
 }
