@@ -697,7 +697,7 @@
 "ui.import.user.bad_hash": "hachage de mot de passe non reconnu, ignoré",
 "ui.import.user.manager": "gère désormais la section",
 "ui.set.tab.audit": "Audit",
-"ui.audit.intro": "Chaque modification des comptes, droits, secrets, nœuds et de la configuration : qui, quoi, dans quelle section, depuis où. Connexions échouées comprises. Conservé selon retention.audit.",
+"ui.audit.intro": "Tout ce qui a été fait sur cette installation : connexions (échouées aussi), comptes, jetons et droits, chaque modification de configuration avec l’enregistrement avant et après, acquittements et mises en sourdine, imports, sauvegardes et restaurations, nœuds, et ce que le système a fait lui-même (retenue et libération des alertes, redémarrages, plantages, mises à jour). Les entrées sont chaînées par des empreintes : une entrée modifiée ou supprimée est détectée. Conservé pendant retention.audit.",
 "ui.audit.actor": "Auteur",
 "ui.audit.all": "Toutes les actions",
 "ui.audit.area": "Section",
@@ -1298,5 +1298,14 @@
 "detail.w_empty_select": "MAINT {name} ne sélectionne aucun moniteur",
 "msg.title_plain": "[Unagikuma] {kind} : {title} {status}",
 "msg.down_for_one": "En panne pendant {duration} ; {count} notification envoyée",
-"ui.uptime.so_far": "Seulement {pct} de cette période observée pour l’instant : le chiffre ne porte que sur cette partie."
+"ui.uptime.so_far": "Seulement {pct} de cette période observée pour l’instant : le chiffre ne porte que sur cette partie.",
+"ui.audit.high_only": "Risque élevé uniquement",
+"ui.audit.high": "risque élevé",
+"ui.audit.since": "Période",
+"ui.audit.any_time": "Toute la période",
+"ui.audit.export_csv": "Exporter en CSV",
+"ui.audit.export_json": "Exporter en JSON",
+"ui.audit.verify": "Vérifier l’intégrité",
+"ui.audit.verify_ok": "Intact : {n} entrées, aucune modifiée, insérée ou supprimée. Entrée la plus récente : {head}",
+"ui.audit.verify_bad": "Altéré : {problem}"
 }

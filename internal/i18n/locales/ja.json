@@ -689,7 +689,7 @@
 "ui.import.user.bad_hash": "パスワードハッシュを認識できずスキップ",
 "ui.import.user.manager": "セクションの管理者になりました",
 "ui.set.tab.audit": "監査",
-"ui.audit.intro": "アカウント、権限、シークレット、ノード、設定へのすべての変更: 誰が、何を、どのセクションで、どこから。失敗したログインも含む。保存期間は retention.audit。",
+"ui.audit.intro": "このシステムで行われたすべて：サインイン（失敗も含む）、アカウント・トークン・権限、変更前後のレコード付きのすべての設定変更、確認と通知停止、インポート、バックアップと復元、ノード、そしてシステム自身の動作（アラートの保留と解放、再起動、異常終了、アップグレード）。エントリはハッシュでつながっているため、変更や削除は検出されます。保存期間は retention.audit。",
 "ui.audit.actor": "実行者",
 "ui.audit.all": "すべての操作",
 "ui.audit.area": "セクション",
@@ -1289,5 +1289,14 @@
 "detail.w_stateful": "{kw} は対象に状態を作ります: 間隔を {i} に延長しました",
 "detail.w_empty_select": "MAINT {name} はどの監視も選択していません",
 "msg.title_plain": "[Unagikuma] {kind}: {title}{status}",
-"ui.uptime.so_far": "この期間のうち、まだ {pct} しか監視していません。数値は監視した部分だけのものです。"
+"ui.uptime.so_far": "この期間のうち、まだ {pct} しか監視していません。数値は監視した部分だけのものです。",
+"ui.audit.high_only": "高リスクのみ",
+"ui.audit.high": "高リスク",
+"ui.audit.since": "期間",
+"ui.audit.any_time": "すべての期間",
+"ui.audit.export_csv": "CSV を書き出す",
+"ui.audit.export_json": "JSON を書き出す",
+"ui.audit.verify": "改ざんを確認",
+"ui.audit.verify_ok": "改ざんなし：{n} 件、変更・挿入・削除はありません。最新のエントリ：{head}",
+"ui.audit.verify_bad": "改ざんされています：{problem}"
 }

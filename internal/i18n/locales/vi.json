@@ -689,7 +689,7 @@
 "ui.import.user.bad_hash": "không nhận ra hash mật khẩu, bỏ qua",
 "ui.import.user.manager": "nay quản lý mục",
 "ui.set.tab.audit": "Kiểm toán",
-"ui.audit.intro": "Mọi thay đổi về tài khoản, quyền, bí mật, nút và cấu hình: ai, làm gì, ở mục nào, từ đâu. Gồm cả đăng nhập thất bại. Lưu theo retention.audit.",
+"ui.audit.intro": "Mọi việc đã làm trên hệ thống này: đăng nhập (cả lần thất bại), tài khoản, token và quyền, mọi thay đổi cấu hình kèm bản ghi trước và sau, xác nhận và tắt tiếng, nhập dữ liệu, sao lưu và khôi phục, nút, và những gì hệ thống tự làm (giữ và thả cảnh báo, khởi động lại, sự cố, nâng cấp). Các mục được nối bằng hash nên mục bị sửa hoặc xóa sẽ bị phát hiện. Lưu trong retention.audit.",
 "ui.audit.actor": "Người thực hiện",
 "ui.audit.all": "Mọi thao tác",
 "ui.audit.area": "Mục",
@@ -1289,5 +1289,14 @@
 "detail.w_stateful": "{kw} tạo trạng thái trên đích: chu kỳ tăng lên {i}",
 "detail.w_empty_select": "MAINT {name} không chọn giám sát nào",
 "msg.title_plain": "[Unagikuma] {kind}: {title} {status}",
-"ui.uptime.so_far": "Mới theo dõi được {pct} của khoảng thời gian này: con số chỉ tính phần đó."
+"ui.uptime.so_far": "Mới theo dõi được {pct} của khoảng thời gian này: con số chỉ tính phần đó.",
+"ui.audit.high_only": "Chỉ rủi ro cao",
+"ui.audit.high": "rủi ro cao",
+"ui.audit.since": "Khoảng thời gian",
+"ui.audit.any_time": "Mọi lúc",
+"ui.audit.export_csv": "Xuất CSV",
+"ui.audit.export_json": "Xuất JSON",
+"ui.audit.verify": "Kiểm tra toàn vẹn",
+"ui.audit.verify_ok": "Nguyên vẹn: {n} mục, không mục nào bị sửa, chèn hay xóa. Mục mới nhất: {head}",
+"ui.audit.verify_bad": "Đã bị can thiệp: {problem}"
 }

@@ -697,7 +697,7 @@
 "ui.import.user.bad_hash": "hash de senha não reconhecido, ignorada",
 "ui.import.user.manager": "agora gerencia a seção",
 "ui.set.tab.audit": "Auditoria",
-"ui.audit.intro": "Toda alteração em contas, permissões, segredos, nós e configuração: quem, o quê, em qual seção e de onde. Inclui logins com falha. Mantido conforme retention.audit.",
+"ui.audit.intro": "Tudo o que foi feito nesta instalação: logins (também os falhados), contas, tokens e permissões, cada mudança de configuração com o registro antes e depois, reconhecimentos e silêncios, importações, backups e restaurações, nós, e o que o próprio sistema fez (reter e liberar alertas, reinícios, falhas, atualizações). As entradas são encadeadas por hashes: uma entrada alterada ou removida é detectada. Mantido por retention.audit.",
 "ui.audit.actor": "Autor",
 "ui.audit.all": "Todas as ações",
 "ui.audit.area": "Seção",
@@ -1298,5 +1298,14 @@
 "detail.w_empty_select": "MAINT {name} não seleciona nenhum monitor",
 "msg.title_plain": "[Unagikuma] {kind}: {title} {status}",
 "msg.down_for_one": "Ficou fora do ar por {duration}; {count} notificação enviada",
-"ui.uptime.so_far": "Apenas {pct} deste período foi monitorado até agora: o valor cobre só essa parte."
+"ui.uptime.so_far": "Apenas {pct} deste período foi monitorado até agora: o valor cobre só essa parte.",
+"ui.audit.high_only": "Só alto risco",
+"ui.audit.high": "alto risco",
+"ui.audit.since": "Período",
+"ui.audit.any_time": "Todo o período",
+"ui.audit.export_csv": "Exportar CSV",
+"ui.audit.export_json": "Exportar JSON",
+"ui.audit.verify": "Verificar integridade",
+"ui.audit.verify_ok": "Íntegro: {n} entradas, nenhuma alterada, inserida ou removida. Entrada mais recente: {head}",
+"ui.audit.verify_bad": "Adulterado: {problem}"
 }

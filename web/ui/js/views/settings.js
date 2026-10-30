@@ -368,7 +368,7 @@ function auditDetail(d) {
   return parts.join(' · ');
 }
 
-const AUDIT_ACTIONS = ['user', 'token', 'secret', 'node', 'cluster', 'config', 'monitor', 'maintenance', 'channel', 'policy', 'incident', 'session', 'import', 'backup', 'settings', 'tunables', 'oncall'];
+const AUDIT_ACTIONS = ['user', 'token', 'secret', 'node', 'cluster', 'config', 'monitor', 'maintenance', 'channel', 'policy', 'incident', 'session', 'import', 'backup', 'settings', 'tunables', 'oncall', 'people', 'system', 'audit'];
 
 function CheckScripts() {
   const rep = useFetch(() => get('/scripts'), []);
@@ -451,13 +451,22 @@ function Registration() {
 }
 
 function Audit() {
-  const [f, setF] = useState({ actor: '', action: '', area: '' });
+  const [f, setF] = useState({ actor: '', action: '', area: '', addr: '', range: '', risk: '' });
   const [items, setItems] = useState(null);
   const [more, setMore] = useState(false);
   const [err, setErr] = useState(null);
-  const load = async (before) => {
-    const q = new URLSearchParams({ limit: '100' });
+  const [check, setCheck] = useState(null);
+  const query = () => {
+    const q = new URLSearchParams();
     for (const [k, v] of Object.entries(f)) if (v.trim()) q.set(k, v.trim());
+    return q;
+  };
+  const verify = async () => {
+    try { setCheck(await get('/audit/verify')); } catch (e) { toastError(e); }
+  };
+  const load = async (before) => {
+    const q = query();
+    q.set('limit', '100');
     if (before) q.set('before', before);
     try {
       const r = await get('/audit?' + q);
@@ -466,7 +475,7 @@ function Audit() {
       setErr(null);
     } catch (e) { setErr(e); }
   };
-  useEffect(() => { load(); }, [f.action]);
+  useEffect(() => { load(); }, [f.action, f.range, f.risk]);
   if (err && err.code === 'registration_required') return html`<div class="card"><div class="bd col" style=${{ gap: '10px' }}>
     <b>${t('ui.audit.locked')}</b><p class="small muted" style=${{ margin: 0 }}>${t('ui.audit.locked_hint')}</p>
     <div><a class="btn primary" href="#/settings/registration">${t('ui.set.tab.registration')}</a></div></div></div>`;
@@ -480,16 +489,27 @@ function Audit() {
         ${AUDIT_ACTIONS.map(a => html`<option value=${a}>${a}</option>`)}
       </select>
       <input type="text" class="ltr" placeholder=${t('ui.audit.area')} value=${f.area} onInput=${set('area')} style=${{ maxWidth: '180px' }} />
+      <input type="text" class="ltr" placeholder=${t('ui.audit.addr')} value=${f.addr} onInput=${set('addr')} style=${{ maxWidth: '160px' }} />
+      <select value=${f.range} onChange=${set('range')} aria-label=${t('ui.audit.since')}>
+        <option value="">${t('ui.audit.any_time')}</option>
+        ${['24h', '7d', '30d', '90d'].map(r => html`<option value=${r}>${r}</option>`)}
+      </select>
+      <label class="row small" style=${{ gap: '4px' }}><input type="checkbox" checked=${f.risk === 'high'} onChange=${(e) => setF({ ...f, risk: e.target.checked ? 'high' : '' })} />${t('ui.audit.high_only')}</label>
       <button class="btn">${t('ui.audit.filter')}</button>
+      <div class="spacer"></div>
+      <a class="btn" href=${'/api/v1/audit/export?format=csv&' + query()} download>${t('ui.audit.export_csv')}</a>
+      <a class="btn" href=${'/api/v1/audit/export?format=json&' + query()} download>${t('ui.audit.export_json')}</a>
+      <button type="button" class="btn" onClick=${verify}>${t('ui.audit.verify')}</button>
     </form>
+    ${check && html`<div class=${'banner ' + (check.ok ? 'ok' : 'error')}>${check.ok ? html`${t('ui.audit.verify_ok', { n: check.entries, head: '' })}<code class="ltr small">${check.head.slice(0, 16)}…</code>` : t('ui.audit.verify_bad', { problem: check.problem })}</div>`}
     ${err && html`<${ErrorBox} error=${err} />`}
     ${!items ? (!err && html`<${Loading} />`) : !items.length ? html`<${Empty} title=${t('ui.audit.empty')} />` : html`
     <div class="card"><div class="bd flush tbl-wrap"><table class="tbl dense">
       <thead><tr><th>${t('ui.audit.time')}</th><th>${t('ui.audit.actor')}</th><th>${t('ui.audit.action')}</th><th>${t('ui.audit.target')}</th><th>${t('ui.audit.area')}</th><th>${t('ui.audit.detail')}</th><th>${t('ui.audit.addr')}</th></tr></thead>
-      <tbody>${items.map(e => html`<tr>
+      <tbody>${items.map(e => html`<tr class=${e.risk === 'high' ? 'risk-high' : ''}>
         <td class="nowrap small">${fmtTime(e.at)}</td>
         <td class="ltr">${e.actor}</td>
-        <td><code class=${e.action.endsWith('failed') ? 'crit-text' : ''}>${e.action}</code></td>
+        <td><code class=${e.action.endsWith('failed') ? 'crit-text' : ''}>${e.action}</code>${e.risk === 'high' ? html` <span class="tag warn">${t('ui.audit.high')}</span>` : ''}</td>
         <td class="ltr">${e.target || ''}</td>
         <td class="ltr small">${e.area || ''}</td>
         <td class="small ltr" style=${{ maxWidth: '420px', wordBreak: 'break-word' }}>${auditDetail(e.detail)}</td>

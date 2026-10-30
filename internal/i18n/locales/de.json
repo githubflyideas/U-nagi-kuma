@@ -697,7 +697,7 @@
 "ui.import.user.bad_hash": "Passwort-Hash unbekannt, übersprungen",
 "ui.import.user.manager": "verantwortet nun den Abschnitt",
 "ui.set.tab.audit": "Audit",
-"ui.audit.intro": "Jede Änderung an Konten, Rechten, Geheimnissen, Knoten und Konfiguration: wer, was, in welchem Abschnitt, von wo. Inklusive fehlgeschlagener Anmeldungen. Aufbewahrung: retention.audit.",
+"ui.audit.intro": "Alles, was an dieser Installation geschah: Anmeldungen (auch fehlgeschlagene), Konten, Tokens und Rechte, jede Konfigurationsänderung mit dem Eintrag vorher und nachher, Bestätigungen und Stummschaltungen, Importe, Sicherungen und Wiederherstellungen, Knoten und was das System selbst tat (Alarme zurückhalten und freigeben, Neustarts, Abstürze, Upgrades). Die Einträge sind durch Hashes verkettet, eine Änderung oder Löschung fällt auf. Aufbewahrt für retention.audit.",
 "ui.audit.actor": "Akteur",
 "ui.audit.all": "Alle Aktionen",
 "ui.audit.area": "Abschnitt",
@@ -1298,5 +1298,14 @@
 "detail.w_empty_select": "MAINT {name} wählt keinen Monitor aus",
 "msg.title_plain": "[Unagikuma] {kind}: {title} {status}",
 "msg.down_for_one": "War {duration} ausgefallen; {count} Benachrichtigung gesendet",
-"ui.uptime.so_far": "Bisher erst {pct} dieses Zeitraums beobachtet: der Wert gilt nur für diesen Teil."
+"ui.uptime.so_far": "Bisher erst {pct} dieses Zeitraums beobachtet: der Wert gilt nur für diesen Teil.",
+"ui.audit.high_only": "Nur hohes Risiko",
+"ui.audit.high": "hohes Risiko",
+"ui.audit.since": "Zeitraum",
+"ui.audit.any_time": "Gesamter Zeitraum",
+"ui.audit.export_csv": "CSV exportieren",
+"ui.audit.export_json": "JSON exportieren",
+"ui.audit.verify": "Unversehrtheit prüfen",
+"ui.audit.verify_ok": "Unversehrt: {n} Einträge, keiner geändert, eingefügt oder entfernt. Neuester Eintrag: {head}",
+"ui.audit.verify_bad": "Manipuliert: {problem}"
 }

@@ -689,7 +689,7 @@
 "ui.import.user.bad_hash": "비밀번호 해시 인식 불가, 건너뜀",
 "ui.import.user.manager": "섹션 관리자가 됨",
 "ui.set.tab.audit": "감사",
-"ui.audit.intro": "계정, 권한, 시크릿, 노드, 설정의 모든 변경: 누가, 무엇을, 어느 섹션에서, 어디서. 로그인 실패 포함. 보존 기간은 retention.audit.",
+"ui.audit.intro": "이 시스템에서 일어난 모든 일: 로그인(실패 포함), 계정·토큰·권한, 변경 전후 레코드가 포함된 모든 설정 변경, 확인과 무음, 가져오기, 백업과 복원, 노드, 그리고 시스템 자체의 동작(알림 보류와 해제, 재시작, 비정상 종료, 업그레이드). 항목은 해시로 연결되어 있어 변경되거나 삭제된 항목이 드러납니다. 보존 기간은 retention.audit.",
 "ui.audit.actor": "수행자",
 "ui.audit.all": "모든 작업",
 "ui.audit.area": "섹션",
@@ -1289,5 +1289,14 @@
 "detail.w_stateful": "{kw}은(는) 대상에 상태를 만듭니다: 간격을 {i}(으)로 늘림",
 "detail.w_empty_select": "MAINT {name}이(가) 선택한 모니터 없음",
 "msg.title_plain": "[Unagikuma] {kind}: {title} {status}",
-"ui.uptime.so_far": "이 기간 중 아직 {pct}만 감시했습니다. 수치는 감시한 부분만 나타냅니다."
+"ui.uptime.so_far": "이 기간 중 아직 {pct}만 감시했습니다. 수치는 감시한 부분만 나타냅니다.",
+"ui.audit.high_only": "고위험만",
+"ui.audit.high": "고위험",
+"ui.audit.since": "기간",
+"ui.audit.any_time": "전체 기간",
+"ui.audit.export_csv": "CSV 내보내기",
+"ui.audit.export_json": "JSON 내보내기",
+"ui.audit.verify": "무결성 확인",
+"ui.audit.verify_ok": "무결: {n}건, 변경·삽입·삭제 없음. 최신 항목: {head}",
+"ui.audit.verify_bad": "변조됨: {problem}"
 }

@@ -697,7 +697,7 @@
 "ui.import.user.bad_hash": "password hash not recognised, skipped",
 "ui.import.user.manager": "now manages the section",
 "ui.set.tab.audit": "Audit",
-"ui.audit.intro": "Every change to accounts, permissions, secrets, nodes and configuration: who, what, in which section, from where. Failed logins included. Kept for retention.audit.",
+"ui.audit.intro": "Everything done to this installation: sign-ins (failed ones too), accounts, tokens and permissions, every configuration change with the record before and after, acknowledgements and silences, imports, backups and restores, nodes, and what the system did itself (holding and releasing alerts, restarts, crashes, upgrades). Entries are chained by hashes, so a changed or removed entry is detected. Kept for retention.audit.",
 "ui.audit.actor": "Actor",
 "ui.audit.all": "All actions",
 "ui.audit.area": "Section",
@@ -1299,5 +1299,14 @@
 "detail.w_empty_select": "MAINT {name} selects no monitor",
 "msg.title_plain": "[Unagikuma] {kind}: {title} {status}",
 "msg.down_for_one": "Was down for {duration}; {count} notification sent",
-"ui.uptime.so_far": "Watched for only {pct} of this window so far: the figure covers that part only."
+"ui.uptime.so_far": "Watched for only {pct} of this window so far: the figure covers that part only.",
+"ui.audit.high_only": "High-risk only",
+"ui.audit.high": "high risk",
+"ui.audit.since": "Period",
+"ui.audit.any_time": "Any time",
+"ui.audit.export_csv": "Export CSV",
+"ui.audit.export_json": "Export JSON",
+"ui.audit.verify": "Check integrity",
+"ui.audit.verify_ok": "Intact: {n} entries, none changed, inserted or removed. Newest entry: {head}",
+"ui.audit.verify_bad": "Tampered with: {problem}"
 }

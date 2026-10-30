@@ -689,7 +689,7 @@
 "ui.import.user.bad_hash": "无法识别密码哈希，跳过",
 "ui.import.user.manager": "已成为该段落管理员",
 "ui.set.tab.audit": "审计",
-"ui.audit.intro": "所有账号、权限、密钥、节点和配置的变更：谁、做了什么、在哪个段落、从哪里。包括失败的登录。保留期见 retention.audit。",
+"ui.audit.intro": "这套系统上发生的一切：登录（包括失败的登录）、账号、令牌和权限、每次配置变更（含变更前后的记录）、确认和静默、导入、备份与恢复、节点，以及系统自身的动作（暂扣与放行告警、重启、崩溃、升级）。记录之间以哈希相连，任何一条被修改或删除都能被发现。保留期见 retention.audit。",
 "ui.audit.actor": "操作人",
 "ui.audit.all": "全部操作",
 "ui.audit.area": "段落",
@@ -1289,5 +1289,14 @@
 "detail.w_stateful": "{kw} 会在目标上产生状态：检测间隔已提高到 {i}",
 "detail.w_empty_select": "MAINT {name} 没有选中任何监控",
 "msg.title_plain": "[Unagikuma] {kind}：{title}{status}",
-"ui.uptime.so_far": "目前只观测了这个时间窗的 {pct}：数值只代表已观测的部分。"
+"ui.uptime.so_far": "目前只观测了这个时间窗的 {pct}：数值只代表已观测的部分。",
+"ui.audit.high_only": "只看高风险",
+"ui.audit.high": "高风险",
+"ui.audit.since": "时间范围",
+"ui.audit.any_time": "全部时间",
+"ui.audit.export_csv": "导出 CSV",
+"ui.audit.export_json": "导出 JSON",
+"ui.audit.verify": "校验完整性",
+"ui.audit.verify_ok": "完整：共 {n} 条记录，没有被修改、插入或删除。最新记录：{head}",
+"ui.audit.verify_bad": "已被篡改：{problem}"
 }

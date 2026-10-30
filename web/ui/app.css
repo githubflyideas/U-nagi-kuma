@@ -515,3 +515,7 @@ button.search { cursor: text; font: inherit; text-align: start; }
 .oc-kpis > div { background: var(--panel); padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
 .oc-kpis b { font-size: 20px; }
 .oc-kpis span { font-size: 12px; color: var(--muted); }
+
+/* Audit log: high-risk actions stand out. */
+tr.risk-high td { background: color-mix(in srgb, var(--degraded) 9%, transparent); }
+tr.risk-high td:first-child { box-shadow: inset 3px 0 0 var(--degraded); }
