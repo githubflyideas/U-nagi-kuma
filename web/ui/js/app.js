@@ -185,7 +185,7 @@ function Shell({ user, onLogout, onLang }) {
   const nav = NAV.filter(([path]) => path !== '/nodes' || (ov.data && ov.data.layout === 'cluster'));
   return html`<div class=${'shell' + (mini ? ' mini' : '')}>
     <aside class=${'side' + (open ? ' open' : '')}>
-      <a class="brand" href="#/"><${Logo} /><div>Unagikuma<small>${ov.data ? ov.data.instance : ''}</small></div></a>
+      <a class="brand" href="#/"><${Logo} /><div>Unagikuma</div></a>
       <nav class="nav">
         ${nav.map(([path, key, ico]) => html`<a href=${href(path)} class=${first === path ? 'on' : ''}>
           <span class="ico" title=${mini ? t(key) : ''}>${ico}</span><span class="lbl">${t(key)}</span>
@@ -203,6 +203,7 @@ function Shell({ user, onLogout, onLang }) {
           <option value="dark">${t('ui.theme.dark')}</option>
         </select>
         <div class="row"><span class="ellipsis">${user}</span><div class="spacer"></div><button class="btn sm ghost" onClick=${onLogout}>${t('ui.logout')}</button></div>
+        ${ov.data && ov.data.instance && html`<div class="host ellipsis" title=${ov.data.instance}>${ov.data.instance}</div>`}
       </div>
     </aside>
     <div class="main">
