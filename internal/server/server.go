@@ -82,7 +82,7 @@ func authOf(r *http.Request) *authInfo {
 	return a
 }
 
-const sessionCookie = "nk_session"
+const sessionCookie = "unagikuma_session"
 
 // New builds the server and starts publishing live events.
 func New(a *app.App, o Options) *Server {

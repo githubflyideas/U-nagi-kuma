@@ -173,9 +173,9 @@ func newEnvWith(t *testing.T, p *PKI, mod func(*MasterOptions)) *clusterEnv {
 	mo := MasterOptions{
 		Auth: func(token, addr string) (string, error) {
 			switch {
-			case token == "nka_bj" && !c.revoked.Load():
+			case token == "uka_bj" && !c.revoked.Load():
 				return "bj", nil
-			case token == "nka_gone":
+			case token == "uka_gone":
 				return "gone", nil
 			}
 			return "", errors.New("no such token")
@@ -205,7 +205,7 @@ func newEnvWith(t *testing.T, p *PKI, mod func(*MasterOptions)) *clusterEnv {
 func (c *clusterEnv) agent(mod func(*AgentOptions)) (*Agent, func()) {
 	c.t.Helper()
 	o := AgentOptions{
-		Server: c.url, Node: "bj", Token: "nka_bj", Fingerprint: c.pki.Fingerprint(), Version: "test", MaxBackoff: 200 * time.Millisecond,
+		Server: c.url, Node: "bj", Token: "uka_bj", Fingerprint: c.pki.Fingerprint(), Version: "test", MaxBackoff: 200 * time.Millisecond,
 		Probe: func(_ context.Context, s probe.Spec) probe.Result {
 			return probe.Result{Vote: probe.VoteOK, Reason: probe.ReasonOK, Latency: 2 * time.Millisecond, Detail: "probed " + s.Target}
 		},
@@ -332,7 +332,7 @@ func TestAgentRefused(t *testing.T) {
 	c := newEnv(t)
 	try := func(mod func(*AgentOptions)) error {
 		t.Helper()
-		o := AgentOptions{Server: c.url, Token: "nka_bj", Fingerprint: c.pki.Fingerprint()}
+		o := AgentOptions{Server: c.url, Token: "uka_bj", Fingerprint: c.pki.Fingerprint()}
 		mod(&o)
 		a, err := NewAgent(o)
 		if err != nil {
@@ -343,13 +343,13 @@ func TestAgentRefused(t *testing.T) {
 		return a.session(ctx)
 	}
 	var ae *AuthError
-	if err := try(func(o *AgentOptions) { o.Token = "nka_wrong" }); !errors.As(err, &ae) {
+	if err := try(func(o *AgentOptions) { o.Token = "uka_wrong" }); !errors.As(err, &ae) {
 		t.Fatalf("bad token: %v", err)
 	}
 	if err := try(func(o *AgentOptions) { o.Node = "sh" }); !errors.As(err, &ae) || !strings.Contains(err.Error(), "belongs to node bj") {
 		t.Fatalf("token of another node: %v", err)
 	}
-	if err := try(func(o *AgentOptions) { o.Token = "nka_gone" }); !errors.As(err, &ae) || !strings.Contains(err.Error(), "not declared") {
+	if err := try(func(o *AgentOptions) { o.Token = "uka_gone" }); !errors.As(err, &ae) || !strings.Contains(err.Error(), "not declared") {
 		t.Fatalf("undeclared node: %v", err)
 	}
 	other, _ := LoadOrCreatePKI(t.TempDir(), time.Now())
@@ -453,7 +453,7 @@ func rawHello(t *testing.T, c *clusterEnv, proto string) frame {
 	req, _ := http.NewRequest("GET", c.url+ConnectPath, nil)
 	req.Header.Set("Connection", "Upgrade")
 	req.Header.Set("Upgrade", Upgrade)
-	req.Header.Set("Authorization", "Bearer nka_bj")
+	req.Header.Set("Authorization", "Bearer uka_bj")
 	if err := req.Write(conn); err != nil {
 		t.Fatal(err)
 	}

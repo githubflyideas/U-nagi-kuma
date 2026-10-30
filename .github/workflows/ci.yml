@@ -97,6 +97,6 @@ jobs:
         run: docker build --build-arg VERSION=ci -t unagikuma:ci .
       - name: image starts
         run: |
-          docker run -d --name nk -p 18077:8077 unagikuma:ci
+          docker run -d --name unagikuma -p 18077:8077 unagikuma:ci
           for i in $(seq 1 20); do curl -fsS http://127.0.0.1:18077/api/v1/setup/status && exit 0; sleep 1; done
-          docker logs nk; exit 1
+          docker logs unagikuma; exit 1

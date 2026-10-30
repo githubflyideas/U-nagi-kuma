@@ -10,7 +10,7 @@ import { QuickAdd } from './editor.js';
 import { Hive, Legend } from './overview.js';
 
 function savedView() {
-  try { return localStorage.getItem('nk.monview') || 'list'; } catch { return 'list'; }
+  try { return localStorage.getItem('unagikuma.monview') || 'list'; } catch { return 'list'; }
 }
 
 const CHIPS = ['critical', 'degraded', 'unknown', 'ok', 'pending', 'paused'];
@@ -27,7 +27,7 @@ export function Monitors({ query }) {
   const [quick, setQuick] = useState(false);
   const [sel, setSel] = useState(new Set());
   const [view, setView] = useState(savedView());
-  const changeView = (v) => { setView(v); try { localStorage.setItem('nk.monview', v); } catch { /* unavailable */ } };
+  const changeView = (v) => { setView(v); try { localStorage.setItem('unagikuma.monview', v); } catch { /* unavailable */ } };
   const list = useFetch(() => get('/monitors?sort=' + sort), [sort]);
   const beats = useFetch(() => get('/monitors/heartbeats?range=24h&cells=36'), []);
   useLive(['heartbeat'], beats.reload, 5000);

@@ -30,7 +30,7 @@ func runBackup(args []string) error {
 	fs := flag.NewFlagSet("backup", flag.ExitOnError)
 	data := fs.String("data", defaultDataDir(), "data directory")
 	cfgPath := fs.String("config", "", "path of monitors.bind (default <data>/monitors.bind)")
-	out := fs.String("out", "", "archive to write (default unagikuma-<time>.tar.gz or .nkbackup)")
+	out := fs.String("out", "", "archive to write (default unagikuma-<time>.tar.gz or .ukbackup)")
 	history := fs.Bool("history", false, "include history.db (check results; can be large)")
 	passFile := fs.String("passphrase-file", "", "encrypt with this passphrase and include the secret key and cluster CA (or set UNAGIKUMA_BACKUP_PASSPHRASE)")
 	_ = fs.Parse(args)
@@ -48,7 +48,7 @@ func runBackup(args []string) error {
 	if *out == "" {
 		ext := "tar.gz"
 		if pass != "" {
-			ext = "nkbackup"
+			ext = "ukbackup"
 		}
 		*out = fmt.Sprintf("unagikuma-%s.%s", now.Format("20060102-150405"), ext)
 	}

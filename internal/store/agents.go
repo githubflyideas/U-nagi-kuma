@@ -18,7 +18,7 @@ type AgentToken struct {
 
 // CreateAgentToken issues a new token for node, revoking any previous one.
 func (s *Store) CreateAgentToken(node string) (string, error) {
-	plain := "nka_" + randomString(30)
+	plain := "uka_" + randomString(30)
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
 	_, err := s.core.Exec(`INSERT INTO agent_tokens(node,prefix,hash,created_at) VALUES(?,?,?,?)

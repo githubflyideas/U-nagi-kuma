@@ -224,7 +224,7 @@ func TestTokenScopes(t *testing.T) {
 	if code := bare.do("GET", "/api/v1/tokens", nil, nil, auth(write)...); code != 403 {
 		t.Fatalf("write token admin: %d", code)
 	}
-	if code := bare.do("GET", "/api/v1/monitors", nil, nil, auth("nk_bogus")...); code != 401 {
+	if code := bare.do("GET", "/api/v1/monitors", nil, nil, auth("uk_bogus")...); code != 401 {
 		t.Fatalf("bogus token: %d", code)
 	}
 }

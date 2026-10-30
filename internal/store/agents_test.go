@@ -14,7 +14,7 @@ func TestAgentTokens(t *testing.T) {
 	if n, err := s.AgentNodeByToken(tok, "10.0.0.9:5555"); n != "bj" || err != nil {
 		t.Fatalf("resolve: %q %v", n, err)
 	}
-	if _, err := s.AgentNodeByToken("nka_wrong", ""); !errors.Is(err, ErrNotFound) {
+	if _, err := s.AgentNodeByToken("uka_wrong", ""); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("wrong token: %v", err)
 	}
 	list, _ := s.AgentTokens()

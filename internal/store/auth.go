@@ -368,9 +368,9 @@ type Token struct {
 	LastUsed  *time.Time `json:"last_used,omitempty"`
 }
 
-// CreateToken returns the plaintext token "nk_...".
+// CreateToken returns the plaintext token "uk_...".
 func (s *Store) CreateToken(userID int64, name string, scopes []string) (string, error) {
-	plain := "nk_" + randomString(30)
+	plain := "uk_" + randomString(30)
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
 	_, err := s.core.Exec(`INSERT INTO tokens(name,prefix,hash,scopes,user_id,created_at) VALUES(?,?,?,?,?,?)`,

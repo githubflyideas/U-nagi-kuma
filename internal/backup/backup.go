@@ -171,7 +171,7 @@ func Restore(r io.Reader, dataDir, configPath, passphrase string, force bool) (M
 	var m Manifest
 	br := bufio.NewReader(r)
 	in := io.Reader(br)
-	if head, _ := br.Peek(len(magic)); string(head) == magic {
+	if head, _ := br.Peek(len(magic)); string(head) == magic || string(head) == string(legacyMagic) {
 		if passphrase == "" {
 			return m, errors.New("this backup is encrypted: a passphrase is needed")
 		}
@@ -274,7 +274,7 @@ func Restore(r io.Reader, dataDir, configPath, passphrase string, force bool) (M
 // its index, and the last chunk is marked in its additional data, so
 // chunks cannot be reordered, dropped or truncated unnoticed.
 const (
-	magic     = "NKBACKUP1\n"
+	magic     = "UKBACKUP1\n"
 	chunkSize = 1 << 20
 	saltLen   = 16
 	prefixLen = 4
@@ -419,3 +419,7 @@ func (d *decReader) Read(p []byte) (int, error) {
 	d.buf = d.buf[n:]
 	return n, nil
 }
+
+// legacyMagic starts the encrypted archives written before v1.6: the same
+// format under an older header. They still restore.
+var legacyMagic = []byte{'N', 'K', 'B', 'A', 'C', 'K', 'U', 'P', '1', '\n'}

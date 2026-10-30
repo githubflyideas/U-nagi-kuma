@@ -502,7 +502,7 @@ func (s *Server) backup(w http.ResponseWriter, r *http.Request) (any, error) {
 	}
 	ext := "tar.gz"
 	if req.Passphrase != "" {
-		ext = "nkbackup"
+		ext = "ukbackup"
 	}
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="unagikuma-%s.%s"`, s.now().Format("20060102-150405"), ext))

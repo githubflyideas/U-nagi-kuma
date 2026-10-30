@@ -120,3 +120,18 @@ func TestTamperedBackupsAreRejected(t *testing.T) {
 		t.Error("garbage accepted")
 	}
 }
+
+// Encrypted archives written before v1.6 carry an older header and must
+// still restore.
+func TestLegacyEncryptedHeaderRestores(t *testing.T) {
+	dir, db := setup(t)
+	arch := write(t, dir, db, Options{Passphrase: "p"})
+	if !bytes.HasPrefix(arch, []byte(magic)) {
+		t.Fatalf("new header: %q", arch[:len(magic)])
+	}
+	old := append(append([]byte(nil), legacyMagic...), arch[len(magic):]...)
+	dst := t.TempDir()
+	if _, err := Restore(bytes.NewReader(old), dst, filepath.Join(dst, "monitors.bind"), "p", false); err != nil {
+		t.Fatalf("legacy archive: %v", err)
+	}
+}

@@ -107,10 +107,10 @@ export function DrawerHost() {
     const open = (e) => setName(e.detail);
     const key = (e) => { if (e.key === 'Escape') setName(null); };
     const nav = () => setName(null);
-    addEventListener('nk:monitor', open);
+    addEventListener('unagikuma:monitor', open);
     addEventListener('keydown', key);
     addEventListener('hashchange', nav);
-    return () => { removeEventListener('nk:monitor', open); removeEventListener('keydown', key); removeEventListener('hashchange', nav); };
+    return () => { removeEventListener('unagikuma:monitor', open); removeEventListener('keydown', key); removeEventListener('hashchange', nav); };
   }, []);
   return name ? html`<${Drawer} name=${name} onClose=${() => setName(null)} />` : null;
 }

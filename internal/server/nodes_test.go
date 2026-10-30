@@ -53,7 +53,7 @@ func TestNodesAPIAndAgent(t *testing.T) {
 	if c := e.do("POST", "/api/v1/nodes", map[string]any{"name": "bj", "title": "北京机房", "region": "north"}, &added); c != 200 {
 		t.Fatalf("add: %d", c)
 	}
-	if !strings.HasPrefix(added.Token, "nka_") || !strings.Contains(added.Install.Shell, added.Token) ||
+	if !strings.HasPrefix(added.Token, "uka_") || !strings.Contains(added.Install.Shell, added.Token) ||
 		!strings.Contains(added.Install.Systemd, "--ca-fingerprint "+list.Fingerprint) || strings.Contains(added.Install.Shell, "--token ") {
 		t.Fatalf("add result: %+v", added)
 	}

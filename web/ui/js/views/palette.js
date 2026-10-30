@@ -6,7 +6,7 @@ import { t, currentLang } from '../i18n.js';
 import { get, post } from '../api.js';
 import { Pill, openMonitor, enc, toast, toastError } from '../ui.js';
 
-export function openPalette() { dispatchEvent(new CustomEvent('nk:palette')); }
+export function openPalette() { dispatchEvent(new CustomEvent('unagikuma:palette')); }
 
 const DUR = { m: 60, h: 3600, d: 86400 };
 
@@ -133,9 +133,9 @@ export function PaletteHost() {
   useEffect(() => {
     const open = () => setOn(true);
     const key = (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setOn(true); } };
-    addEventListener('nk:palette', open);
+    addEventListener('unagikuma:palette', open);
     addEventListener('keydown', key);
-    return () => { removeEventListener('nk:palette', open); removeEventListener('keydown', key); };
+    return () => { removeEventListener('unagikuma:palette', open); removeEventListener('keydown', key); };
   }, []);
   return on ? html`<${Palette} onClose=${() => setOn(false)} />` : null;
 }
