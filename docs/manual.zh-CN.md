@@ -10,7 +10,8 @@
 - [探测节点](#探测节点)
 - [用户](#用户)
 - [注册与配额](#注册与配额)
-- [从 Uptime Kuma 迁移](#从-uptime-kuma-迁移)
+- [从 Uptime Kuma 或 Nagios 迁移](#从-uptime-kuma-或-nagios-迁移)
+- [忘记密码？](#忘记密码)
 - [命令行](#命令行)
 - [数据与备份](#数据与备份)
 - [API](#api)
@@ -25,6 +26,8 @@
 ```
 
 打开 `http://<主机>:8077/` 创建管理员账号。如果不是在服务器本机打开界面，需要填写首次启动时打印在日志里的一次性初始化令牌。
+
+macOS 版本暂未经过苹果公证，第一次启动会被拦截：执行一次 `xattr -d com.apple.quarantine ./unagikuma`（或在访达中右键点击它并选择“打开”）。
 
 然后在界面里添加监控，或用**快速添加监控项**粘贴一批目标，也可以直接编辑 `data/monitors.bind`。
 
@@ -193,7 +196,7 @@ public IN STATUSPAGE "Example 服务状态" select="group:public" subscribe=mail
 
 ## 探测节点
 
-> 实验性功能：在 v0.x 版本之间，节点协议和主节点切换仍可能调整。
+> 实验性功能：节点协议和主节点切换在以后的版本中仍可能调整。请同时升级主节点和各个探测节点。
 
 单机就是完整的部署。想从更多地点检查同样的目标时，声明节点并在那里运行 agent：
 
@@ -261,7 +264,7 @@ unagikuma agent --server https://master.example.com:8077 --node bj \
 
 ## 从 Uptime Kuma 或 Nagios 迁移
 
-导入会加入 Unagikuma 能运行的内容，其余的逐条列出原因和替代做法。已有的监控项不会被修改或删除，所以重复运行是安全的。请先用 `--dry-run` 预览。
+导入会加入 Unagikuma 能运行的内容，其余的逐条列出原因和替代做法。已有的监控项不会被修改或删除，所以重复运行是安全的。请先用 `--dry-run` 预览。在新机器上可以在第一次启动之前导入：导入会自己创建数据目录。
 
 **从 Uptime Kuma 迁移**（1.23 和 2.x）。先停止 Uptime Kuma，然后：
 
@@ -291,7 +294,7 @@ unagikuma import nagios /etc/nagios4/nagios.cfg
 unagikuma reset-password --data /path/to/data admin
 ```
 
-输入两次新密码（不会显示），或用 `--generate` 生成一个随机密码并只显示一次。该用户的所有登录会话都会退出。如果用户名写错，命令会列出现有用户。
+输入两次新密码（不会显示），或用 `--generate` 生成一个随机密码并只显示一次。该用户的所有登录会话都会退出。API 令牌仍然有效；加上 `--revoke-tokens` 可以同时吊销该用户的令牌。如果用户名写错，命令会列出现有用户。
 
 ## 命令行
 

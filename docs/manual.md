@@ -10,7 +10,8 @@ How to install, configure and run Unagikuma. The [README](../README.md) has the 
 - [Probe nodes](#probe-nodes)
 - [Users](#users)
 - [Registration and quotas](#registration-and-quotas)
-- [Moving from Uptime Kuma](#moving-from-uptime-kuma)
+- [Moving from Uptime Kuma or Nagios](#moving-from-uptime-kuma-or-nagios)
+- [Forgot your password?](#forgot-your-password)
 - [Command line](#command-line)
 - [Data and backups](#data-and-backups)
 - [API](#api)
@@ -25,6 +26,8 @@ Download the archive for your platform from the [releases](../../releases), unpa
 ```
 
 Open `http://<host>:8077/` and create the admin account. When you open the UI from another machine, Unagikuma asks for the one-time setup token it printed to its log at first start.
+
+On macOS the binaries are not notarized yet, so the first start is blocked: run `xattr -d com.apple.quarantine ./unagikuma` once (or right-click it in Finder and choose *Open*).
 
 Add a monitor in the UI, use **Quick add monitors** to paste a list of targets, or edit `data/monitors.bind`.
 
@@ -193,7 +196,7 @@ public IN STATUSPAGE "Example Inc. status" select="group:public" subscribe=maile
 
 ## Probe nodes
 
-> Experimental: the agent protocol and the handover may still change between v0.x releases.
+> Experimental: the agent protocol and the handover may still change in a later release. Update the master and its agents together.
 
 A single machine is a complete setup. To check the same targets from more places, declare nodes and run agents there:
 
@@ -278,7 +281,7 @@ A licence may limit the number of nodes (the master included) and of accounts. W
 
 ## Moving from Uptime Kuma or Nagios
 
-The import adds what Unagikuma can run and lists everything else with the reason and what to do instead. It never changes or deletes monitors that are already here, so running it twice is safe. Always look first with `--dry-run`.
+The import adds what Unagikuma can run and lists everything else with the reason and what to do instead. It never changes or deletes monitors that are already here, so running it twice is safe. Always look first with `--dry-run`. On a new machine you can import before the first start: the import creates the data directory.
 
 **From Uptime Kuma** (1.23 and 2.x). Stop Uptime Kuma, then:
 
@@ -308,7 +311,7 @@ On the machine where Unagikuma runs (it may keep running):
 unagikuma reset-password --data /path/to/data admin
 ```
 
-Type the new password twice (it is not shown), or use `--generate` to get a random one printed once. Everyone signed in as that user is signed out. If the user name is wrong, the command lists the existing users.
+Type the new password twice (it is not shown), or use `--generate` to get a random one printed once. Everyone signed in as that user is signed out. API tokens keep working; add `--revoke-tokens` to revoke that user's tokens too. If the user name is wrong, the command lists the existing users.
 
 ## Command line
 
