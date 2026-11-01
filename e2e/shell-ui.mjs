@@ -21,7 +21,10 @@ async function fixture(width = 390, phase = 'in') {
     if (p === '/api/v1/languages') return route.fulfill({ json: [{ code: 'en', name: 'English' }] });
     if (p.startsWith('/api/v1/i18n/')) return route.fulfill({ json: JSON.parse(await readFile(path.join(root, 'internal/i18n/locales/en.json'))) });
     if (p === '/api/v1/monitors') return route.fulfill({ json: { items: [] } });
-    if (p === '/api/v1/overview') return route.fulfill({ json: { counts: { total: 0 }, paths: [], layout: 'single' } });
+    if (p === '/api/v1/overview') return route.fulfill({ json: {
+      counts: { total: 0 }, paths: [], layout: 'single', channels: [], expiring: [],
+      health: { uplink: { state: 'cannot_judge' }, gateway: {}, heartbeat: { configured: false } }
+    } });
     if (p.startsWith('/api/')) return route.fulfill({ status: 503, json: { code: 'unavailable' } });
     const name = p === '/' ? 'index.html' : decodeURIComponent(p.slice(1));
     if (name.includes('..')) return route.fulfill({ status: 403 });
@@ -33,7 +36,7 @@ async function fixture(width = 390, phase = 'in') {
     } catch { return route.fulfill({ status: 404 }); }
   });
   const page = await ctx.newPage();
-  page.on('pageerror', e => errors.push(e.message));
+  page.on('pageerror', e => errors.push(e.stack || e.message));
   await page.goto('http://unagi.test/#/notfound');
   await page.locator(phase === 'in' ? '.top' : 'form').waitFor();
   return { ctx, page, posts };
@@ -138,6 +141,12 @@ try {
     assert.equal(posts.length, 2, phase + ' unlocks after an error');
     await posts[1].fulfill({ json: { user: 'test', csrf: 'fixture' } });
     await page.locator('.shell').waitFor();
+    // Authentication redirects to overview; await its render, not just the shell.
+    // Otherwise context teardown can hide errors from incomplete API fixtures.
+    await page.locator('.story').waitFor({ timeout: 5000 }).catch(error => {
+      assert.deepEqual(errors, []);
+      throw error;
+    });
     console.log('ok', phase, 'single-flight submission and error retry');
     await ctx.close();
   }

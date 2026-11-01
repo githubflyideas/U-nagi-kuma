@@ -15,7 +15,10 @@ import (
 const zoneTestBody = "@ IN SOA node. admin.localhost. ( 1 1m 15s 5s 3 )\nweb IN HTTP https://example.com\n"
 
 func TestZoneUpdateCASAndBinding(t *testing.T) {
-	s, _ := OpenZoneStore(t.TempDir(), "this-node", config.Options{})
+	s, err := OpenZoneStore(t.TempDir(), "this-node", config.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	z, err := s.Import([]byte(zoneTestBody), ZoneImportOptions{Name: "office"})
 	if err != nil {
 		t.Fatal(err)

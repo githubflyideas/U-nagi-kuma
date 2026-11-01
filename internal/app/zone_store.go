@@ -69,30 +69,35 @@ func OpenZoneStore(dataDir, localNode string, opt config.Options) (*ZoneStore, e
 	if !config.ValidName(localNode) {
 		return nil, fmt.Errorf("invalid local node identity")
 	}
-	dir, err := filepath.Abs(filepath.Join(dataDir, "zones"))
+	root, err := filepath.Abs(dataDir)
 	if err != nil {
 		return nil, err
 	}
-	if err = os.MkdirAll(dir, 0700); err != nil {
+	if err = os.MkdirAll(root, 0700); err != nil {
 		return nil, err
 	}
-	for p := dir; ; p = filepath.Dir(p) {
-		fi, e := os.Lstat(p)
-		if e != nil {
-			return nil, e
-		}
-		if fi.Mode()&os.ModeSymlink != 0 {
-			return nil, fmt.Errorf("zone directory must not use symlinks")
-		}
-		if filepath.Dir(p) == p {
-			break
-		}
-	}
-	real, err := filepath.EvalSymlinks(dir)
+	// The administrator-selected data directory is the trust boundary. Resolve
+	// aliases there (including OS ancestors such as macOS /var) once, so aliases
+	// share storage and the writer lock. Do not resolve the managed zones child:
+	// neither that directory nor a record may redirect outside this boundary.
+	root, err = filepath.EvalSymlinks(root)
 	if err != nil {
 		return nil, err
 	}
-	dir = real
+	dir := filepath.Join(root, "zones")
+	if err = os.Mkdir(dir, 0700); err != nil && !errors.Is(err, os.ErrExist) {
+		return nil, err
+	}
+	fi, err := os.Lstat(dir)
+	if err != nil {
+		return nil, err
+	}
+	if fi.Mode()&os.ModeSymlink != 0 {
+		return nil, fmt.Errorf("zone directory must not use symlinks")
+	}
+	if !fi.IsDir() {
+		return nil, fmt.Errorf("zone directory must be a directory")
+	}
 	lockKey := strings.ToLower(dir)
 	m, _ := zoneStoreLocks.LoadOrStore(lockKey, &sync.Mutex{})
 	return &ZoneStore{dir: dir, local: localNode, opt: opt, mu: m.(*sync.Mutex)}, nil

@@ -83,6 +83,7 @@ func TestWorkspaceServiceGenerationAndDeletion(t *testing.T) {
 	if got, e := other.Get("same"); e != nil || got != "B" {
 		t.Fatalf("scope B %q %v", got, e)
 	}
+	//lint:ignore SA9005 Security regression: the reader must serialize without exposing capability or key material.
 	dto, e := json.Marshal(other)
 	if e != nil || string(dto) != "{}" {
 		t.Fatalf("reader DTO %s %v", dto, e)

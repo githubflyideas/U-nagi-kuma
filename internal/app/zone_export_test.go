@@ -7,7 +7,10 @@ import (
 )
 
 func TestZoneExportSecretsAndDependencies(t *testing.T) {
-	s, _ := OpenZoneStore(t.TempDir(), "node", config.Options{})
+	s, err := OpenZoneStore(t.TempDir(), "node", config.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	body := zoneTestBody + "; COMMENT_PRIVATE\nchat IN CHANNEL telegram token=INLINE_PRIVATE chat-id=123\n"
 	z, err := s.Import([]byte(body), ZoneImportOptions{Name: "office"})
 	if err != nil {
@@ -84,7 +87,10 @@ func TestZoneExportReferenceSafety(t *testing.T) {
 }
 
 func TestZoneExportRefusesOpaqueTargetCredentials(t *testing.T) {
-	s, _ := OpenZoneStore(t.TempDir(), "node", config.Options{})
+	s, err := OpenZoneStore(t.TempDir(), "node", config.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	for i, target := range []string{"https://user:PRIVATE@example.com", "https://example.com/?token=PRIVATE", "https://example.com/PRIVATE"} {
 		z, err := s.Import([]byte(strings.Replace(zoneTestBody, "https://example.com", target, 1)), ZoneImportOptions{Name: string(rune('a' + i))})
 		if err != nil {

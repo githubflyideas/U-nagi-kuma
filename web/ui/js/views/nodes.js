@@ -39,10 +39,7 @@ export function Nodes({ embedded }) {
     if (!await confirmDialog(t('ui.node.revoke_confirm', { node: n.name }), { danger: true, ok: t('ui.node.revoke') })) return;
     try { await del('/nodes/' + encodeURIComponent(n.name) + '/token'); list.reload(); } catch (e) { toastError(e); }
   };
-  const handover = async (n) => {
-    if (!await confirmDialog(t('ui.ha.handover_confirm', { node: n.name, addr: n.standby }), { danger: true, ok: t('ui.ha.handover') })) return;
-    try { const r = await post('/nodes/' + encodeURIComponent(n.name) + '/handover', {}); toast(t('ui.ha.handover_started', { node: n.name, term: r.term })); list.reload(); } catch (e) { toastError(e); }
-  };
+
   const remove = async (n) => {
     if (!await confirmDialog(t('ui.node.delete_confirm', { node: n.name }), { danger: true, ok: t('ui.delete') })) return;
     try { await del('/nodes/' + encodeURIComponent(n.name), ifMatch(n.etag)); list.reload(); } catch (e) { toastError(e); }
