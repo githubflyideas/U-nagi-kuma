@@ -1,0 +1,75 @@
+/* Console-only alternatives. Full palettes prevent OS-dark tokens leaking
+   into Paper. Public status pages retain their independently configured theme. */
+:root[data-theme="midnight"] {
+  --bg: #0c1426;
+  --panel: #121f35;
+  --panel-2: #192a44;
+  --border: #2a3c58;
+  --border-strong: #526683;
+  --text: #e8effc;
+  --muted: #adbed9;
+  --faint: #91a4c2;
+  --accent: #a5b9ff;
+  --accent-soft: #26395e;
+  --accent-text: #10213e;
+  --link: #b4c7ff;
+  --ok: #73dfb1;
+  --ok-soft: #153c36;
+  --degraded: #ffd084;
+  --degraded-soft: #46371f;
+  --critical: #ff9eae;
+  --critical-soft: #492539;
+  --unknown: #c8b3ff;
+  --unknown-soft: #342c51;
+  --pending: #adbed9;
+  --pending-soft: #26344c;
+  --maint: #96caff;
+  --maint-soft: #1c3655;
+  --empty: #283954;
+  --shadow: 0 6px 22px rgba(0, 6, 20, .14);
+  --bg-image: none;
+  color-scheme: dark;
+}
+:root[data-theme="paper"] {
+  --bg: #f6f3eb;
+  --panel: #fffdf8;
+  --panel-2: #efebe1;
+  --border: #ddd6c7;
+  --border-strong: #b6ac98;
+  --text: #302e29;
+  --muted: #6c665b;
+  --faint: #756d60;
+  --accent: #785535;
+  --accent-soft: #efe3d2;
+  --accent-text: #ffffff;
+  --link: #72502e;
+  --ok: #216443;
+  --ok-soft: #e1efe4;
+  --degraded: #805209;
+  --degraded-soft: #f5e9c9;
+  --critical: #ac3040;
+  --critical-soft: #f9e5e7;
+  --unknown: #6d4898;
+  --unknown-soft: #eee6f7;
+  --pending: #655f55;
+  --pending-soft: #e8e3d9;
+  --maint: #315e96;
+  --maint-soft: #e2ecf6;
+  --empty: #ded8cb;
+  --shadow: 0 2px 8px rgba(74, 56, 30, .045);
+  --bg-image: none;
+  color-scheme: light;
+}
+:root:is([data-theme="midnight"], [data-theme="paper"]) .side,
+:root:is([data-theme="midnight"], [data-theme="paper"]) .top {
+  background: var(--panel);
+  backdrop-filter: none;
+}
+:root:is([data-theme="midnight"], [data-theme="paper"]) .card > .hd h2 {
+  color: var(--text);
+  letter-spacing: .02em;
+}
+:root:is([data-theme="midnight"], [data-theme="paper"]) :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}

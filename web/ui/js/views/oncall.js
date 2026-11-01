@@ -4,19 +4,38 @@
 // rotate= set: each member is one person's channel (their SMS, their chat);
 // it notifies the member on call, and the others only if that one cannot be
 // reached.
-import { html, useState, useMemo } from '../lib.js';
+import { html, useState, useMemo, useRef } from '../lib.js';
 import { t, dur, fmtNum, currentLang } from '../i18n.js';
 import { get, post, del } from '../api.js';
 import { useFetch, useLive, Loading, ErrorBox, Empty, Field, Modal, Card, Seg, toast, toastError, errText, confirmDialog, useDocTitle } from '../ui.js';
 
 const pad = (n) => String(n).padStart(2, '0');
+// Calendar profiling showed repeated ICU formatter construction dominating
+// rendering. Keep one bounded set for the active language, not one per cell.
+let formatterLang, formatters;
+function dateFormats() {
+  const lang = currentLang();
+  if (!formatters || lang !== formatterLang) {
+    formatterLang = lang;
+    const make = options => new Intl.DateTimeFormat(lang, options);
+    formatters = {
+      full: make({ month: 'short', day: 'numeric', weekday: 'short' }),
+      time: make({ hour: '2-digit', minute: '2-digit' }),
+      weekday: make({ weekday: 'short' }),
+      short: make({ month: 'short', day: 'numeric' }),
+      day: make({ day: 'numeric' }),
+    };
+  }
+  return formatters;
+}
 function toLocal(d) {
   d = new Date(d);
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 function when(d) {
   d = new Date(d);
-  return d.toLocaleDateString(currentLang(), { month: 'short', day: 'numeric', weekday: 'short' }) + ' ' + d.toLocaleTimeString(currentLang(), { hour: '2-digit', minute: '2-digit' });
+  const f = dateFormats();
+  return f.full.format(d) + ' ' + f.time.format(d);
 }
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 // handoffText shows "mon 09:00" with the day in the UI language.
@@ -35,11 +54,16 @@ function NewRotation({ channels, onClose, onSaved }) {
   const today = new Date();
   const [f, setF] = useState({ name: 'oncall', members: [], every: 'weekly', day: 'mon', time: '09:00',
     start: `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`, tz: browserZone() });
+  const pending = useRef(false);
+  const [saving, setSaving] = useState(false);
   const [err, setErr] = useState(null);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   const toggle = (name) => setF({ ...f, members: f.members.includes(name) ? f.members.filter(x => x !== name) : [...f.members, name] });
   const save = async (e) => {
     e.preventDefault();
+    if (pending.current || f.members.length < 2) return;
+    pending.current = true;
+    setSaving(true);
     setErr(null);
     const opts = { members: f.members.join(','), rotate: f.every, handoff: (f.every === 'weekly' ? f.day + ' ' : '') + f.time, start: f.start };
     if (f.tz.trim()) opts.tz = f.tz.trim();
@@ -48,6 +72,7 @@ function NewRotation({ channels, onClose, onSaved }) {
       toast(t('ui.saved'));
       onSaved();
     } catch (e2) { setErr(e2); }
+    finally { pending.current = false; setSaving(false); }
   };
   const usable = channels.filter(c => c.kind !== 'group');
   return html`<${Modal} title=${t('ui.oc.new')} onClose=${onClose}>
@@ -72,7 +97,7 @@ function NewRotation({ channels, onClose, onSaved }) {
       ${err && html`<div class="banner error">${errText(err)}</div>`}
       <div class="row"><div class="spacer"></div>
         <button type="button" class="btn" onClick=${onClose}>${t('ui.cancel')}</button>
-        <button class="btn primary" disabled=${f.members.length < 2}>${t('ui.save')}</button></div>
+        <button class="btn primary" disabled=${saving || f.members.length < 2}>${t('ui.save')}</button></div>
     </form>
   <//>`;
 }
@@ -86,20 +111,32 @@ function StandIn({ rot, seg, onClose, onSaved }) {
   const busy = seg ? seg.member : rot.now;
   const others = rot.members.filter(m => m.channel !== busy);
   const [f, setF] = useState({ member: (others[0] || rot.members[0]).channel, from: toLocal(from), until: toLocal(until), note: '' });
+  const pending = useRef(false);
+  const [saving, setSaving] = useState(false);
   const [err, setErr] = useState(null);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   const save = async (e) => {
     e.preventDefault();
     setErr(null);
+    if (pending.current) return;
+    const fromDate = new Date(f.from), untilDate = new Date(f.until);
+    if (!Number.isFinite(fromDate.getTime()) || !Number.isFinite(untilDate.getTime()) || untilDate <= fromDate) {
+      setErr(new Error(t('ui.oc.invalid_range')));
+      return;
+    }
+    pending.current = true;
+    setSaving(true);
     try {
-      await post('/oncall/overrides', { rotation: rot.name, member: f.member, from: new Date(f.from).toISOString(), until: new Date(f.until).toISOString(), note: f.note.trim() });
+      await post('/oncall/overrides', { rotation: rot.name, member: f.member, from: fromDate.toISOString(), until: untilDate.toISOString(), note: f.note.trim() });
       toast(t('ui.saved'));
       onSaved();
     } catch (e2) { setErr(e2); }
+    finally { pending.current = false; setSaving(false); }
   };
   return html`<${Modal} title=${t('ui.oc.standin_title', { name: rot.name })} onClose=${onClose}>
     <form class="form" onSubmit=${save}>
       <p class="small muted" style=${{ marginTop: 0 }}>${t('ui.oc.standin_intro')}</p>
+      <p class="small oc-zone">${t('ui.oc.your_tz', { tz: browserZone() || '—' })}</p>
       <${Field} label=${t('ui.oc.standin_who')}><select value=${f.member} onChange=${set('member')}>
         ${rot.members.map(m => html`<option value=${m.channel}>${who(rot, m.channel)}${m.people.length ? ' (' + m.channel + ')' : ''}</option>`)}</select><//>
       <div class="two">
@@ -110,7 +147,7 @@ function StandIn({ rot, seg, onClose, onSaved }) {
       ${err && html`<div class="banner error">${errText(err)}</div>`}
       <div class="row"><div class="spacer"></div>
         <button type="button" class="btn" onClick=${onClose}>${t('ui.cancel')}</button>
-        <button class="btn primary">${t('ui.save')}</button></div>
+        <button class="btn primary" disabled=${saving}>${t('ui.save')}</button></div>
     </form>
   <//>`;
 }
@@ -122,21 +159,28 @@ function Swap({ rot, onClose, onSaved }) {
   const [a, setA] = useState(0);
   const [b, setB] = useState(Math.max(0, shifts.findIndex(x => x.member !== (shifts[0] || {}).member)));
   const [note, setNote] = useState('');
+  const pending = useRef(false);
+  const [saving, setSaving] = useState(false);
   const [err, setErr] = useState(null);
   const label = (x) => when(x.from) + ' – ' + when(x.until) + ' · ' + who(rot, x.member);
   const same = shifts[a] && shifts[b] && shifts[a].member === shifts[b].member;
   const save = async (e) => {
     e.preventDefault();
     setErr(null);
+    if (pending.current || !shifts[a] || !shifts[b] || same) return;
+    pending.current = true;
+    setSaving(true);
     try {
       await post('/oncall/swap', { rotation: rot.name, a: shifts[a].from, b: shifts[b].from, note: note.trim() });
       toast(t('ui.oc.swapped'));
       onSaved();
     } catch (e2) { setErr(e2); }
+    finally { pending.current = false; setSaving(false); }
   };
   return html`<${Modal} title=${t('ui.oc.swap_title', { name: rot.name })} onClose=${onClose}>
     <form class="form" onSubmit=${save}>
       <p class="small muted" style=${{ marginTop: 0 }}>${t('ui.oc.swap_intro')}</p>
+      <p class="small oc-zone">${t('ui.oc.your_tz', { tz: browserZone() || '—' })}</p>
       <${Field} label=${t('ui.oc.swap_a')}><select value=${a} onChange=${(e) => setA(+e.target.value)}>
         ${shifts.map((x, i) => html`<option value=${i}>${label(x)}</option>`)}</select><//>
       <${Field} label=${t('ui.oc.swap_b')}><select value=${b} onChange=${(e) => setB(+e.target.value)}>
@@ -146,7 +190,7 @@ function Swap({ rot, onClose, onSaved }) {
       ${err && html`<div class="banner error">${errText(err)}</div>`}
       <div class="row"><div class="spacer"></div>
         <button type="button" class="btn" onClick=${onClose}>${t('ui.cancel')}</button>
-        <button class="btn primary" disabled=${!shifts.length || same}>${t('ui.oc.swap')}</button></div>
+        <button class="btn primary" disabled=${saving || !shifts[a] || !shifts[b] || same}>${t('ui.oc.swap')}</button></div>
     </form>
   <//>`;
 }
@@ -163,7 +207,7 @@ function calRange(mode, anchor) {
   return { start, end: new Date(start.getFullYear(), start.getMonth(), start.getDate() + days), days };
 }
 function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
-const hm = (d) => d.toLocaleTimeString(currentLang(), { hour: '2-digit', minute: '2-digit' });
+const hm = (d) => dateFormats().time.format(d);
 
 // Calendar shows, day by day, who is on call: one colour per member, a
 // dashed edge on stand-ins, the handoff time where a shift begins mid-day.
@@ -172,22 +216,20 @@ function Calendar({ rot, cal, mode, anchor, onPick }) {
   const colour = (m) => 'oc-c' + (Math.max(0, rot.members.findIndex(x => x.channel === m)) % 8);
   const segs = (cal && cal.segments) || [];
   const today = new Date();
-  const heads = Array.from({ length: 7 }, (_, i) => addDays(start, i).toLocaleDateString(currentLang(), { weekday: 'short' }));
+  const formats = dateFormats();
+  const heads = Array.from({ length: 7 }, (_, i) => formats.weekday.format(addDays(start, i)));
   const cells = Array.from({ length: days }, (_, i) => {
     const ds = addDays(start, i), de = addDays(start, i + 1);
-    // In the month view a shift carried over from the day before that
-    // ends in the morning is left out: the day shows who takes over.
-    const noon = new Date(ds.getFullYear(), ds.getMonth(), ds.getDate(), 12);
-    const items = segs.filter(x => new Date(x.from) < de && new Date(x.until) > ds &&
-      !(mode === 'month' && !x.stand_in && new Date(x.from) < ds && new Date(x.until) <= noon && segs.some(y => new Date(y.from) >= new Date(x.until) && new Date(y.from) < de)));
+    // Keep every coverage interval, including the morning before a handoff.
+    const items = segs.filter(x => new Date(x.from) < de && new Date(x.until) > ds);
     const isToday = ds <= today && today < de;
     const other = mode === 'month' && ds.getMonth() !== anchor.getMonth();
     return html`<div class=${'oc-day' + (isToday ? ' today' : '') + (other ? ' other' : '')}>
-      <div class="oc-date">${ds.toLocaleDateString(currentLang(), mode === 'week' ? { month: 'short', day: 'numeric' } : { day: 'numeric' })}</div>
+      <div class="oc-date"><span class="oc-date-short">${(mode === 'week' ? formats.short : formats.day).format(ds)}</span><span class="oc-date-full">${formats.full.format(ds)}</span></div>
       ${items.map(x => {
         const f = new Date(x.from), u = new Date(x.until);
         const startsHere = f > ds, endsHere = u < de;
-        const time = mode === 'week' ? (startsHere || endsHere ? hm(f > ds ? f : ds) + '–' + (u < de ? hm(u) : '24:00') : '') : (startsHere ? hm(f) : '');
+        const time = startsHere || endsHere ? hm(f > ds ? f : ds) + '–' + (u < de ? hm(u) : '24:00') : '';
         const over = u <= today;
         const title = who(rot, x.member) + ' (' + x.member + ') · ' + when(x.from) + ' – ' + when(x.until) +
           (x.stand_in ? ' · ' + t('ui.oc.standing_in', { name: who(rot, x.scheduled) }) + (x.note ? ' · ' + x.note : '') : '');
@@ -211,7 +253,9 @@ function Rotation({ rot, reload, cal, mode, anchor }) {
     if (!await confirmDialog(t('ui.oc.cancel_confirm', { name: who(rot, o.member) }), { danger: true, ok: t('ui.oc.cancel') })) return;
     try { await del('/oncall/overrides/' + o.id); reload(); } catch (e) { toastError(e); }
   };
-  const until = rot.stand_in ? rot.stand_in.until : rot.scheduled.until;
+  // Label the base rotation boundary, not an inferred effective handoff:
+  // an override can start sooner or span more than one scheduled shift.
+  const until = rot.scheduled.until;
   return html`<div class="card oc-rot">
     <div class="hd"><h3 class="ltr">${rot.name}</h3>
       <span class="small muted">${t('ui.oc.plan', { every: ['daily', 'weekly'].includes(rot.rotate) ? t('ui.oc.' + rot.rotate) : rot.rotate, handoff: handoffText(rot.handoff) })}${rot.tz ? ' · ' + rot.tz : ''}</span>
@@ -220,11 +264,17 @@ function Rotation({ rot, reload, cal, mode, anchor }) {
       <button class="btn sm" onClick=${() => setSwap(true)} disabled=${rot.members.length < 2}>${t('ui.oc.swap')}</button>
       <a class="btn sm" href="#/alerts/channels">${t('ui.edit')}</a></div>
     <div class="bd">
-      <div class="oc-now">
-        <span class="small muted">${t('ui.oc.now')}</span>
-        <b>${who(rot, rot.now)}</b>
-        <span class="small muted">${t('ui.oc.until_when', { when: when(until) })}</span>
-        ${rot.stand_in && html`<span class="tag warn">${t('ui.oc.standing_in', { name: who(rot, rot.scheduled.member) })}</span>`}
+      <div class="oc-summary">
+        <div class="oc-now">
+          <span class="small muted">${t('ui.oc.now')}</span>
+          <b>${who(rot, rot.now)}</b>
+          ${rot.stand_in && html`<span class="tag warn">${t('ui.oc.standing_in', { name: who(rot, rot.scheduled.member) })} · ${t('ui.oc.until_when', { when: when(rot.stand_in.until) })}</span>`}
+        </div>
+        <div class="oc-handoff">
+          <span class="small muted">${t('ui.oc.next_scheduled')}</span>
+          <b><time datetime=${until}>${when(until)}</time></b>
+          <span class="small muted">${t('ui.oc.your_tz', { tz: browserZone() || '—' })}</span>
+        </div>
       </div>
       ${!rot.policies.length && html`<div class="banner warning small">${t('ui.oc.unused')}</div>`}
       ${rot.policies.length > 0 && html`<p class="small muted" style=${{ margin: '8px 0 0' }}>${t('ui.oc.used_by', { policies: rot.policies.join(', ') })}</p>`}
@@ -270,7 +320,13 @@ export function OnCall() {
   const d = useFetch(() => get('/oncall'), []);
   const chans = useFetch(() => get('/channels'), []);
   const [creating, setCreating] = useState(false);
-  const [mode, setMode] = useState(() => { try { return localStorage.getItem('unagikuma.ocview') || 'month'; } catch { return 'month'; } });
+  const [mode, setMode] = useState(() => {
+    const fallback = matchMedia('(max-width: 720px)').matches ? 'week' : 'month';
+    try {
+      const saved = localStorage.getItem('unagikuma.ocview');
+      return saved === 'week' || saved === 'month' ? saved : fallback;
+    } catch { return fallback; }
+  });
   const [anchor, setAnchor] = useState(() => new Date());
   const range = useMemo(() => calRange(mode, anchor), [mode, anchor.getFullYear(), anchor.getMonth(), anchor.getDate()]);
   // From the day before, so a shift running into the first day shows as
@@ -286,6 +342,8 @@ export function OnCall() {
   if (!d.data) return html`<div class="page">${d.error ? html`<${ErrorBox} error=${d.error} retry=${d.reload} />` : html`<${Loading} />`}</div>`;
   const rots = d.data.rotations;
   return html`<div class="page">
+    <${ErrorBox} error=${d.error} retry=${d.reload} />
+    <${ErrorBox} error=${chans.error} retry=${chans.reload} />
     <div class="row"><p class="muted small spacer" style=${{ margin: 0 }}>${t('ui.oc.intro')}</p>
       <button class="btn primary" onClick=${() => setCreating(true)} disabled=${!chans.data}>${t('ui.oc.new')}</button></div>
     ${!rots.length ? html`<div class="card"><${Empty} title=${t('ui.oc.none')}><p>${t('ui.oc.none_hint')}</p>

@@ -43,6 +43,8 @@ type Server struct {
 	push  *ratelimit.Keyed
 	subs  *ratelimit.Keyed // public status page subscriptions, per IP
 
+	clusterAdmission clusterAdmission
+
 	setupMu    sync.Mutex
 	setupToken string
 
@@ -175,6 +177,7 @@ type apiFunc func(w http.ResponseWriter, r *http.Request) (any, error)
 // handle registers an API endpoint with authentication and scope checks.
 // scope "" means public; "read" also accepts any authenticated caller.
 func (s *Server) handle(pattern, scope string, f apiFunc) {
+	var origins http.CrossOriginProtection
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if scope != "" {
 			ai, err := s.authenticate(r)
@@ -201,6 +204,15 @@ func (s *Server) handle(pattern, scope string, f apiFunc) {
 				return
 			}
 			r = r.WithContext(context.WithValue(r.Context(), ctxKey{}, ai))
+		}
+		// Browser-facing setup/login have no session CSRF token yet. Check
+		// their origins too; retain token checks for cookie-authenticated writes.
+		// Explicit bearer credentials remain usable by non-browser API clients.
+		if ai := authOf(r); ai == nil || ai.session {
+			if err := origins.Check(r); err != nil {
+				writeError(w, Errorf(http.StatusForbidden, CodeForbidden, "cross-origin request rejected"))
+				return
+			}
 		}
 		audit := r.Method != http.MethodGet && r.Method != http.MethodHead && scope != "read" && !noAudit[pattern]
 		var rec *auditRec

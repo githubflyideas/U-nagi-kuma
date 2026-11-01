@@ -106,7 +106,7 @@ func (s *Server) row(name string) (rowJSON, bool) {
 	if !ok {
 		return rowJSON{}, false
 	}
-	return s.rowFrom(r, s.app.Config().Config, s.incidentIndex()), true
+	return s.rowFrom(r, s.app.RuntimeConfig(), s.incidentIndex()), true
 }
 
 func (s *Server) incidentIndex() map[int64]engine.Incident {
@@ -172,6 +172,10 @@ func (s *Server) rowBase(r engine.MonitorRow, cfg *config.Config, incs map[int64
 			out.Tags = append(out.Tags, tagJSON{t.Key, t.Value})
 		}
 	}
+	// Zone bodies are not editable base records. Targets may embed credentials.
+	if strings.HasPrefix(r.Name, "zone-") && s.app.Config().Config.FindMonitor(r.Name) == nil {
+		out.Target, out.Host, out.Keyword = "[redacted]", "", ""
+	}
 	if inc, ok := incs[r.IncidentID]; ok && r.IncidentID != 0 {
 		ib := &incidentBrief{ID: inc.ID, NotifyCount: inc.State.NotifyCount, Capped: inc.State.Capped, Acked: inc.State.Acked,
 			AckedBy: inc.State.AckedBy, SilencedUntil: tp(inc.State.SilencedUntil), OpenedAt: inc.State.OpenedAt}
@@ -187,7 +191,7 @@ func (s *Server) rowBase(r engine.MonitorRow, cfg *config.Config, incs map[int64
 // target or group; key:value terms filter status, type, tag, group, depth,
 // scope; a leading '-' negates a term.
 func (s *Server) monitors(w http.ResponseWriter, r *http.Request) (any, error) {
-	cfg := s.app.Config().Config
+	cfg := s.app.RuntimeConfig()
 	incs := s.incidentIndex()
 	q := parseQuery(r.URL.Query().Get("q"))
 	var out []rowJSON
@@ -366,7 +370,7 @@ func (t queryTerm) match(r rowJSON) bool {
 	return strings.Contains(hay, t.val)
 }
 
-var ranges = map[string]time.Duration{"1h": time.Hour, "6h": 6 * time.Hour, "24h": 24 * time.Hour, "7d": 7 * 24 * time.Hour, "30d": 30 * 24 * time.Hour, "90d": 90 * 24 * time.Hour}
+var ranges = map[string]time.Duration{"5m": 5 * time.Minute, "15m": 15 * time.Minute, "30m": 30 * time.Minute, "1h": time.Hour, "6h": 6 * time.Hour, "12h": 12 * time.Hour, "24h": 24 * time.Hour, "7d": 7 * 24 * time.Hour, "30d": 30 * 24 * time.Hour, "90d": 90 * 24 * time.Hour}
 
 func rangeOf(r *http.Request) (string, time.Duration) {
 	key := r.URL.Query().Get("range")
@@ -418,6 +422,9 @@ func (s *Server) monitorDetail(w http.ResponseWriter, r *http.Request) (any, err
 		path["exit"] = exitJSON(h)
 	}
 	out["path"] = path
+	if m == nil && s.app.RuntimeConfig().FindMonitor(name) != nil {
+		out["readonly"] = true
+	}
 	if m != nil {
 		lines := strings.Split(cur.Text, "\n")
 		text := strings.Join(lines[m.Lines[0]-1:m.Lines[1]], "\n")

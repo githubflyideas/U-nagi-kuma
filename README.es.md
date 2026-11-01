@@ -8,7 +8,36 @@ Monitorización autoalojada y sencilla: entérate en cuanto tus webs o servidore
 
 [English](README.md) · [中文](README.zh.md) · [हिन्दी](README.hi.md) · **Español** · [العربية](README.ar.md) · [Français](README.fr.md) · [বাংলা](README.bn.md) · [Português](README.pt.md) · [Русский](README.ru.md) · [Bahasa Indonesia](README.id.md) · [اردو](README.ur.md) · [Deutsch](README.de.md) · [日本語](README.ja.md) · [Tiếng Việt](README.vi.md) · [한국어](README.ko.md)
 
-![Un breve recorrido por la interfaz web de Unagikuma](docs/images/tour.gif)
+## Interfaz actual
+
+> Compilación nueva del árbol de trabajo aún no publicado, con un servidor local real y datos de demostración desechables. Las notificaciones solo van al registro local; no son incidentes de producción ni capturas de la versión final.
+
+![Panel Midnight](docs/images/current/dashboard-midnight.png)
+
+<details>
+<summary>Temas, canales de alerta, guardias, informe diario y móvil</summary>
+
+**Panel Paper**
+
+![Panel Paper](docs/images/current/dashboard-paper.png)
+
+**Canales de alerta**
+
+![Canales de alerta](docs/images/current/alerts-midnight.png)
+
+**Calendario de guardias**
+
+![Calendario de guardias](docs/images/current/oncall-paper.png)
+
+**Informe diario: estado actual, no historial de 24 horas**
+
+![Informe diario: estado actual, no historial de 24 horas](docs/images/current/daily-report-midnight.png)
+
+**Informe móvil**
+
+<img src="docs/images/current/mobile-paper.png" alt="Informe móvil" width="390">
+
+</details>
 
 ## ¿Por qué Unagikuma?
 

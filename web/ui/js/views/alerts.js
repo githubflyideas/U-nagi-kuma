@@ -1,5 +1,5 @@
 // Alerting: notification channels, escalation policies and the contact directory.
-import { html, useState } from '../lib.js';
+import { html, useState, useRef } from '../lib.js';
 import { t, tn, dur, has } from '../i18n.js';
 import { get, post, del, put, ifMatch } from '../api.js';
 import { ContactsTab, IssueDot, NewAddresses, addressKey } from './contacts.js';
@@ -18,15 +18,19 @@ function ChannelForm({ kinds, initial, onClose, onSaved }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
   const [test, setTest] = useState(null);
+  const revision = useRef(0);
+  const testing = useRef(false);
+  const [testBusy, setTestBusy] = useState(false);
+  const invalidateTest = () => { revision.current++; setTest(null); };
   const [unknown, setUnknown] = useState(null); // addresses to offer for the directory
   const found = kinds.find(k => k.kind === kind);
   // Any channel may be limited to a time period ("!name" = outside it).
   const info = { ...found, fields: [...((found && found.fields) || []), { key: 'period', type: 'text', placeholder: 'office-hours' }] };
-  const set = (k, v) => setOpts({ ...opts, [k]: v });
+  const set = (k, v) => { invalidateTest(); setOpts({ ...opts, [k]: v }); };
   const values = () => {
     const o = {};
     for (const f of info.fields) {
-      const v = opts[f.key] !== undefined ? opts[f.key] : '';
+      const v = opts[f.key] !== undefined ? opts[f.key] : (editing ? '' : f.default || '');
       if (v !== '') o[f.key] = v;
     }
     return o;
@@ -37,7 +41,7 @@ function ChannelForm({ kinds, initial, onClose, onSaved }) {
     try {
       await post('/channels', { name, kind, opts: values() }, ifMatch(initial && initial.etag));
       toast(t('ui.saved'));
-      onSaved();
+      onSaved(name);
     } catch (e2) { setErr(e2); }
     setBusy(false);
   };
@@ -55,24 +59,31 @@ function ChannelForm({ kinds, initial, onClose, onSaved }) {
     }
     store();
   };
+  const savedTest = editing && Object.values(values()).includes('***');
   const runTest = async () => {
+    if (testing.current) return;
+    testing.current = true;
+    setTestBusy(true);
+    const version = revision.current;
     setTest({ busy: true });
     try {
       const k = kind.startsWith('webhook:') ? 'webhook' : kind;
       const o = values();
       if (kind.startsWith('webhook:')) o.preset = kind.slice(8);
-      setTest({ res: await post('/channels/test', editing && Object.values(o).includes('***') ? { name } : { name: name || 'test', kind: k, opts: o }) });
-    } catch (e2) { setTest({ err: e2 }); }
+      const res = await post('/channels/test', savedTest ? { name: initial.name } : { name: name || 'test', kind: k, opts: o });
+      if (revision.current === version) setTest({ res });
+    } catch (e2) { if (revision.current === version) setTest({ err: e2 }); }
+    finally { testing.current = false; setTestBusy(false); }
   };
   return html`<${Modal} title=${editing ? t('ui.ch.edit', { name }) : t('ui.ch.add')} onClose=${onClose}>
-    <form class="form" onSubmit=${save}>
+    <form class="form channel-form" onSubmit=${save}>
       <div class="two">
         <${Field} label=${t('ui.ch.kind')}>
-          <select value=${kind} onChange=${(e) => { setKind(e.target.value); setTest(null); }} disabled=${editing}>
+          <select value=${kind} onChange=${(e) => { invalidateTest(); setKind(e.target.value); }} disabled=${editing}>
             <optgroup label=${t('ui.ch.native')}>${kinds.filter(k => !k.preset).map(k => html`<option value=${k.kind}>${k.label}</option>`)}</optgroup>
             <optgroup label=${t('ui.ch.presets')}>${kinds.filter(k => k.preset).map(k => html`<option value=${k.kind}>${k.label}</option>`)}</optgroup>
           </select><//>
-        <${Field} label=${t('ui.name')}><input type="text" class="ltr" value=${name} onInput=${(e) => setName(e.target.value)} required disabled=${editing} pattern="[A-Za-z0-9][A-Za-z0-9_.\\-]{0,62}" /><//>
+        <${Field} label=${t('ui.name')}><input type="text" class="ltr" value=${name} onInput=${(e) => { invalidateTest(); setName(e.target.value); }} required disabled=${editing} pattern="[A-Za-z0-9][A-Za-z0-9_.\\-]{0,62}" /><//>
       </div>
       ${info.fields.map(f => {
         const v = opts[f.key] !== undefined ? opts[f.key] : (editing ? '' : f.default || '');
@@ -89,12 +100,11 @@ function ChannelForm({ kinds, initial, onClose, onSaved }) {
             placeholder=${f.type === 'secret' && editing ? '***' : f.placeholder || ''} autocomplete="off" onInput=${(e) => set(f.key, e.target.value)} /><//>`;
       })}
       ${err && html`<div class="banner error">${errText(err)}</div>`}
-      ${test && !test.busy && html`<div class=${'banner ' + (test.err || !test.res.ok ? 'error' : 'ok')}>
-        ${test.err ? errText(test.err) : test.res.ok ? t('ui.ch.test_ok') : html`${t('ui.ch.test_failed')}: <span class="ltr">${test.res.error || (test.res.status ? 'HTTP ' + test.res.status : '')}</span>`}
-      </div>`}
+      <p class="channel-test-hint">${t(savedTest ? 'ui.ch.test_saved_hint' : 'ui.ch.test_current_hint')}</p>
+      <${ChannelTestResult} test=${test} />
       ${initial && initial.issues && initial.issues.length > 0 && html`<div class="banner warning">${initial.issues.map(i => html`<div><span class="rdot"></span> <${IssueLine} i=${i} /></div>`)}</div>`}
       <div class="row">
-        <button type="button" class="btn" onClick=${runTest} disabled=${test && test.busy}>${test && test.busy ? html`<span class="spin"></span>` : ''} ${t('ui.ch.test')}</button>
+        <button type="button" class="btn" onClick=${runTest} disabled=${testBusy}>${testBusy ? html`<span class="spin"></span>` : ''} ${t(savedTest ? 'ui.ch.test_saved' : 'ui.ch.test_current')}</button>
         <div class="spacer"></div>
         <button type="button" class="btn" onClick=${onClose}>${t('ui.cancel')}</button>
         <button class="btn primary" disabled=${busy}>${t('ui.save')}</button>
@@ -109,6 +119,14 @@ function IssueLine({ i }) {
   return html`<span>${t('ui.dir.issue.' + i.code, { address: i.address || '', person: i.person ? '@' + i.person : '', n: i.count || 0 })}</span>`;
 }
 
+function ChannelTestResult({ test }) {
+  if (!test) return null;
+  const failed = test.err || (test.res && !test.res.ok);
+  return html`<div role="status" aria-live="polite" class=${'channel-test-result ' + (test.busy ? 'pending' : failed ? 'error' : 'ok')}>
+    ${test.busy ? html`<span class="spin"></span><span>${t('ui.ch.testing')}</span>` : test.err ? errText(test.err) : test.res.ok ? t('ui.ch.test_ok') : html`${t('ui.ch.test_failed')}: ${test.res.error || (test.res.status ? 'HTTP ' + test.res.status : '')}`}
+  </div>`;
+}
+
 function ChannelsTab() {
   const list = useFetch(() => get('/channels'), []);
   const kinds = useFetch(() => get('/channel-kinds'), []);
@@ -117,31 +135,73 @@ function ChannelsTab() {
     if (!await confirmDialog(t('ui.ch.delete_confirm', { name: c.name }), { danger: true, ok: t('ui.delete') })) return;
     try { await del('/channels/' + encodeURIComponent(c.name), ifMatch(c.etag)); list.reload(); } catch (e) { toastError(e); }
   };
+  const [tests, setTests] = useState(() => new Map());
+  const pending = useRef(new Map());
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState('all');
+  const [page, setPage] = useState(0);
   const test = async (c) => {
+    if (pending.current.has(c.name)) return;
+    const request = {};
+    pending.current.set(c.name, request);
+    setTests(s => new Map(s).set(c.name, { busy: true }));
     try {
-      const r = await post('/channels/test', { name: c.name });
-      r.ok ? toast(t('ui.ch.test_ok')) : toast(t('ui.ch.test_failed') + ': ' + (r.error || ''), 'error');
-    } catch (e) { toastError(e); }
+      const res = await post('/channels/test', { name: c.name });
+      if (pending.current.get(c.name) === request) setTests(s => new Map(s).set(c.name, { res }));
+    } catch (err) {
+      if (pending.current.get(c.name) === request) setTests(s => new Map(s).set(c.name, { err }));
+    } finally {
+      if (pending.current.get(c.name) === request) pending.current.delete(c.name);
+    }
   };
-  if (!list.data || !kinds.data) return list.error ? html`<${ErrorBox} error=${list.error} />` : html`<${Loading} />`;
-  return html`<div class="col" style=${{ gap: '12px' }}>
-    <div class="row"><p class="muted small spacer" style=${{ margin: 0 }}>${t('ui.ch.intro')}</p><button class="btn primary" onClick=${() => setEdit({})}>${t('ui.ch.add')}</button></div>
+  if (list.error) return html`<${ErrorBox} error=${list.error} retry=${list.reload} />`;
+  if (kinds.error) return html`<${ErrorBox} error=${kinds.error} retry=${kinds.reload} />`;
+  if (!list.data || !kinds.data) return html`<${Loading} />`;
+  const label = c => (kinds.data.find(k => k.kind === (c.opts.preset ? 'webhook:' + c.opts.preset : c.kind)) || { label: c.kind }).label;
+  const hasIssues = c => !!c.issues?.length;
+  const unused = c => !c.used_by.length;
+  const q = query.trim().toLocaleLowerCase();
+  const visible = list.data.filter(c => (filter === 'issues' ? hasIssues(c) : filter === 'unused' ? unused(c) : true)
+    && [c.name, c.kind, label(c), ...c.used_by].some(v => v.toLocaleLowerCase().includes(q)));
+  // Filter the whole collection before paging; small lists need no extra controls.
+  const pageSize = 100;
+  const pages = Math.ceil(visible.length / pageSize);
+  const currentPage = Math.min(page, Math.max(0, pages - 1));
+  const shown = visible.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+  return html`<div class="channels-view">
+    <header class="channels-heading"><div><h2>${t('ui.ch.tab')}</h2><p class="muted">${t('ui.ch.intro')}</p></div><button class="btn primary" onClick=${() => setEdit({})}>+ ${t('ui.ch.add')}</button></header>
+    <div class="channels-overview" aria-label=${t('ui.ch.overview')}>
+      ${[['all', 'ui.ch.total', list.data.length], ['issues', 'ui.ch.needs_attention', list.data.filter(hasIssues).length], ['unused', 'ui.ch.unused', list.data.filter(unused).length]].map(([key, title, n]) => html`<button class=${'channel-stat ' + (key === 'issues' && n ? 'warning' : '')} aria-pressed=${filter === key} onClick=${() => { setFilter(key); setPage(0); }}><span>${t(title)}</span><strong>${n}</strong></button>`)}
+    </div>
+    <div class="channels-toolbar"><input type="search" value=${query} aria-label=${t('ui.ch.search')} placeholder=${t('ui.ch.search')} onInput=${e => { setQuery(e.target.value); setPage(0); }} /><span class="muted small">${t('ui.ch.showing', { n: visible.length, total: list.data.length })}</span></div>
+    ${pages > 1 && html`<nav class="row" aria-label=${t('ui.ch.tab')}>
+      <button type="button" class="btn sm" disabled=${currentPage === 0} onClick=${() => setPage(currentPage - 1)}>${t('ui.oc.prev')}</button>
+      <span class="small muted" role="status" aria-live="polite">${currentPage * pageSize + 1}–${Math.min((currentPage + 1) * pageSize, visible.length)} / ${visible.length}</span>
+      <button type="button" class="btn sm" disabled=${currentPage === pages - 1} onClick=${() => setPage(currentPage + 1)}>${t('ui.oc.next')}</button>
+    </nav>`}
     <div class="card"><div class="bd flush tbl-wrap">
-      ${!list.data.length ? html`<${Empty} title=${t('ui.ch.none')}>${t('ui.ch.none_hint')}<//>` : html`<table class="tbl">
-        <thead><tr><th>${t('ui.name')}</th><th>${t('ui.ch.kind')}</th><th>${t('ui.ch.used_by')}</th><th></th></tr></thead>
-        <tbody>${list.data.map(c => html`<tr>
-          <td class="name ltr">${c.name} <${IssueDot} issues=${c.issues} /></td>
-          <td>${(kinds.data.find(k => k.kind === (c.opts.preset ? 'webhook:' + c.opts.preset : c.kind)) || { label: c.kind }).label}</td>
-          <td class="small">${c.used_by.length ? c.used_by.join(', ') : html`<span class="warn-text">${t('ui.ch.unused')}</span>`}</td>
-          <td class="right nowrap">
-            <button class="btn sm" onClick=${() => test(c)}>${t('ui.ch.test')}</button>
+      ${!list.data.length ? html`<${Empty} title=${t('ui.ch.none')}>${t('ui.ch.none_hint')}<//>` : !visible.length ? html`<${Empty} title=${t('ui.ch.no_matches')}><button class="btn sm" onClick=${() => { setQuery(''); setFilter('all'); }}>${t('ui.ch.clear_filters')}</button><//>` : html`<table class="tbl channels-table">
+        <thead><tr><th>${t('ui.name')}</th><th>${t('ui.ch.kind')}</th><th>${t('ui.ch.used_by')}</th><th>${t('ui.ch.actions')}</th></tr></thead>
+        <tbody>${shown.map(c => html`<tr key=${c.name}>
+          <td><span class="name ltr">${c.name}</span> <${IssueDot} issues=${c.issues} />
+            ${hasIssues(c) && html`<ul class="channel-issues">${c.issues.map(i => html`<li><${IssueLine} i=${i} /></li>`)}</ul>`}</td>
+          <td><span class="channel-kind">${label(c)}</span></td>
+          <td class="small">${c.used_by.length ? html`<div class="channel-policies">${c.used_by.map(p => html`<span class="tag ltr">${p}</span>`)}</div>` : html`<span class="warn-text">${t('ui.ch.unused')}</span>`}</td>
+          <td class="channel-actions-cell">
+            <div class="channel-actions"><button class="btn sm" onClick=${() => test(c)} disabled=${!!tests.get(c.name)?.busy}>${t('ui.ch.test')}</button>
             <button class="btn sm" onClick=${() => setEdit(c)}>${t('ui.edit')}</button>
-            <button class="btn sm danger" onClick=${() => remove(c)}>${t('ui.delete')}</button>
+            <button class="btn sm danger" onClick=${() => remove(c)}>${t('ui.delete')}</button></div>
+            <${ChannelTestResult} test=${tests.get(c.name)} />
           </td>
         </tr>`)}</tbody>
       </table>`}
     </div></div>
-    ${edit && html`<${ChannelForm} kinds=${kinds.data} initial=${edit.name ? edit : null} onClose=${() => setEdit(null)} onSaved=${() => { setEdit(null); list.reload(); }} />`}
+    ${edit && html`<${ChannelForm} kinds=${kinds.data} initial=${edit.name ? edit : null} onClose=${() => setEdit(null)} onSaved=${name => {
+      // Retire the old request before allowing tests of the newly saved configuration.
+      pending.current.delete(name);
+      setTests(s => { const next = new Map(s); next.delete(name); return next; });
+      setEdit(null); list.reload();
+    }} />`}
   </div>`;
 }
 

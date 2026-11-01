@@ -98,17 +98,22 @@ func (e *Engine) dispatchIntents(ctx context.Context, wg *sync.WaitGroup) {
 			if !e.channelBucket(name).Allow(now) {
 				continue // rate limited: stays queued
 			}
+			previous := in.Delivery.Steps[i]
 			in.Delivery.Begin(i)
 			in.UpdatedAt = now
+			// Durable admission precedes both the actual send and rate accounting.
+			// Restore the step on rejection so a transient storage outage can
+			// retry, but never treat an authorization denial as permission to send.
+			if err := e.deps.Sink.SaveIntent(in); err != nil {
+				e.log.Error("cannot persist intent", "err", err)
+				in.Delivery.Steps[i] = previous
+				continue
+			}
 			if !in.Message.DryRun {
 				e.noteSent(name, now)
 				if newProblem(in) {
 					e.noteSent(backstopKey(in, name), now)
 				}
-			}
-			// Durable before the attempt: a crash now resends at most once.
-			if err := e.deps.Sink.SaveIntent(in); err != nil {
-				e.log.Error("cannot persist intent", "err", err)
 			}
 			msg := in.Message
 			msg.Delayed = LateBy(in.DueAt, now, late)

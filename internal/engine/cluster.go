@@ -282,6 +282,7 @@ func (e *Engine) applyNodes(specs []NodeSpec, now time.Time) {
 			e.resolveSystem(nodeOfflineKey(name), now, "")
 		}
 	}
+	e.recordDiscovery(now)
 }
 
 // checkNodes opens offline incidents for agents away longer than their

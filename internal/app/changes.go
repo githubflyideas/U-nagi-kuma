@@ -215,7 +215,7 @@ func (a *App) reapply() {
 	defer a.applyMu.Unlock()
 	// Read under the lock: a configuration applied meanwhile is the one
 	// to re-apply, never an older one.
-	if c := a.applied.Load(); c != nil {
+	if c := a.baseApplied; c != nil {
 		a.applyLocked(c)
 	}
 }

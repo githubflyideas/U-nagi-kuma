@@ -1,0 +1,26 @@
+/* On-call additions use the active theme's surfaces and text tokens. */
+.oc-summary { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 12px; }
+.oc-summary .oc-now, .oc-handoff { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; padding: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel-2); overflow-wrap: anywhere; }
+.oc-summary .oc-now { border-inline-start: 3px solid var(--link); }
+.oc-handoff b { font-size: 16px; font-variant-numeric: tabular-nums; }
+.oc-zone { padding: 8px 10px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; overflow-wrap: anywhere; }
+.oc-date-full { display: none; }
+.oc-rot .oc-seg { flex-wrap: wrap; padding: 5px 6px; gap: 3px 6px; }
+.oc-rot .oc-seg .ellipsis { white-space: normal; overflow-wrap: anywhere; }
+.oc-rot .oc-time { font-variant-numeric: tabular-nums; }
+.oc-rot .oc-seg:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+.oc-legend > span { min-width: 0; overflow-wrap: anywhere; flex-wrap: wrap; }
+.oc-dot { flex-shrink: 0; }
+@media (max-width: 720px) {
+  .oc-summary { grid-template-columns: minmax(0, 1fr); }
+  .oc-rot .oc-cal { grid-template-columns: minmax(0, 1fr); }
+  .oc-cal .oc-head, .oc-date-short { display: none; }
+  .oc-date-full { display: inline; }
+  .oc-cal .oc-day, .oc-cal.week .oc-day { min-height: 0; padding: 10px; gap: 6px; }
+  .oc-cal .oc-day.other .oc-date { opacity: 1; }
+  .oc-cal .oc-date { font-size: 13px; }
+  .oc-rot .oc-cal .oc-seg { flex-direction: row; align-items: baseline; font-size: 13px; min-height: 44px; padding: 10px; gap: 8px; }
+  .oc-rot .oc-time { display: inline; font-size: 12px; }
+  .oc-rot .hd > .small { flex-basis: 100%; overflow-wrap: anywhere; }
+  .oc-bar > b { flex-basis: 100%; }
+}

@@ -16,7 +16,11 @@ export function Nodes({ embedded }) {
   const [editing, setEditing] = useState(null);
   if (!list.data) return list.error ? html`<${ErrorBox} error=${list.error} retry=${list.reload} />` : html`<${Loading} />`;
   const d = list.data;
-  if (d.agent && d.agent.member) return html`<${Membership} state=${d.agent} reload=${list.reload} />`;
+  if (d.agent && d.agent.member) return html`<div class="col" style=${{ gap: '12px', minWidth: 0 }}>
+    ${list.error && html`<${ErrorBox} error=${list.error} retry=${list.reload} />`}
+    <${Discovery} data=${d.discovery} />
+    <${Membership} state=${d.agent} reload=${list.reload} />
+  </div>`;
 
   const add = async (e) => {
     e.preventDefault();
@@ -44,7 +48,9 @@ export function Nodes({ embedded }) {
     try { await del('/nodes/' + encodeURIComponent(n.name), ifMatch(n.etag)); list.reload(); } catch (e) { toastError(e); }
   };
 
-  return html`<div class="col" style=${{ gap: '12px' }}>
+  return html`<div class="col" style=${{ gap: '12px', minWidth: 0 }}>
+    ${list.error && html`<${ErrorBox} error=${list.error} retry=${list.reload} />`}
+    <${Discovery} data=${d.discovery} />
     <div class="row">
       <p class="muted small spacer" style=${{ margin: 0 }}>${t(d.layout === 'single' ? 'ui.node.intro_single' : 'ui.node.intro')}</p>
       ${d.layout === 'single' && html`<button class="btn" onClick=${() => setJoining(true)}>${t('ui.join.join')}</button>`}
@@ -53,12 +59,12 @@ export function Nodes({ embedded }) {
     </div>
     <div class="card"><div class="bd flush tbl-wrap"><table class="tbl">
       <thead><tr>
-        <th>${t('ui.name')}</th><th>${t('ui.status')}</th><th>${t('ui.node.config')}</th><th>${t('ui.node.rtt')}</th>
+        <th>${t('ui.name')}</th><th>${t('ui.node.discovery.health')}</th><th>${t('ui.node.config')}</th><th>${t('ui.node.rtt')}</th>
         <th>${t('ui.node.clock')}</th><th>${t('ui.node.version')}</th><th>${t('ui.node.token')}</th><th></th>
       </tr></thead>
-      <tbody>${d.nodes.map(n => html`<${NodeRow} n=${n} onToken=${newToken} onRevoke=${revoke} onRemove=${remove} onEdit=${setEditing} onHandover=${handover} />`)}</tbody>
+      <tbody>${d.nodes.map(n => html`<${NodeRow} n=${n} onToken=${newToken} onRevoke=${revoke} onRemove=${remove} onEdit=${setEditing} />`)}</tbody>
     </table></div></div>
-    <p class="faint small ltr" style=${{ margin: 0 }}>${t('ui.node.fingerprint')}: <span class="mono">${d.fingerprint}</span></p>
+    <p class="faint small ltr" style=${{ margin: 0, overflowWrap: 'anywhere' }}>${t('ui.node.fingerprint')}: <span class="mono">${d.fingerprint}</span></p>
     ${form && html`<${Modal} title=${t('ui.node.add')} onClose=${() => setForm(null)}>
       <form class="form" onSubmit=${add}>
         <${Field} label=${t('ui.name')} hint=${t('ui.node.name_hint')}>
@@ -75,6 +81,31 @@ export function Nodes({ embedded }) {
     ${joinCode && html`<${JoinCode} server=${d.server} onClose=${() => { setJoinCode(false); list.reload(); }} />`}
     ${joining && html`<${JoinForm} d=${d} onClose=${() => { setJoining(false); list.reload(); }} />`}
   </div>`;
+}
+
+// Read-only configured registry metadata: never infer membership from sessions.
+function Discovery({ data }) {
+  const known = data && data.source === 'configured_registry';
+  const members = known && Array.isArray(data.members) && data.members.every(n => typeof n === 'string') ? data.members : null;
+  const unknown = t('ui.node.discovery.unknown');
+  const at = value => typeof value === 'string' && !value.startsWith('0001-') && Number.isFinite(Date.parse(value))
+    ? html`<time datetime=${value} title=${value}>${fmtTime(value)}</time>` : unknown;
+  const interval = known && Number.isFinite(data.interval_s) && data.interval_s > 0
+    ? t('ui.node.discovery.seconds', { n: data.interval_s.toLocaleString(document.documentElement.lang || 'en') }) : unknown;
+  const item = { minWidth: 0, margin: 0, overflowWrap: 'anywhere' };
+  return html`<section class="card" data-node-discovery style=${{ minWidth: 0, overflowWrap: 'anywhere' }}>
+    <div class="hd"><h2>${t('ui.node.discovery.title')}</h2></div>
+    <div class="bd col" style=${{ gap: '12px', minWidth: 0 }}>
+      <p class="muted small" style=${{ margin: 0 }}>${t('ui.node.discovery.description')}</p>
+      <dl style=${{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px', margin: 0 }}>
+        <div style=${item}><dt class="muted small">${t('ui.node.discovery.known')}</dt><dd data-known-members style=${item}>${members ? members.length : unknown}</dd></div>
+        <div style=${item}><dt class="muted small">${t('ui.node.discovery.interval')}</dt><dd style=${item}>${interval}</dd></div>
+        <div style=${item}><dt class="muted small">${t('ui.node.discovery.last')}</dt><dd style=${item}>${known ? at(data.last_refresh) : unknown}</dd></div>
+        <div style=${item}><dt class="muted small">${t('ui.node.discovery.next')}</dt><dd style=${item}>${known ? at(data.next_refresh) : unknown}</dd></div>
+      </dl>
+      <div class="small" style=${item}>${members ? (members.length ? members.map(name => html`<span class="mono" style=${{ display: 'inline-block', maxWidth: '100%', overflowWrap: 'anywhere', marginInlineEnd: '12px' }}>${name}</span>`) : t('ui.node.discovery.empty')) : unknown}</div>
+    </div>
+  </section>`;
 }
 
 // NodeEdit changes a node's record in monitors.bind.
@@ -200,7 +231,7 @@ function Membership({ state, reload }) {
     </div></div>`;
 }
 
-function NodeRow({ n, onToken, onRevoke, onRemove, onEdit, onHandover }) {
+function NodeRow({ n, onToken, onRevoke, onRemove, onEdit }) {
   const offline = !n.self && !n.online;
   return html`<tr>
     <td>
@@ -225,7 +256,7 @@ function NodeRow({ n, onToken, onRevoke, onRemove, onEdit, onHandover }) {
       ${n.self ? '' : n.token ? html`<span class="mono ltr">${n.token.prefix}…</span><div class="sub"><${Ago} at=${n.token.last_used} />${n.token.last_addr ? ' · ' + n.token.last_addr : ''}</div>`
         : html`<span class="faint">${t('ui.node.no_token')}</span>`}
     </td>
-    <td class="right nowrap">${n.standby && n.online && html`<button class="btn sm" onClick=${() => onHandover(n)}>${t('ui.ha.handover')}</button> `}<button class="btn sm" onClick=${() => onEdit(n)}>${t('ui.edit')}</button>${!n.self && html`
+    <td class="right nowrap"><button class="btn sm" onClick=${() => onEdit(n)}>${t('ui.edit')}</button>${!n.self && html`
       ${' '}<button class="btn sm" onClick=${() => onToken(n)}>${t('ui.node.new_token')}</button>
       ${n.token && html` <button class="btn sm" onClick=${() => onRevoke(n)}>${t('ui.node.revoke')}</button>`}
       ${' '}<button class="btn sm danger" onClick=${() => onRemove(n)}>${t('ui.delete')}</button>`}</td>

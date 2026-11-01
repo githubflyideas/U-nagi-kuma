@@ -8,7 +8,36 @@ Monitoramento auto-hospedado e descomplicado: saiba na hora quando seus sites e 
 
 [English](README.md) · [中文](README.zh.md) · [हिन्दी](README.hi.md) · [Español](README.es.md) · [العربية](README.ar.md) · [Français](README.fr.md) · [বাংলা](README.bn.md) · **Português** · [Русский](README.ru.md) · [Bahasa Indonesia](README.id.md) · [اردو](README.ur.md) · [Deutsch](README.de.md) · [日本語](README.ja.md) · [Tiếng Việt](README.vi.md) · [한국어](README.ko.md)
 
-![Um tour rápido pela interface web do Unagikuma](docs/images/tour.gif)
+## Interface atual
+
+> Nova compilação da árvore de trabalho ainda não publicada, com backend local real e dados de demonstração descartáveis. Notificações apenas no log local; não são incidentes de produção nem imagens da versão final.
+
+![Painel Midnight](docs/images/current/dashboard-midnight.png)
+
+<details>
+<summary>Temas, canais de alerta, plantões, relatório diário e celular</summary>
+
+**Painel Paper**
+
+![Painel Paper](docs/images/current/dashboard-paper.png)
+
+**Canais de alerta**
+
+![Canais de alerta](docs/images/current/alerts-midnight.png)
+
+**Calendário de plantões**
+
+![Calendário de plantões](docs/images/current/oncall-paper.png)
+
+**Relatório diário: estado atual, não um histórico de 24 horas**
+
+![Relatório diário: estado atual, não um histórico de 24 horas](docs/images/current/daily-report-midnight.png)
+
+**Relatório no celular**
+
+<img src="docs/images/current/mobile-paper.png" alt="Relatório no celular" width="390">
+
+</details>
 
 ## Por que o Unagikuma
 

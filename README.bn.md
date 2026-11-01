@@ -8,7 +8,36 @@
 
 [English](README.md) · [中文](README.zh.md) · [हिन्दी](README.hi.md) · [Español](README.es.md) · [العربية](README.ar.md) · [Français](README.fr.md) · **বাংলা** · [Português](README.pt.md) · [Русский](README.ru.md) · [Bahasa Indonesia](README.id.md) · [اردو](README.ur.md) · [Deutsch](README.de.md) · [日本語](README.ja.md) · [Tiếng Việt](README.vi.md) · [한국어](README.ko.md)
 
-![Unagikuma ওয়েব ইন্টারফেসের একটি ছোট পরিচিতি](docs/images/tour.gif)
+## বর্তমান ইন্টারফেস
+
+> এখনও প্রকাশিত হয়নি এমন কার্যরত সোর্স থেকে নতুন বিল্ড, প্রকৃত স্থানীয় ব্যাকএন্ড ও অস্থায়ী উদাহরণ ডেটা দিয়ে তোলা। বিজ্ঞপ্তি শুধু স্থানীয় লগে যায়; এগুলো বাস্তব উৎপাদন ব্যবস্থার ঘটনা বা চূড়ান্ত রিলিজের ছবি নয়।
+
+![Midnight ড্যাশবোর্ড](docs/images/current/dashboard-midnight.png)
+
+<details>
+<summary>থিম, সতর্কতা চ্যানেল, অন-কল পালা, দৈনিক প্রতিবেদন ও মোবাইল দৃশ্য</summary>
+
+**Paper ড্যাশবোর্ড**
+
+![Paper ড্যাশবোর্ড](docs/images/current/dashboard-paper.png)
+
+**সতর্কতা চ্যানেল**
+
+![সতর্কতা চ্যানেল](docs/images/current/alerts-midnight.png)
+
+**অন-কল ক্যালেন্ডার**
+
+![অন-কল ক্যালেন্ডার](docs/images/current/oncall-paper.png)
+
+**দৈনিক প্রতিবেদন: বর্তমান অবস্থা, ২৪ ঘণ্টার ইতিহাস নয়**
+
+![দৈনিক প্রতিবেদন: বর্তমান অবস্থা, ২৪ ঘণ্টার ইতিহাস নয়](docs/images/current/daily-report-midnight.png)
+
+**মোবাইল প্রতিবেদন**
+
+<img src="docs/images/current/mobile-paper.png" alt="মোবাইল প্রতিবেদন" width="390">
+
+</details>
 
 ## কেন Unagikuma
 

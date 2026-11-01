@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"regexp"
@@ -91,15 +92,49 @@ func absDuration(d time.Duration) time.Duration {
 	return d
 }
 
+// The legacy engine queries wait for Run and have no context parameter. Keep
+// at most one outstanding query, even if HTTP clients time out before Run.
+// The worker is released when the engine starts or stops; requests never wait
+// indefinitely and repeated requests cannot accumulate blocked goroutines.
+var nodeListQueryGate = make(chan struct{}, 1)
+
 func (s *Server) nodesList(w http.ResponseWriter, r *http.Request) (any, error) {
-	views := s.nodeViews()
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	defer cancel()
+	unavailable := func() (any, error) {
+		return nil, Errorf(http.StatusServiceUnavailable, CodeInternal, "node registry is temporarily unavailable")
+	}
+	if ctx.Err() != nil {
+		return unavailable()
+	}
+	select {
+	case nodeListQueryGate <- struct{}{}:
+	case <-ctx.Done():
+		return unavailable()
+	}
+	type snapshot struct {
+		views     []nodeView
+		discovery engine.DiscoverySnapshot
+	}
+	result := make(chan snapshot, 1)
+	go func() {
+		defer func() { <-nodeListQueryGate }()
+		result <- snapshot{s.nodeViews(), s.app.Engine().Discovery()}
+	}()
+	var snap snapshot
+	select {
+	case snap = <-result:
+	case <-ctx.Done():
+		return unavailable()
+	}
+	views := snap.views
 	layout := "single"
 	if len(views) > 1 {
 		layout = "cluster"
 	}
 	monitors := len(s.app.Config().Config.Monitors)
 	return map[string]any{"layout": layout, "nodes": views, "fingerprint": s.app.PKI().Fingerprint(), "server": agentServerURL(r),
-		"agent": s.app.Agent(), "instance": s.app.Instance(), "monitors": monitors}, nil
+		"agent": s.app.Agent(), "instance": s.app.Instance(), "monitors": monitors, "discovery": snap.discovery}, nil
 }
 
 var hostRe = regexp.MustCompile(`^(\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9.-]+)(:[0-9]{1,5})?$`)

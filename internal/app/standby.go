@@ -21,13 +21,11 @@ import (
 
 // Handing the master role to another server without an election: the
 // master keeps standbys (NODE standby=https://…) supplied with a copy of
-// its state — databases, monitors.bind, the secret key and the cluster CA
-// — so a standby can take over by restoring it. Every handover raises the
-// term; agents follow the highest term they have seen, and a master that
-// learns of a higher term steps down, so two masters never run at once
-// for long. Promotion is always somebody's decision (a button or
-// `unagikuma promote`), never automatic: without a quorum protocol an
-// automatic takeover could split the cluster when the network does.
+// its core/configuration state and on-disk keys, but not history.db. Agents
+// follow the highest term they have seen; retirement only converges while
+// communication works. Terms do not fence partitioned masters or provide
+// single-writer consensus. Promotion is an explicit operator decision.
+// Coordinated handover is refused until target readiness can be acknowledged.
 const (
 	termFile       = "cluster-term"
 	supersededFile = "cluster-superseded.json"
@@ -40,7 +38,8 @@ const (
 
 // StandbyState is the copy of the master's state a standby holds.
 type StandbyState struct {
-	Term    uint64    `json:"term"` // the master's term when it was taken
+	Scope   string    `json:"scope,omitempty"` // expected protocol scope, not a verification acknowledgement
+	Term    uint64    `json:"term"`            // the master's term when it was taken
 	Fetched time.Time `json:"fetched"`
 	Size    int64     `json:"size"`
 	Key     string    `json:"key"`
@@ -145,8 +144,12 @@ func (a *App) syncStandbys() {
 // ErrNotStandby means a handover target is not a connected standby.
 var ErrNotStandby = errors.New("the node is not a connected standby (NODE standby=https://…)")
 
-// HandOver makes a standby the master: it fetches the current state and
-// restarts as master with the next term, while this server steps down.
+// ErrHandoverReadiness refuses coordinated transfer until the protocol can
+// acknowledge a verified current snapshot and successful target startup.
+var ErrHandoverReadiness = errors.New("handover refused: target snapshot and restart readiness cannot be acknowledged by this protocol; fence the old master and use explicit offline recovery")
+
+// HandOver fails closed: a connected standby is not proof of restore readiness.
+// No promotion is dispatched and the source continues serving.
 func (a *App) HandOver(node, author string) (uint64, error) {
 	if !a.isStandby(node) {
 		return 0, ErrNotStandby
@@ -158,25 +161,7 @@ func (a *App) HandOver(node, author string) (uint64, error) {
 	if !connected {
 		return 0, ErrNotStandby
 	}
-	term := a.Term() + 1
-	if !a.master.Promote(node, term) {
-		return 0, ErrNotStandby
-	}
-	_ = a.store.Audit(auditEntry("cluster.handover", author, map[string]any{"node": node, "term": term}))
-	// Step down once the standby had time to fetch the state; until then
-	// this master keeps serving it.
-	go func() {
-		time.Sleep(a.handoverWait())
-		a.supersede(term, node)
-	}()
-	return term, nil
-}
-
-func (a *App) handoverWait() time.Duration {
-	if a.opts.HandoverWait > 0 {
-		return a.opts.HandoverWait
-	}
-	return 20 * time.Second
+	return 0, ErrHandoverReadiness
 }
 
 // ---- standby side ----
@@ -208,7 +193,7 @@ func (a *App) fetchState(ctx context.Context, ag *cluster.Agent) (StandbyState, 
 	if err := os.Rename(tmp.Name(), filepath.Join(dir, stateFile)); err != nil {
 		return meta, err
 	}
-	meta = StandbyState{Term: term, Fetched: a.now(), Size: fi.Size(), Key: key}
+	meta = StandbyState{Scope: "core-config-keys-no-history", Term: term, Fetched: a.now(), Size: fi.Size(), Key: key}
 	a.saveStandby(meta)
 	a.log.Info("master state copied", "term", term, "bytes", fi.Size())
 	return meta, nil
@@ -239,16 +224,21 @@ type promoteRequest struct {
 	At   time.Time `json:"at"`
 }
 
-// Promote turns this standby into the master with term (0: the copy's term
-// plus one) and asks for a restart. With a connection to the master the
-// state is refreshed first.
+// Promote handles explicit operator recovery (term 0). A connected master's
+// state must refresh successfully; failures never fall back to a stale copy.
+// Nonzero terms are legacy handover requests and fail closed. Disconnected
+// disaster recovery still requires the operator to fence the previous master
+// and accept the last snapshot's age/scope; this is not a freshness guarantee.
 func (a *App) Promote(ctx context.Context, term uint64, author string) (uint64, error) {
+	if term != 0 {
+		return 0, ErrHandoverReadiness
+	}
 	a.am.mu.Lock()
 	ag := a.am.agent
 	a.am.mu.Unlock()
 	if ag != nil && ag.Status().Connected {
 		if _, err := a.fetchState(ctx, ag); err != nil {
-			a.log.Warn("could not refresh the master's state; taking over with the last copy", "err", err)
+			return 0, fmt.Errorf("promotion refused: refresh the master's state: %w", err)
 		}
 	}
 	meta := a.Standby()
@@ -334,14 +324,40 @@ func applyPromote(dir, configPath string) (bool, error) {
 			prev = append(prev, m.Server)
 		}
 	}
-	// The node's own databases are replaced by the master's.
-	for _, name := range []string{"core.db", "history.db"} {
-		for _, suffix := range []string{"", "-wal", "-shm"} {
-			_ = os.Remove(filepath.Join(dir, name+suffix))
-		}
-	}
-	if _, err := backup.Restore(f, dir, configPath, meta.Key, true); err != nil {
+	// Restore stages and checks the archive before replacing databases.
+	// Never delete local state before archive validation succeeds.
+	manifest, err := backup.Restore(f, dir, configPath, meta.Key, true)
+	if err != nil {
 		return false, fmt.Errorf("restore the master's state: %w", err)
+	}
+	// Core-only snapshots do not contain the old master's history. Preserve
+	// the standby's unrelated local history for operator recovery, but never
+	// serve it as if it were replicated master history. Same-volume renames
+	// avoid copying a potentially huge database and never overwrite a prior
+	// recovery directory. Failure leaves the promotion marker for inspection.
+	hasHistory := false
+	for _, name := range manifest.Files {
+		hasHistory = hasHistory || name == "history.db"
+	}
+	if !hasHistory {
+		var saved string
+		for _, suffix := range []string{"", "-wal", "-shm"} {
+			path := filepath.Join(dir, "history.db"+suffix)
+			if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+				continue
+			} else if err != nil {
+				return false, err
+			}
+			if saved == "" {
+				saved, err = os.MkdirTemp(filepath.Join(dir, standbyDir), "previous-history-")
+				if err != nil {
+					return false, fmt.Errorf("preserve local history: %w", err)
+				}
+			}
+			if err := os.Rename(path, filepath.Join(saved, "history.db"+suffix)); err != nil {
+				return false, fmt.Errorf("preserve local history in %s: %w", saved, err)
+			}
+		}
 	}
 	for _, name := range []string{agentFile, agentTokenFile, supersededFile, promoteFile} {
 		_ = os.Remove(filepath.Join(dir, name))

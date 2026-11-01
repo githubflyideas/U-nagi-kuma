@@ -35,3 +35,39 @@ func TestUI(t *testing.T) {
 		t.Fatalf("browser tests failed (screenshots in %s)", out)
 	}
 }
+
+// TestZonesUI runs the zone vertical slice against a disposable real server.
+func TestZonesUI(t *testing.T) {
+	if err := exec.Command("node", "-e", "require.resolve('playwright')").Run(); err != nil {
+		if os.Getenv("UNAGIKUMA_E2E_UI") == "1" {
+			t.Fatalf("node with playwright is required: %v", err)
+		}
+		t.Skip("node with playwright not found")
+	}
+	s := start(t, "zones-ui", fmt.Sprintf(soa, "zones-ui"))
+	out, err := exec.Command("node", "zones-live-ui.mjs", s.url("")).CombinedOutput()
+	t.Logf("\n%s", out)
+	if err != nil {
+		t.Fatalf("zone browser integration failed: %v", err)
+	}
+}
+
+// TestUIComponents exercises deterministic browser contracts for asynchronous
+// failures, theme persistence and mobile layouts without contacting providers.
+func TestUIComponents(t *testing.T) {
+	if err := exec.Command("node", "-e", "require.resolve('playwright')").Run(); err != nil {
+		if os.Getenv("UNAGIKUMA_E2E_UI") == "1" {
+			t.Fatalf("node with playwright is required: %v", err)
+		}
+		t.Skip("node with playwright not found")
+	}
+	for _, file := range []string{"themes.mjs", "channels-ui.mjs", "oncall-ui.mjs", "shell-ui.mjs", "version-history-ui.mjs", "report-ui.mjs", "node-discovery-ui.mjs", "zones-ui.mjs"} {
+		t.Run(file, func(t *testing.T) {
+			out, err := exec.Command("node", file).CombinedOutput()
+			t.Logf("\n%s", out)
+			if err != nil {
+				t.Fatalf("browser contract failed: %v", err)
+			}
+		})
+	}
+}

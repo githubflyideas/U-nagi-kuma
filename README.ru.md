@@ -8,7 +8,36 @@
 
 [English](README.md) · [中文](README.zh.md) · [हिन्दी](README.hi.md) · [Español](README.es.md) · [العربية](README.ar.md) · [Français](README.fr.md) · [বাংলা](README.bn.md) · [Português](README.pt.md) · **Русский** · [Bahasa Indonesia](README.id.md) · [اردو](README.ur.md) · [Deutsch](README.de.md) · [日本語](README.ja.md) · [Tiếng Việt](README.vi.md) · [한국어](README.ko.md)
 
-![Короткий обзор веб-интерфейса Unagikuma](docs/images/tour.gif)
+## Текущий интерфейс
+
+> Новая сборка неопубликованного рабочего дерева с настоящим локальным сервером и одноразовыми демонстрационными данными. Уведомления записываются только в локальный журнал. Это не реальные аварии и не снимки окончательного релиза.
+
+![Обзор Midnight](docs/images/current/dashboard-midnight.png)
+
+<details>
+<summary>Темы, каналы оповещений, дежурства, ежедневный отчёт и мобильный вид</summary>
+
+**Обзор Paper**
+
+![Обзор Paper](docs/images/current/dashboard-paper.png)
+
+**Каналы оповещений**
+
+![Каналы оповещений](docs/images/current/alerts-midnight.png)
+
+**Календарь дежурств**
+
+![Календарь дежурств](docs/images/current/oncall-paper.png)
+
+**Ежедневный отчёт: текущий снимок, не история за 24 часа**
+
+![Ежедневный отчёт: текущий снимок, не история за 24 часа](docs/images/current/daily-report-midnight.png)
+
+**Мобильный отчёт**
+
+<img src="docs/images/current/mobile-paper.png" alt="Мобильный отчёт" width="390">
+
+</details>
 
 ## Почему Unagikuma
 

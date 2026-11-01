@@ -24,6 +24,12 @@ const importUsage = `Move monitors from another tool into Unagikuma.
 Usage:
   unagikuma import kuma   [flags] kuma.db|backup.json
   unagikuma import nagios [flags] nagios.cfg|DIR|FILE.cfg...
+  unagikuma import checkmate [flags] monitors.json
+  unagikuma import gatus [flags] config.yaml
+
+  checkmate  bluewave-labs/Checkmate Settings export (HTTP subset).
+  gatus      Gatus endpoints YAML (literal HTTP status condition subset).
+             Unsupported items block apply; see docs/import-adapters.md.
 
   kuma     Uptime Kuma's database (data/kuma.db; stop Uptime Kuma first)
            or a backup exported from Uptime Kuma 1.x (Settings › Backup).
@@ -48,7 +54,7 @@ Exit status: 0 done (or nothing new), 1 failed (nothing was changed), 2 wrong us
 // runImport converts another tool's data into monitors.bind records,
 // secrets and accounts, and writes a report.
 func runImport(args []string) error {
-	if len(args) == 0 || (args[0] != "kuma" && args[0] != "nagios") {
+	if len(args) == 0 || (args[0] != "kuma" && args[0] != "nagios" && args[0] != "gatus" && args[0] != "checkmate") {
 		if len(args) > 0 && (args[0] == "-h" || args[0] == "--help" || args[0] == "help") {
 			fmt.Print(importUsage)
 			return nil
@@ -74,12 +80,39 @@ func runImport(args []string) error {
 		fmt.Fprintf(os.Stderr, "unagikuma import: %v\n\n%s", err, importUsage)
 		os.Exit(2)
 	}
-	if fs.NArg() == 0 || (source == "kuma" && fs.NArg() != 1) {
+	if fs.NArg() == 0 || (source != "nagios" && fs.NArg() != 1) {
 		fmt.Fprint(os.Stderr, importUsage)
 		os.Exit(2)
 	}
 	if !store.ValidRole(*role) {
 		return fmt.Errorf("unknown role %q: use admin, operator or viewer", *role)
+	}
+	var adapterData []byte
+	if source == "gatus" || source == "checkmate" {
+		f, err := os.Open(fs.Arg(0))
+		if err != nil {
+			return err
+		}
+		adapterData, err = io.ReadAll(io.LimitReader(f, importer.AdapterMaxBytes+1))
+		f.Close()
+		if err != nil {
+			return err
+		}
+		var pre *importer.Result
+		if source == "gatus" {
+			pre, err = importer.Gatus(adapterData, nil, importer.Options{})
+		} else {
+			pre, err = importer.Checkmate(adapterData, nil, importer.Options{})
+		}
+		if err != nil {
+			return err
+		}
+		if !*dry {
+			if err := pre.ActivationError(); err != nil {
+				fmt.Print(pre.Report(importer.ReportOptions{DryRun: true}))
+				return err
+			}
+		}
 	}
 	if *cfgPath == "" {
 		*cfgPath = filepath.Join(*data, "monitors.bind")
@@ -135,7 +168,22 @@ func runImport(args []string) error {
 		UserExists: func(n string) bool { return st != nil && userExists(st, n) }}
 	var extra []string
 	var res *importer.Result
-	if source == "nagios" {
+	if source == "gatus" || source == "checkmate" {
+		if source == "gatus" {
+			res, err = importer.Gatus(adapterData, cfg, o)
+		} else {
+			res, err = importer.Checkmate(adapterData, cfg, o)
+		}
+		if err != nil {
+			return err
+		}
+		if !*dry {
+			if err := res.ActivationError(); err != nil {
+				fmt.Print(res.Report(importer.ReportOptions{DryRun: true}))
+				return err
+			}
+		}
+	} else if source == "nagios" {
 		in, err := importer.ReadNagiosFiles(fs.Args())
 		if err != nil {
 			return err

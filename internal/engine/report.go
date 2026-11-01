@@ -1,6 +1,8 @@
 package engine
 
 import (
+	"fmt"
+	"github.com/githubflyideas/unagikuma/internal/i18n"
 	"sort"
 	"strings"
 	"time"
@@ -12,10 +14,38 @@ import (
 // Report is the daily status report: what is down right now, what is
 // fine, rendered in the configured language.
 type Report struct {
-	Title  string
-	Body   string
-	Policy string
-	OK     bool // every host up and every service OK
+	Title    string
+	Body     string
+	Policy   string
+	OK       bool           // Legacy: no currently failing hosts/services; not proof of coverage.
+	Snapshot ReportSnapshot `json:"snapshot"`
+	Delivery string         `json:"delivery,omitempty"` // Queue acceptance only; never confirmation of delivery.
+}
+
+// ReportSnapshot describes one atomic engine view, never a historical window.
+type ReportSnapshot struct {
+	GeneratedAt   time.Time     `json:"generated_at"`
+	Timezone      string        `json:"timezone"`
+	Semantics     string        `json:"semantics"`
+	State         string        `json:"state"` // empty | attention | incomplete | healthy
+	Hosts         ReportCounts  `json:"hosts"`
+	Services      ReportCounts  `json:"services"`
+	Issues        []ReportIssue `json:"issues"`
+	IssuesTotal   int           `json:"issues_total"`
+	IssuesOmitted int           `json:"issues_omitted"`
+}
+type ReportCounts struct {
+	Total  int            `json:"total"`
+	States map[string]int `json:"states"`
+}
+type ReportIssue struct {
+	Name    string     `json:"name"`
+	Title   string     `json:"title"`
+	Status  string     `json:"status"`
+	Since   *time.Time `json:"since,omitempty"`
+	Acked   bool       `json:"acked"`
+	AckedBy string     `json:"acked_by,omitempty"`
+	Detail  string     `json:"detail,omitempty"`
 }
 
 // scheduleReport computes the next daily status report.
@@ -37,8 +67,8 @@ func (e *Engine) dailyReport(now time.Time) {
 	e.sendReport(e.report(now), now)
 }
 
-func (e *Engine) sendReport(r Report, now time.Time) {
-	e.enqueue(&Intent{Kind: "REPORT", Policy: r.Policy, CreatedAt: now, DueAt: now, System: true,
+func (e *Engine) sendReport(r Report, now time.Time) bool {
+	return e.enqueue(&Intent{Kind: "REPORT", Policy: r.Policy, CreatedAt: now, DueAt: now, System: true,
 		Message: notify.Message{Kind: "REPORT", Priority: "high", Title: r.Title, Body: r.Body, Time: now, Instance: e.cfg.Instance, Lang: e.cfg.Lang}})
 }
 
@@ -49,19 +79,33 @@ func (e *Engine) DailyReport() Report {
 	return r
 }
 
-// SendDailyReport sends the report now, outside its schedule.
+// SendDailyReport attempts to queue the report now, outside its schedule.
+// Delivery reports acceptance, independently of the legacy health OK field.
 func (e *Engine) SendDailyReport() Report {
-	var r Report
+	r := Report{Delivery: "rejected"}
 	e.do(func() {
 		now := e.now()
 		r = e.report(now)
-		e.sendReport(r, now)
+		r.Delivery = "rejected"
+		if e.sendReport(r, now) {
+			r.Delivery = "queued"
+		}
 	})
 	return r
 }
 
 func (e *Engine) report(now time.Time) Report {
 	max := e.cfg.Tunables.Int("notify.daily-report-max-items")
+	if max < 1 {
+		max = 1
+	}
+	loc := e.cfg.Location
+	if loc == nil {
+		loc = time.UTC
+	}
+	snap := ReportSnapshot{GeneratedAt: now, Timezone: loc.String(), Semantics: "current_snapshot", Issues: []ReportIssue{},
+		Hosts:    ReportCounts{States: map[string]int{"up": 0, "down": 0, "unreachable": 0, "pending": 0, "paused": 0, "maintenance": 0}},
+		Services: ReportCounts{States: map[string]int{"ok": 0, "critical": 0, "degraded": 0, "unknown": 0, "unreachable": 0, "pending": 0, "paused": 0, "maintenance": 0}}}
 	rows := map[string]MonitorRow{}
 	var svcs []hostview.Service
 	for _, n := range e.sortedMonitorNames() {
@@ -82,7 +126,7 @@ func (e *Engine) report(now time.Time) Report {
 	for _, h := range hosts {
 		byState[h.Status] = append(byState[h.Status], h.Name)
 	}
-	counts := map[string]int{}
+	counts := snap.Services.States
 	var bad []MonitorRow
 	for _, s := range svcs {
 		counts[s.Status]++
@@ -106,7 +150,27 @@ func (e *Engine) report(now time.Time) Report {
 		}
 		return strings.Join(names, ", ")
 	}
+	snap.Hosts.Total, snap.Services.Total = len(hosts), len(svcs)
+	for state, names := range byState {
+		snap.Hosts.States[state] = len(names)
+	}
+	snap.IssuesTotal = len(bad)
+	snap.State = "healthy"
+	switch {
+	case len(svcs) == 0:
+		snap.State = "empty"
+	case len(bad) > 0:
+		snap.State = "attention"
+	case counts["ok"] != len(svcs):
+		snap.State = "incomplete"
+	}
 	var b []string
+	b = append(b, i18n.T(e.cfg.Lang, "ui.report.snapshot"), now.In(loc).Format("2006-01-02 15:04:05 -07:00")+" · "+loc.String(),
+		i18n.T(e.cfg.Lang, "ui.report.state."+snap.State))
+	if len(svcs) > 0 {
+		b = append(b, e.text("report_summary", len(hosts), len(svcs), counts))
+	}
+	b = append(b, "")
 	section := func(key string, names []string) {
 		if len(names) > 0 {
 			b = append(b, e.text(key, len(names), list(names)))
@@ -125,11 +189,37 @@ func (e *Engine) report(now time.Time) Report {
 			if title == "" {
 				title = r.Name
 			}
-			who := ""
-			if inc, ok := e.incidents[r.IncidentID]; ok && inc.State.Acked {
-				who = inc.State.AckedBy
+			who, acked := "", false
+			inc := e.incidents[r.IncidentID]
+			if inc == nil && r.Status == StatusDegraded {
+				inc = e.lowByMon[r.Name]
+				if inc == nil {
+					inc = e.incidents[r.RegionalID]
+				}
 			}
-			b = append(b, e.text("report_service_line", title, r.Status, r.LastChange, now.Sub(r.LastChange), who, r.Detail))
+			if inc != nil && inc.State.Open() && inc.State.Acked {
+				who, acked = inc.State.AckedBy, true
+			}
+			issue := ReportIssue{Name: r.Name, Title: title, Status: r.Status, Acked: acked, AckedBy: who, Detail: reportSnippet(r.Detail, 400)}
+			if !r.LastChange.IsZero() {
+				since := r.LastChange
+				issue.Since = &since
+			}
+			snap.Issues = append(snap.Issues, issue)
+			line := "• " + reportSnippet(title, 160) + ": " + i18n.T(e.cfg.Lang, "status."+r.Status)
+			if issue.Since != nil {
+				line += " · " + issue.Since.In(loc).Format("2006-01-02 15:04:05 -07:00")
+			}
+			if issue.Acked {
+				line += " · " + i18n.T(e.cfg.Lang, "ui.report.acked")
+				if who != "" {
+					line += ": " + reportSnippet(who, 80)
+				}
+			}
+			if issue.Detail != "" {
+				line += " — " + issue.Detail
+			}
+			b = append(b, line)
 		}
 		b = append(b, "")
 	}
@@ -137,13 +227,15 @@ func (e *Engine) report(now time.Time) Report {
 	section("report_hosts_paused", byState["paused"])
 	section("report_hosts_pending", byState["pending"])
 	section("report_hosts_up", byState["up"])
-	b = append(b, "", e.text("report_summary", len(hosts), len(svcs), counts))
+	snap.IssuesOmitted = snap.IssuesTotal - len(snap.Issues)
 
-	r := Report{Policy: e.reportPolicy()}
+	r := Report{Policy: e.reportPolicy(), Snapshot: snap}
 	down := len(byState["down"]) + len(byState["unreachable"])
 	r.OK = down == 0 && len(bad) == 0
-	if r.OK {
+	if snap.State == "healthy" {
 		r.Title = e.text("report_title_ok", len(hosts), len(svcs))
+	} else if snap.State == "empty" || snap.State == "incomplete" {
+		r.Title = i18n.T(e.cfg.Lang, "ui.report.tab") + ": " + i18n.T(e.cfg.Lang, "ui.report.state."+snap.State)
 	} else {
 		r.Title = e.text("report_title", down, len(hosts), len(bad), len(svcs))
 	}
@@ -157,6 +249,16 @@ func (e *Engine) report(now time.Time) Report {
 	}
 	r.Body = strings.TrimSpace(strings.Join(lines, "\n"))
 	return r
+}
+
+// Keep one check's verbose output from dominating a notification.
+func reportSnippet(s string, limit int) string {
+	s = strings.Join(strings.Fields(s), " ")
+	r := []rune(s)
+	if len(r) > limit {
+		return fmt.Sprintf("%s…", string(r[:limit]))
+	}
+	return s
 }
 
 func (e *Engine) reportPolicy() string {

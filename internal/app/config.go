@@ -103,14 +103,14 @@ func (cm *configManager) load() error {
 	} else if err != nil {
 		return err
 	}
-	f, cfg, diags := config.Load(cm.path, text, cm.app.validators())
+	f, cfg, diags := config.Load(cm.path, text, cm.app.baseValidators())
 	if config.HasErrors(diags) {
 		snaps, _ := cm.app.store.Snapshots(1)
 		if len(snaps) == 0 {
 			return &InvalidError{Diags: diags}
 		}
 		sn, _ := cm.app.store.SnapshotText(snaps[0].Serial)
-		f2, cfg2, d2 := config.Load(cm.path, []byte(sn.Text), cm.app.validators())
+		f2, cfg2, d2 := config.Load(cm.path, []byte(sn.Text), cm.app.baseValidators())
 		if config.HasErrors(d2) {
 			return &InvalidError{Diags: diags}
 		}
@@ -206,7 +206,7 @@ func (cm *configManager) saveRenamed(text []byte, ifMatch, author, message strin
 		}
 	}
 	text = f.Bytes()
-	f, cfg, diags := config.Load(cm.path, text, cm.app.validators())
+	f, cfg, diags := config.Load(cm.path, text, cm.app.baseValidators())
 	if config.HasErrors(diags) {
 		return cm.cur, &InvalidError{Diags: diags}
 	}
@@ -264,7 +264,7 @@ func (cm *configManager) check() {
 	if err != nil || shaOf(text) == cm.cur.SHA {
 		return
 	}
-	f, cfg, diags := config.Load(cm.path, text, cm.app.validators())
+	f, cfg, diags := config.Load(cm.path, text, cm.app.baseValidators())
 	switch {
 	case config.HasErrors(diags):
 		cm.setBanner(&Banner{Kind: "error", Code: "invalid", Message: "monitors.bind has errors; the previous version keeps running", Diags: diags})

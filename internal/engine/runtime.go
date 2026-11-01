@@ -213,10 +213,11 @@ type Engine struct {
 	results chan roundResult
 	votes   chan RemoteVote
 
-	rounds   map[string]*pendingRound // open cluster rounds by id
-	nodes    map[string]*nodeRuntime  // agents by name
-	agentRT  map[string]*monRuntime   // agent mode: per-monitor network caches
-	attempts chan attemptResult
+	rounds    map[string]*pendingRound // open cluster rounds by id
+	discovery DiscoverySnapshot        // retained configured membership, independent of liveness
+	nodes     map[string]*nodeRuntime  // agents by name
+	agentRT   map[string]*monRuntime   // agent mode: per-monitor network caches
+	attempts  chan attemptResult
 	// runCtx ends with Run; background work (event handlers) uses it.
 	runCtx context.Context
 	// handling marks monitors whose event handler is running.
@@ -469,6 +470,7 @@ func (e *Engine) onTick() {
 	e.expireRounds(now)
 	e.expireDeps(now)
 	e.checkMaint(now)
+	e.refreshDiscovery(now)
 	e.checkNodes(now)
 	e.advanceIncidents(now)
 	e.escalate(now)

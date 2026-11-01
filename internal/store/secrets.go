@@ -125,8 +125,8 @@ func (x *Secrets) Put(name, value string, scopes []string) error {
 	sc, _ := json.Marshal(scopes)
 	x.s.wmu.Lock()
 	defer x.s.wmu.Unlock()
-	_, err = x.s.core.Exec(`INSERT INTO secrets(name,key_id,dek,value,scopes,updated_at) VALUES(?,?,?,?,?,?)
-		ON CONFLICT(name) DO UPDATE SET key_id=excluded.key_id,dek=excluded.dek,value=excluded.value,scopes=excluded.scopes,updated_at=excluded.updated_at`,
+	_, err = x.s.core.Exec(`INSERT INTO secrets(tenant_id,workspace_id,name,key_id,dek,value,scopes,updated_at) SELECT t.id,w.id,?,?,?,?,?,? FROM tenants t JOIN workspaces w ON w.tenant_id=t.id WHERE t.is_default=1 AND w.is_default=1
+		ON CONFLICT(tenant_id,workspace_id,name) DO UPDATE SET key_id=excluded.key_id,dek=excluded.dek,value=excluded.value,scopes=excluded.scopes,updated_at=excluded.updated_at`,
 		name, keyID(x.kek), wrapped, val, string(sc), ms(x.s.now()))
 	return err
 }
@@ -134,7 +134,7 @@ func (x *Secrets) Put(name, value string, scopes []string) error {
 // Get decrypts a secret.
 func (x *Secrets) Get(name string) (string, error) {
 	var kid, dek, val string
-	err := x.s.core.QueryRow(`SELECT key_id,dek,value FROM secrets WHERE name=?`, name).Scan(&kid, &dek, &val)
+	err := x.s.core.QueryRow(`SELECT key_id,dek,value FROM secrets WHERE `+defaultSecretOwner+` AND name=?`, name).Scan(&kid, &dek, &val)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", ErrNotFound
 	}
@@ -158,7 +158,7 @@ func (x *Secrets) Get(name string) (string, error) {
 // Has reports whether a secret exists.
 func (x *Secrets) Has(name string) bool {
 	var n int
-	_ = x.s.core.QueryRow(`SELECT COUNT(*) FROM secrets WHERE name=?`, name).Scan(&n)
+	_ = x.s.core.QueryRow(`SELECT COUNT(*) FROM secrets WHERE `+defaultSecretOwner+` AND name=?`, name).Scan(&n)
 	return n > 0
 }
 
@@ -166,13 +166,13 @@ func (x *Secrets) Has(name string) bool {
 func (x *Secrets) Delete(name string) error {
 	x.s.wmu.Lock()
 	defer x.s.wmu.Unlock()
-	_, err := x.s.core.Exec(`DELETE FROM secrets WHERE name=?`, name)
+	_, err := x.s.core.Exec(`DELETE FROM secrets WHERE `+defaultSecretOwner+` AND name=?`, name)
 	return err
 }
 
 // List returns secret names and scopes, never values.
 func (x *Secrets) List() ([]SecretInfo, error) {
-	rows, err := x.s.core.Query(`SELECT name,scopes,updated_at FROM secrets ORDER BY name`)
+	rows, err := x.s.core.Query(`SELECT name,scopes,updated_at FROM secrets WHERE ` + defaultSecretOwner + ` ORDER BY name`)
 	if err != nil {
 		return nil, err
 	}
@@ -201,15 +201,15 @@ func (x *Secrets) Rotate(newKEK []byte) error {
 		return err
 	}
 	defer tx.Rollback()
-	rows, err := tx.Query(`SELECT name,dek FROM secrets`)
+	rows, err := tx.Query(`SELECT tenant_id,workspace_id,name,dek FROM secrets`)
 	if err != nil {
 		return err
 	}
-	type rw struct{ name, dek string }
+	type rw struct{ tenant, workspace, name, dek string }
 	var all []rw
 	for rows.Next() {
 		var r rw
-		if err := rows.Scan(&r.name, &r.dek); err != nil {
+		if err := rows.Scan(&r.tenant, &r.workspace, &r.name, &r.dek); err != nil {
 			rows.Close()
 			return err
 		}
@@ -225,9 +225,12 @@ func (x *Secrets) Rotate(newKEK []byte) error {
 		if err != nil {
 			return err
 		}
-		if _, err := tx.Exec(`UPDATE secrets SET dek=?, key_id=? WHERE name=?`, wrapped, keyID(newKEK), r.name); err != nil {
+		if _, err := tx.Exec(`UPDATE secrets SET dek=?, key_id=? WHERE tenant_id=? AND workspace_id=? AND name=?`, wrapped, keyID(newKEK), r.tenant, r.workspace, r.name); err != nil {
 			return err
 		}
+	}
+	if err := rewrapWorkspaceConfigs(tx, x.kek, newKEK); err != nil {
+		return err
 	}
 	if err := tx.Commit(); err != nil {
 		return err

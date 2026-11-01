@@ -8,7 +8,36 @@
 
 [English](README.md) · [中文](README.zh.md) · [हिन्दी](README.hi.md) · [Español](README.es.md) · [العربية](README.ar.md) · [Français](README.fr.md) · [বাংলা](README.bn.md) · [Português](README.pt.md) · [Русский](README.ru.md) · [Bahasa Indonesia](README.id.md) · [اردو](README.ur.md) · [Deutsch](README.de.md) · [日本語](README.ja.md) · [Tiếng Việt](README.vi.md) · **한국어**
 
-![Unagikuma 웹 화면 둘러보기](docs/images/tour.gif)
+## 현재 인터페이스
+
+> 아직 출시되지 않은 작업 트리에서 새로 빌드한 실제 로컬 백엔드와 일회용 데모 데이터를 사용했습니다. 알림은 로컬 로그에만 기록됩니다. 실제 운영 장애나 최종 출시 버전의 화면이 아닙니다.
+
+![Midnight 대시보드](docs/images/current/dashboard-midnight.png)
+
+<details>
+<summary>테마, 알림 채널, 당직 순환, 일일 보고서 및 모바일 화면</summary>
+
+**Paper 대시보드**
+
+![Paper 대시보드](docs/images/current/dashboard-paper.png)
+
+**알림 채널**
+
+![알림 채널](docs/images/current/alerts-midnight.png)
+
+**당직 달력**
+
+![당직 달력](docs/images/current/oncall-paper.png)
+
+**일일 보고서: 24시간 기록이 아닌 현재 스냅샷**
+
+![일일 보고서: 24시간 기록이 아닌 현재 스냅샷](docs/images/current/daily-report-midnight.png)
+
+**모바일 보고서**
+
+<img src="docs/images/current/mobile-paper.png" alt="모바일 보고서" width="390">
+
+</details>
 
 ## Unagikuma를 써야 하는 이유
 

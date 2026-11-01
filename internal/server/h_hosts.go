@@ -11,7 +11,7 @@ import (
 type hostJSON = hostview.Host
 
 func (s *Server) hostList() []hostJSON {
-	cfg := s.app.Config().Config
+	cfg := s.app.RuntimeConfig()
 	status := map[string]string{}
 	for _, r := range s.app.Engine().Rows() {
 		status[r.Name] = r.Status

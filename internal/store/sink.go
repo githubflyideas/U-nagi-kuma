@@ -22,49 +22,33 @@ func mustJSON(v any) string {
 	return string(b)
 }
 
-// SaveState persists a monitor's runtime state.
+// SaveState is the trusted default-tenant engine compatibility adapter.
 func (s *Store) SaveState(r engine.StateRecord) {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
-	_, err := s.core.Exec(`INSERT INTO monitor_state(name,state,status,reason,detail,latency_ms,last_check,last_change,incident_id,def_hash)
-		VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(name) DO UPDATE SET state=excluded.state,status=excluded.status,reason=excluded.reason,
-		detail=excluded.detail,latency_ms=excluded.latency_ms,last_check=excluded.last_check,last_change=excluded.last_change,
-		incident_id=excluded.incident_id,def_hash=excluded.def_hash`,
-		r.Name, mustJSON(r.State), r.Status, r.Reason, r.Detail, r.LatencyMS, ms(r.LastCheck), ms(r.LastChange), r.IncidentID, r.DefHash)
+	var foreign int
+	err := s.core.QueryRow(`SELECT COUNT(*) FROM monitors WHERE tenant_id=? AND name=? AND retired_at IS NULL AND workspace_id NOT IN (SELECT id FROM workspaces WHERE tenant_id=? AND is_default=1)`, s.defaultTenant, r.Name, s.defaultTenant).Scan(&foreign)
+	if err == nil && foreign != 0 {
+		err = ErrTenantAccess
+	}
+	if err == nil {
+		err = saveMonitorState(s.core, s.defaultTenant, r)
+	}
 	s.logErr("save state", err)
 }
 
-// DeleteState forgets a monitor.
+// DeleteState forgets only a default-tenant monitor state.
 func (s *Store) DeleteState(name string) {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
-	_, err := s.core.Exec(`DELETE FROM monitor_state WHERE name=?`, name)
+	_, err := s.core.Exec(`DELETE FROM monitor_state WHERE workspace_id IN (SELECT id FROM workspaces WHERE is_default=1) AND tenant_id=(SELECT id FROM tenants WHERE is_default=1) AND name=?`, name)
 	s.logErr("delete state", err)
 }
 
-// States loads every persisted monitor state (for engine.Restore).
+// States restores only default-tenant state for the legacy engine.
 func (s *Store) States() ([]engine.StateRecord, error) {
-	rows, err := s.core.Query(`SELECT name,state,status,reason,detail,latency_ms,last_check,last_change,incident_id,def_hash FROM monitor_state`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var out []engine.StateRecord
-	for rows.Next() {
-		var r engine.StateRecord
-		var st string
-		var reason, detail, hash sql.NullString
-		var lat sql.NullFloat64
-		var lc, lch, inc sql.NullInt64
-		if err := rows.Scan(&r.Name, &st, &r.Status, &reason, &detail, &lat, &lc, &lch, &inc, &hash); err != nil {
-			return nil, err
-		}
-		_ = json.Unmarshal([]byte(st), &r.State)
-		r.Reason, r.Detail, r.DefHash, r.LatencyMS = reason.String, detail.String, hash.String, lat.Float64
-		r.LastCheck, r.LastChange, r.IncidentID = fromMS(lc.Int64), fromMS(lch.Int64), inc.Int64
-		out = append(out, r)
-	}
-	return out, rows.Err()
+	rows, err := s.core.Query(`SELECT name,state,status,reason,detail,latency_ms,last_check,last_change,incident_id,def_hash FROM monitor_state WHERE workspace_id IN (SELECT id FROM workspaces WHERE is_default=1) AND tenant_id=(SELECT id FROM tenants WHERE is_default=1)`)
+	return scanMonitorStates(rows, err)
 }
 
 // SaveIncident inserts (assigning inc.ID) or updates an incident.
@@ -242,6 +226,7 @@ type evidenceItem struct {
 }
 
 type item struct {
+	mid      int64 // private pre-authorized stable ID; zero is legacy default-only resolution
 	verdict  *engine.VerdictRecord
 	delivery *engine.DeliveryRecord
 	evidence *evidenceItem
@@ -461,10 +446,15 @@ func (b *batcher) flushHistory(items []item) bool {
 		if it.verdict == nil {
 			continue
 		}
-		mid, err := s.idFor(it.verdict.Monitor)
+		mid := it.mid
+		var err error
+		if mid == 0 {
+			mid, err = s.idFor(it.verdict.Monitor)
+		}
 		if err != nil {
 			s.logErr("monitor id", err)
-			continue
+			s.writes.fail(err)
+			return false
 		}
 		vs = append(vs, resolved{it.verdict, mid})
 	}
@@ -478,15 +468,31 @@ func (b *batcher) flushHistory(items []item) bool {
 		return false
 	}
 	defer tx.Rollback()
-	ins, _ := tx.Prepare(`INSERT INTO rounds(mid,at,st,flags,lat,reason,nodes) VALUES(?,?,?,?,?,?,?)`)
+	ins, err := tx.Prepare(`INSERT INTO rounds(mid,at,st,flags,lat,reason,nodes) VALUES(?,?,?,?,?,?,?)`)
+	if err != nil {
+		s.writes.fail(err)
+		return false
+	}
 	w := &aggWriter{}
 	for _, table := range []string{"agg5m", "hourly"} {
-		st, _ := tx.Prepare(`INSERT INTO ` + table + `(mid,t,up_s,down_s,ex_s,deg_s,lat_sum,lat_n,lat_max) VALUES(?,?,?,?,?,?,?,?,?)
+		st, err := tx.Prepare(`INSERT INTO ` + table + `(mid,t,up_s,down_s,ex_s,deg_s,lat_sum,lat_n,lat_max) VALUES(?,?,?,?,?,?,?,?,?)
 			ON CONFLICT(mid,t) DO UPDATE SET up_s=up_s+excluded.up_s, down_s=down_s+excluded.down_s, ex_s=ex_s+excluded.ex_s,
 			deg_s=deg_s+excluded.deg_s, lat_sum=lat_sum+excluded.lat_sum, lat_n=lat_n+excluded.lat_n, lat_max=max(lat_max, excluded.lat_max)`)
+		if err != nil {
+			s.writes.fail(err)
+			return false
+		}
 		w.stmts = append(w.stmts, st)
 	}
 	w.log = s.logErr
+	// Stage only affected aggregation entries; publish after the SQL commit.
+	staged := &batcher{s: s, last: map[int64]lastVerdict{}}
+	for _, r := range vs {
+		if prev, ok := b.last[r.mid]; ok {
+			prev.soft = append([]softSpan(nil), prev.soft...)
+			staged.last[r.mid] = prev
+		}
+	}
 	for _, r := range vs {
 		v := r.v
 		var fails, reason, lat any
@@ -512,20 +518,29 @@ func (b *batcher) flushHistory(items []item) bool {
 		}
 		if _, err := ins.Exec(r.mid, ms(v.At), code, flags, lat, reason, fails); err != nil {
 			s.logErr("insert round", err)
-			continue
+			s.writes.fail(err)
+			return false
 		}
-		b.aggregate(w, r.mid, v)
+		staged.aggregate(w, r.mid, v)
+		if w.err != nil {
+			s.writes.fail(w.err)
+			return false
+		}
 	}
 	if err := tx.Commit(); err != nil {
 		s.logErr("history commit", err)
 		s.writes.fail(err)
 		return false
 	}
+	for id, last := range staged.last {
+		b.last[id] = last
+	}
 	return true
 }
 
 // aggWriter adds seconds and latency to the 5-minute and hourly buckets.
 type aggWriter struct {
+	err   error
 	stmts []*sql.Stmt // agg5m, hourly
 	log   func(string, error)
 }
@@ -540,6 +555,9 @@ func (w *aggWriter) add(mid int64, at time.Time, up, down, ex, deg, lat float64)
 	for i, st := range w.stmts {
 		_, err := st.Exec(mid, at.Truncate(bucketWidths[i]).Unix(), up, down, ex, deg, lat, n, lat)
 		w.log("aggregate", err)
+		if err != nil && w.err == nil {
+			w.err = err
+		}
 	}
 }
 

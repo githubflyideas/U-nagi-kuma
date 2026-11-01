@@ -1,5 +1,5 @@
 // Application shell: session, navigation and routing.
-import { html, render, useState, useEffect } from './lib.js';
+import { html, render, useState, useEffect, useLayoutEffect, useRef } from './lib.js';
 import { t, tn, setLang, detectLang, loadLanguages, langList, currentLang, fmtTime, detailText } from './i18n.js';
 import { get, post, del, setCSRF, onUnauthorized } from './api.js';
 import { startLive, stopLive, onConnection } from './live.js';
@@ -16,6 +16,7 @@ import { Notices } from './views/announce.js';
 import { OnCall } from './views/oncall.js';
 import { Settings } from './views/settings.js';
 import { Nodes } from './views/nodes.js';
+import { Zones } from './views/zones.js';
 import { Expiry } from './views/expiry.js';
 import { IncidentReport } from './views/incident.js';
 import { DrawerHost } from './views/drawer.js';
@@ -24,7 +25,7 @@ import { PaletteHost, openPalette } from './views/palette.js';
 // The console is dark unless the user picks light or the system setting.
 function applyTheme(v) {
   v = v || 'dark';
-  if (v === 'light' || v === 'dark') document.documentElement.dataset.theme = v;
+  if (['light', 'dark', 'midnight', 'paper'].includes(v)) document.documentElement.dataset.theme = v;
   else delete document.documentElement.dataset.theme;
 }
 
@@ -54,18 +55,24 @@ function Setup({ local, onDone, onLang }) {
   const [f, setF] = useState({ username: 'admin', password: '', confirm: '', token: '' });
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const submitting = useRef(false);
   const submit = async (e) => {
     e.preventDefault();
+    if (submitting.current) return;
     if (f.password.length < 8) return setErr(t('ui.setup.short'));
     if (f.password !== f.confirm) return setErr(t('ui.setup.mismatch'));
+    submitting.current = true;
+    setErr('');
     setBusy(true);
     try {
       const r = await post('/setup', { username: f.username, password: f.password, token: f.token, lang: currentLang(), timezone: localZone() });
       onDone(r);
     } catch (e2) {
       setErr(errText(e2));
+    } finally {
+      submitting.current = false;
+      setBusy(false);
     }
-    setBusy(false);
   };
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   return html`<div class="auth"><div>
@@ -89,15 +96,21 @@ function Login({ onDone, onLang }) {
   const [f, setF] = useState({ username: '', password: '' });
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const submitting = useRef(false);
   const submit = async (e) => {
     e.preventDefault();
+    if (submitting.current) return;
+    submitting.current = true;
+    setErr('');
     setBusy(true);
     try {
       onDone(await post('/session', f));
     } catch (e2) {
       setErr(e2.status === 401 ? t('ui.login.wrong') : errText(e2));
+    } finally {
+      submitting.current = false;
+      setBusy(false);
     }
-    setBusy(false);
   };
   return html`<div class="auth"><div>
     <div class="logo"><${Logo} /> Unagikuma</div>
@@ -125,6 +138,7 @@ const NAV = [
   ['/oncall', 'ui.nav.oncall', '☎'],
   ['/notices', 'ui.nav.notices', '⚑'],
   ['/config', 'ui.nav.config', '{}'],
+  ['/zones', 'ui.zone.title', '▧'],
   ['/nodes', 'ui.nav.nodes', '⌖'],
   ['/settings', 'ui.nav.settings', '⚙'],
 ];
@@ -134,6 +148,52 @@ const OLD_ALERT_TABS = { changes: 'changes', notices: 'pages', report: 'report' 
 function Shell({ user, onLogout, onLang }) {
   const route = useRoute();
   const [open, setOpen] = useState(false);
+  const [mobile, setMobile] = useState(() => matchMedia('(max-width: 860px)').matches);
+  const side = useRef(null);
+  const main = useRef(null);
+  const sideToggle = useRef(null);
+  useLayoutEffect(() => {
+    const media = matchMedia('(max-width: 860px)');
+    const change = () => { setMobile(media.matches); setOpen(false); };
+    media.addEventListener('change', change);
+    return () => media.removeEventListener('change', change);
+  }, []);
+  useLayoutEffect(() => {
+    side.current.inert = mobile && !open;
+    main.current.inert = mobile && open;
+    if (!mobile || !open) return;
+    const panel = side.current;
+    const content = main.current;
+    const opener = sideToggle.current;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const controls = () => Array.from(panel.querySelectorAll('a[href],button,select,input,[tabindex]'))
+      .filter(el => !el.disabled && el.tabIndex >= 0 && el.getClientRects().length);
+    panel.querySelector('.side-close').focus();
+    const key = e => {
+      if (e.key === 'Escape') { e.preventDefault(); setOpen(false); }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') setOpen(false);
+      if (e.key !== 'Tab') return;
+      const list = controls();
+      const first = list[0], last = list[list.length - 1];
+      if (e.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) {
+        e.preventDefault(); last?.focus();
+      } else if (!e.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) {
+        e.preventDefault(); first?.focus();
+      }
+    };
+    const palette = () => setOpen(false);
+    document.addEventListener('keydown', key);
+    addEventListener('unagikuma:palette', palette);
+    return () => {
+      document.removeEventListener('keydown', key);
+      removeEventListener('unagikuma:palette', palette);
+      document.body.style.overflow = overflow;
+      content.inert = false;
+      // Don't steal focus from a command palette opened by its shortcut.
+      if (panel.contains(document.activeElement) || document.activeElement === document.body) opener?.focus();
+    };
+  }, [mobile, open]);
   const [live, setLive] = useState(false);
   const [theme, setTheme] = useState(storage('unagikuma.theme') || 'dark');
   const [mini, setMini] = useState(storage('unagikuma.side') === 'mini');
@@ -176,6 +236,7 @@ function Shell({ user, onLogout, onLang }) {
     case 'notices': view = html`<${Notices} tab=${p[1] || 'changes'} />`; break;
     case 'config': view = html`<${ConfigView} tab=${p[1] || 'edit'} />`; break;
     case 'settings': view = html`<${Settings} tab=${p[1] || 'general'} user=${user} />`; break;
+    case 'zones': view = html`<${Zones} />`; break;
     case 'nodes': view = html`<div class="page"><${Nodes} /></div>`; break;
     default: view = html`<div class="page"><div class="empty"><b>404</b></div></div>`;
   }
@@ -184,8 +245,13 @@ function Shell({ user, onLogout, onLang }) {
   // get their own place in the sidebar.
   const nav = NAV.filter(([path]) => path !== '/nodes' || (ov.data && ov.data.layout === 'cluster'));
   return html`<div class=${'shell' + (mini ? ' mini' : '')}>
-    <aside class=${'side' + (open ? ' open' : '')}>
-      <a class="brand" href="#/"><${Logo} /><div>Unagikuma</div></a>
+    ${mobile && open && html`<div class="side-backdrop" aria-hidden="true" onClick=${() => setOpen(false)}></div>`}
+    <aside ref=${side} id="shell-navigation" class=${'side' + (open ? ' open' : '')}
+      onClick=${e => { if (e.target.closest('a[href]')) setOpen(false); }}
+      role=${mobile && open ? 'dialog' : undefined} aria-modal=${mobile && open ? 'true' : undefined}
+      aria-label=${t('ui.side.expand')} aria-hidden=${mobile && !open ? 'true' : undefined}>
+      <button type="button" class="btn ghost side-close" onClick=${() => setOpen(false)} aria-label=${t('ui.close')}>✕</button>
+      <a class="brand" href="#/" aria-label=${ov.data && ov.data.version ? 'Unagikuma ' + ov.data.version : 'Unagikuma'}><${Logo} /><div><span class="brand-name">Unagikuma</span>${ov.data && ov.data.version && html`<span class="brand-version" dir="ltr">${ov.data.version}</span>`}</div></a>
       <nav class="nav">
         ${nav.map(([path, key, ico]) => html`<a href=${href(path)} class=${first === path ? 'on' : ''}>
           <span class="ico" title=${mini ? t(key) : ''}>${ico}</span><span class="lbl">${t(key)}</span>
@@ -201,14 +267,16 @@ function Shell({ user, onLogout, onLang }) {
           <option value="auto">${t('ui.theme.auto')}</option>
           <option value="light">${t('ui.theme.light')}</option>
           <option value="dark">${t('ui.theme.dark')}</option>
+          <option value="midnight">${t('ui.theme.midnight')}</option>
+          <option value="paper">${t('ui.theme.paper')}</option>
         </select>
         <div class="row"><span class="ellipsis">${user}</span><div class="spacer"></div><button class="btn sm ghost" onClick=${onLogout}>${t('ui.logout')}</button></div>
         ${ov.data && ov.data.instance && html`<div class="host ellipsis" title=${ov.data.instance}>${ov.data.instance}</div>`}
       </div>
     </aside>
-    <div class="main">
+    <div class="main" ref=${main}>
       <header class="top">
-        <button class="btn sm" onClick=${toggleSide} aria-label=${mini ? t('ui.side.expand') : t('ui.side.collapse')} title=${mini ? t('ui.side.expand') : t('ui.side.collapse')}>☰</button>
+        <button ref=${sideToggle} class="btn sm" onClick=${toggleSide} aria-controls="shell-navigation" aria-expanded=${mobile ? open : !mini} aria-label=${mobile || mini ? t('ui.side.expand') : t('ui.side.collapse')} title=${mobile || mini ? t('ui.side.expand') : t('ui.side.collapse')}>☰</button>
         <div class="crumbs">${t((NAV.find(n => n[0] === (first === '/expiry' ? '/monitors' : first)) || NAV[0])[1])}</div>
         ${ov.data && html`<${Verdict} ov=${ov.data} />`}
         <div class="spacer"></div>

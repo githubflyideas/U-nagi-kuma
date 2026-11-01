@@ -8,7 +8,36 @@ Une supervision auto-hébergée et simple : sachez dès qu’un site ou un serve
 
 [English](README.md) · [中文](README.zh.md) · [हिन्दी](README.hi.md) · [Español](README.es.md) · [العربية](README.ar.md) · **Français** · [বাংলা](README.bn.md) · [Português](README.pt.md) · [Русский](README.ru.md) · [Bahasa Indonesia](README.id.md) · [اردو](README.ur.md) · [Deutsch](README.de.md) · [日本語](README.ja.md) · [Tiếng Việt](README.vi.md) · [한국어](README.ko.md)
 
-![Une courte visite de l’interface web d’Unagikuma](docs/images/tour.gif)
+## Interface actuelle
+
+> Nouvelle compilation du travail en cours non publié, avec un véritable serveur local et des données de démonstration jetables. Les notifications restent dans les journaux locaux : ni incidents de production, ni captures de la version finale.
+
+![Tableau de bord Midnight](docs/images/current/dashboard-midnight.png)
+
+<details>
+<summary>Thèmes, canaux d’alerte, astreintes, rapport quotidien et mobile</summary>
+
+**Tableau de bord Paper**
+
+![Tableau de bord Paper](docs/images/current/dashboard-paper.png)
+
+**Canaux d’alerte**
+
+![Canaux d’alerte](docs/images/current/alerts-midnight.png)
+
+**Calendrier des astreintes**
+
+![Calendrier des astreintes](docs/images/current/oncall-paper.png)
+
+**Rapport quotidien : état actuel, pas un historique sur 24 heures**
+
+![Rapport quotidien : état actuel, pas un historique sur 24 heures](docs/images/current/daily-report-midnight.png)
+
+**Rapport mobile**
+
+<img src="docs/images/current/mobile-paper.png" alt="Rapport mobile" width="390">
+
+</details>
 
 ## Pourquoi Unagikuma
 

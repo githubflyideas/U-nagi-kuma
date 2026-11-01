@@ -87,6 +87,7 @@ func contains(list []string, s string) bool {
 // finish fills in what the CLI, the API and the web UI read: the block of
 // records, the counts and the notes.
 func (r *Result) finish() {
+	r.Blocked = r.ActivationError() != nil
 	r.Records = nil
 	for i := range r.sections {
 		for j := range r.sections[i].recs {

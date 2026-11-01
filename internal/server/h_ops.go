@@ -79,7 +79,7 @@ func (s *Server) overview(w http.ResponseWriter, r *http.Request) (any, error) {
 		AvgMS       float64  `json:"avg_ms"`
 		LastError   string   `json:"last_error,omitempty"`
 	}
-	cfg := s.app.Config().Config
+	cfg := s.app.RuntimeConfig()
 	stats := map[string]*ch{}
 	var chans []*ch
 	for _, c := range cfg.Channels {
@@ -167,7 +167,7 @@ func (s *Server) overview(w http.ResponseWriter, r *http.Request) (any, error) {
 		}
 	}
 	return map[string]any{
-		"instance": s.app.Instance(), "serial": ov.Serial, "layout": layout, "counts": counts, "unhandled": ov.Unhandled,
+		"instance": s.app.Instance(), "version": s.app.Version(), "serial": ov.Serial, "layout": layout, "counts": counts, "unhandled": ov.Unhandled,
 		"degraded": ov.Degraded, "value_week": week, "health": health, "channels": chans, "expiring": expiring,
 		"open_system": ov.OpenSystem, "pending_notifications": ov.PendingIntents, "banner": s.app.Banner(),
 		"alerting_configured": alerting, "nodes": nodes, "paths": paths, "tactical": s.tactical(), "script_problems": s.scriptCount(),

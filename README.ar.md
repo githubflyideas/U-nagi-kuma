@@ -12,7 +12,36 @@
 
 [English](README.md) · [中文](README.zh.md) · [हिन्दी](README.hi.md) · [Español](README.es.md) · **العربية** · [Français](README.fr.md) · [বাংলা](README.bn.md) · [Português](README.pt.md) · [Русский](README.ru.md) · [Bahasa Indonesia](README.id.md) · [اردو](README.ur.md) · [Deutsch](README.de.md) · [日本語](README.ja.md) · [Tiếng Việt](README.vi.md) · [한국어](README.ko.md)
 
-![جولة قصيرة في واجهة Unagikuma](docs/images/tour.gif)
+## الواجهة الحالية
+
+> بناء جديد من شجرة العمل غير المنشورة، بخادم محلي حقيقي وبيانات توضيحية مؤقتة. تُكتب الإشعارات في السجل المحلي فقط؛ ليست حوادث إنتاج فعلية ولا صور الإصدار النهائي.
+
+![لوحة Midnight](docs/images/current/dashboard-midnight.png)
+
+<details>
+<summary>السمات وقنوات التنبيه والمناوبات والتقرير اليومي وعرض الهاتف</summary>
+
+**لوحة Paper**
+
+![لوحة Paper](docs/images/current/dashboard-paper.png)
+
+**قنوات التنبيه**
+
+![قنوات التنبيه](docs/images/current/alerts-midnight.png)
+
+**تقويم المناوبات**
+
+![تقويم المناوبات](docs/images/current/oncall-paper.png)
+
+**التقرير اليومي: لقطة للحالة الحالية، وليس سجل آخر 24 ساعة**
+
+![التقرير اليومي: لقطة للحالة الحالية، وليس سجل آخر 24 ساعة](docs/images/current/daily-report-midnight.png)
+
+**التقرير على الهاتف**
+
+<img src="docs/images/current/mobile-paper.png" alt="التقرير على الهاتف" width="390">
+
+</details>
 
 <div dir="rtl">
 

@@ -2,6 +2,9 @@ package server
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"net/http"
 	"runtime"
@@ -10,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/githubflyideas/unagikuma/internal/app"
 	"github.com/githubflyideas/unagikuma/internal/backup"
 	"github.com/githubflyideas/unagikuma/internal/config"
 	"github.com/githubflyideas/unagikuma/internal/directory"
@@ -107,16 +111,24 @@ func (s *Server) channelSave(w http.ResponseWriter, r *http.Request) (any, error
 	}
 	sort.Strings(keys)
 	var opts []config.Opt
+	var staged []string
 	for _, k := range keys {
 		v := req.Opts[k]
 		switch {
 		case v == "***" && existing != nil:
 			v = existing.Opts[k] // unchanged masked value
 		case v != "" && !strings.Contains(v, "${") && (isSecretKey(k) || (k == "url" && kind != "webhook")):
-			name := "ch_" + req.Name + "_" + strings.ReplaceAll(k, "-", "_")
+			// Never overwrite a credential referenced by the live config:
+			// validation or If-Match may reject this edit after secrets are staged.
+			var nonce [16]byte
+			if _, err := rand.Read(nonce[:]); err != nil {
+				return nil, err
+			}
+			name := "ch_" + req.Name + "_" + strings.ReplaceAll(k, "-", "_") + "_" + hex.EncodeToString(nonce[:])
 			if err := s.app.SecretStore().Put(name, v, []string{kind}); err != nil {
 				return nil, err
 			}
+			staged = append(staged, name)
 			v = "${secret:" + name + "}"
 		}
 		if v != "" {
@@ -126,6 +138,18 @@ func (s *Server) channelSave(w http.ResponseWriter, r *http.Request) (any, error
 	spec := config.RecordSpec{Name: req.Name, Type: "CHANNEL", Target: kind, Opts: opts}
 	st, err := s.app.EditConfig(authOf(r).user, req.Message, ifMatch(r, spec.Name, func(f *config.File) error { return f.UpsertRecord(spec) }))
 	if err != nil {
+		// These failures are guaranteed to precede config publication.
+		// Other errors may occur after publication (e.g. snapshot failure),
+		// so retain their staged credentials rather than breaking references.
+		var invalid *app.InvalidError
+		var stale errPrecondition
+		if errors.As(err, &invalid) || errors.As(err, &stale) || errors.Is(err, app.ErrConflict) {
+			for _, name := range staged {
+				if cleanupErr := s.app.SecretStore().Delete(name); cleanupErr != nil {
+					s.log.Warn("cannot remove staged channel secret", "err", cleanupErr)
+				}
+			}
+		}
 		return nil, s.configError(err)
 	}
 	return s.savedRecord(st, spec.Name), nil
@@ -167,16 +191,29 @@ func (s *Server) channelTest(w http.ResponseWriter, r *http.Request) (any, error
 		}
 	}
 	resolve := s.app.Resolver()
+	hasReferences := false
 	for k, v := range ch.Opts {
+		hasReferences = hasReferences || strings.Contains(v, "${")
 		rv, err := resolve(v)
 		if err != nil {
-			return nil, Errorf(http.StatusBadRequest, CodeInvalid, "%v", err)
+			return nil, Errorf(http.StatusBadRequest, CodeInvalid, "cannot resolve channel option references")
 		}
 		ch.Opts[k] = rv
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), s.app.Config().Config.Tunables.Duration("notify.channel-timeout"))
 	defer cancel()
-	return s.app.Engine().TestChannel(ctx, ch), nil
+	att := s.app.Engine().TestChannel(ctx, ch)
+	// References can appear in any option, not just credential fields.
+	// Provider diagnostics can echo transformed or partial values, so do
+	// not return them when testing resolved secrets or environment values.
+	if hasReferences {
+		if att.Error != "" {
+			att.Error = "channel test failed; check channel settings and provider connectivity"
+		}
+		att.Response = ""
+		att.Bounces = nil
+	}
+	return att, nil
 }
 
 func (s *Server) policies(w http.ResponseWriter, r *http.Request) (any, error) {

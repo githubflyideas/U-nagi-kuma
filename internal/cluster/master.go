@@ -394,13 +394,14 @@ type peer struct {
 	closed   chan struct{}
 	once     sync.Once
 
-	mu       sync.Mutex
-	status   engine.NodeStatus
-	caps     map[string]bool
-	pending  *AgentConfig // latest config not yet written
-	sentHash string       // hash of the last config queued
-	seq      uint64
-	pings    map[uint64]time.Time
+	mu         sync.Mutex
+	status     engine.NodeStatus
+	caps       map[string]bool
+	pending    *AgentConfig // latest config not yet written
+	sentHash   string       // hash of the last config queued
+	sentSerial uint32       // serial paired with sentHash
+	seq        uint64
+	pings      map[uint64]time.Time
 }
 
 func (p *peer) send(typ string, v any) bool {
@@ -427,6 +428,7 @@ func (p *peer) setConfig(cfg *AgentConfig) {
 	hash := cfg.Hash
 	cfg, skipped := p.supported(cfg)
 	p.pending, p.sentHash = cfg, hash
+	p.sentSerial = cfg.Serial
 	p.status.Unsupported = skipped
 	p.mu.Unlock()
 	if len(skipped) > 0 {
@@ -606,7 +608,13 @@ func (p *peer) reader(r *bufio.Reader, maxMsg int) error {
 				return err
 			}
 			p.mu.Lock()
-			p.status.Serial, p.status.Health, p.status.Scripts = st.Serial, st.Health, st.Scripts
+			// A serial alone is not an acknowledgement of the configuration
+			// we sent. Keep health reports, but mark mismatched content unsynced.
+			p.status.Serial = 0
+			if st.Hash == p.sentHash && st.Serial == p.sentSerial {
+				p.status.Serial = st.Serial
+			}
+			p.status.Health, p.status.Scripts = st.Health, st.Scripts
 			p.mu.Unlock()
 			p.report()
 		case msgPong:

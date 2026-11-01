@@ -1,0 +1,113 @@
+{
+  "capturedAt": "2026-10-31T01:12:09.427Z",
+  "sourceRevision": "9e7b8c1d856b11bfb5541134ef8230875986fa27",
+  "sourceDirty": true,
+  "sourceNote": "Unreleased current working-tree UI; not a frozen final-release build. Zone integration ongoing.",
+  "trackedProductDiffSha256": "8ef4cec5d857bb7511f780b9d73f51e68556f50a67e223237bdc83e1522484c9",
+  "trackedProductUnchangedDuringBuild": true,
+  "buildInvocation": "CGO_ENABLED=0 go build -p 1 -trimpath -o <disposable-scratch>/unagikuma.exe ./cmd/unagikuma",
+  "versionOverride": false,
+  "binarySha256": "4df9e587e76e06a0661b14864a6d2e312ae6327c73fca7c421242b046768791c",
+  "runtimeURLType": "loopback HTTP (127.0.0.1, ephemeral port)",
+  "data": "Disposable illustrative demo; real loopback HTTP probes, intentional 503 and passive PUSH; no production data",
+  "notifications": "Local log channels only; automatic daily report disabled",
+  "reportVerified": {
+    "services": 4,
+    "issues": 1,
+    "semantics": "current_snapshot"
+  },
+  "images": [
+    {
+      "file": "dashboard-midnight.png",
+      "route": "#/",
+      "theme": "midnight",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "dimensions": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bytes": 110775,
+      "sha256": "63e9db727d13963eb79a078ce187392b919daabceb3c96d63b05b8f713cc5d05"
+    },
+    {
+      "file": "dashboard-paper.png",
+      "route": "#/",
+      "theme": "paper",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "dimensions": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bytes": 107001,
+      "sha256": "ba45e99ad834c7ba4af319fdd53ba6506df3b9f86c8d5bf422a5c5aba20ef4e1"
+    },
+    {
+      "file": "alerts-midnight.png",
+      "route": "#/alerts/channels",
+      "theme": "midnight",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "dimensions": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bytes": 102350,
+      "sha256": "826531e911b8f672e77cb2ace95139de667f4ef6ef86734e000c7d741131108c"
+    },
+    {
+      "file": "oncall-paper.png",
+      "route": "#/oncall",
+      "theme": "paper",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "dimensions": {
+        "width": 1440,
+        "height": 1755
+      },
+      "bytes": 201198,
+      "sha256": "cacb04595270942265882855b05474bbd1e078eb38f8e5117ceaa340d9d5f5ec"
+    },
+    {
+      "file": "daily-report-midnight.png",
+      "route": "#/notices/report",
+      "theme": "midnight",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "dimensions": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bytes": 88950,
+      "sha256": "8b57cf8d36de69a804299cff4e4a966ba845a0463dc2ce213034d3cfdaf5a15b"
+    },
+    {
+      "file": "mobile-paper.png",
+      "route": "#/notices/report",
+      "theme": "paper",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "dimensions": {
+        "width": 390,
+        "height": 1084
+      },
+      "bytes": 53940,
+      "sha256": "a6f1232e6644aeb48f99c50bad2160e16be3cac0c0d38076b1ee2b7711f061fe"
+    }
+  ],
+  "errors": [],
+  "optimization": "Lossless PNG compression only; original dimensions and pixels preserved"
+}

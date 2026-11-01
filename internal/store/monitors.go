@@ -18,24 +18,27 @@ type MonitorDef struct {
 }
 
 type monitorIDs struct {
-	mu      sync.Mutex
+	mu       sync.Mutex
+	byTenant map[TenantID]*monitorCache
+}
+
+type monitorCache struct {
 	byName  map[string]int64
 	aliases map[string]string // old name → new name, for rounds still queued under the old one
 }
 
-// MonitorID returns the id of an active monitor (0 when unknown).
+// MonitorID is a trusted default-tenant compatibility lookup (0 when unknown).
 func (s *Store) MonitorID(name string) int64 {
 	s.ids.mu.Lock()
 	defer s.ids.mu.Unlock()
-	return s.ids.byName[s.ids.resolve(name)]
+	return s.ids.byTenant[s.defaultTenant].byName[s.ids.byTenant[s.defaultTenant].resolve(name)]
 }
 
-// MonitorName returns the name of the active monitor with this id ("" when
-// none is).
+// MonitorName resolves only active default-tenant IDs ("" for foreign/unknown).
 func (s *Store) MonitorName(id int64) string {
 	s.ids.mu.Lock()
 	defer s.ids.mu.Unlock()
-	for name, v := range s.ids.byName {
+	for name, v := range s.ids.byTenant[s.defaultTenant].byName {
 		if v == id {
 			return name
 		}
@@ -43,18 +46,18 @@ func (s *Store) MonitorName(id int64) string {
 	return ""
 }
 
-// MonitorIDs returns the ids of all active monitors.
+// MonitorIDs returns only active default-tenant monitor IDs.
 func (s *Store) MonitorIDs() map[string]int64 {
 	s.ids.mu.Lock()
 	defer s.ids.mu.Unlock()
-	out := make(map[string]int64, len(s.ids.byName))
-	for k, v := range s.ids.byName {
+	out := make(map[string]int64, len(s.ids.byTenant[s.defaultTenant].byName))
+	for k, v := range s.ids.byTenant[s.defaultTenant].byName {
 		out[k] = v
 	}
 	return out
 }
 
-func (m *monitorIDs) resolve(name string) string {
+func (m *monitorCache) resolve(name string) string {
 	for i := 0; i < 8; i++ { // chains of renames; bounded against loops
 		next, ok := m.aliases[name]
 		if !ok {
@@ -66,19 +69,30 @@ func (m *monitorIDs) resolve(name string) string {
 }
 
 func (s *Store) loadMonitorIDs() error {
-	rows, err := s.core.Query(`SELECT id, name FROM monitors WHERE retired_at IS NULL`)
+	t, err := s.DefaultTenant()
+	if err != nil {
+		return err
+	}
+	s.defaultTenant = t.ID
+	rows, err := s.core.Query(`SELECT tenant_id,id,name FROM monitors WHERE retired_at IS NULL AND workspace_id IN (SELECT id FROM workspaces WHERE is_default=1)`)
 	if err != nil {
 		return err
 	}
 	defer rows.Close()
-	s.ids.byName, s.ids.aliases = map[string]int64{}, map[string]string{}
+	s.ids.byTenant = map[TenantID]*monitorCache{s.defaultTenant: {byName: map[string]int64{}, aliases: map[string]string{}}}
 	for rows.Next() {
+		var tenant TenantID
 		var id int64
 		var name string
-		if err := rows.Scan(&id, &name); err != nil {
+		if err = rows.Scan(&tenant, &id, &name); err != nil {
 			return err
 		}
-		s.ids.byName[name] = id
+		c := s.ids.byTenant[tenant]
+		if c == nil {
+			c = &monitorCache{byName: map[string]int64{}, aliases: map[string]string{}}
+			s.ids.byTenant[tenant] = c
+		}
+		c.byName[name] = id
 	}
 	return rows.Err()
 }
@@ -87,8 +101,8 @@ func (s *Store) loadMonitorIDs() error {
 // (rounds can arrive before the configuration that names it is synced).
 func (s *Store) idFor(name string) (int64, error) {
 	s.ids.mu.Lock()
-	name = s.ids.resolve(name)
-	id, ok := s.ids.byName[name]
+	name = s.ids.byTenant[s.defaultTenant].resolve(name)
+	id, ok := s.ids.byTenant[s.defaultTenant].byName[name]
 	s.ids.mu.Unlock()
 	if ok {
 		return id, nil
@@ -100,7 +114,7 @@ func (s *Store) idFor(name string) (int64, error) {
 		return 0, err
 	}
 	defer tx.Rollback()
-	id, err = activeOrNew(tx, name, "", ms(s.now()))
+	id, err = activeOrNew(tx, s.defaultTenant, name, "", ms(s.now()))
 	if err != nil {
 		return 0, err
 	}
@@ -108,16 +122,23 @@ func (s *Store) idFor(name string) (int64, error) {
 		return 0, err
 	}
 	s.ids.mu.Lock()
-	s.ids.byName[name] = id
+	s.ids.byTenant[s.defaultTenant].byName[name] = id
 	s.ids.mu.Unlock()
 	return id, nil
 }
 
 // activeOrNew returns the active id of name, reviving a retired one with
 // the same definition, or inserting a new one.
-func activeOrNew(tx *sql.Tx, name, hash string, now int64) (int64, error) {
+func activeOrNew(tx *sql.Tx, tenant TenantID, name, hash string, now int64) (int64, error) {
+	var workspace WorkspaceID
+	if err := tx.QueryRow(`SELECT id FROM workspaces WHERE tenant_id=? AND is_default=1`, tenant).Scan(&workspace); err != nil {
+		return 0, err
+	}
+	return activeOrNewWorkspace(tx, tenant, workspace, name, hash, now)
+}
+func activeOrNewWorkspace(tx *sql.Tx, tenant TenantID, workspace WorkspaceID, name, hash string, now int64) (int64, error) {
 	var id int64
-	err := tx.QueryRow(`SELECT id FROM monitors WHERE name=? AND retired_at IS NULL`, name).Scan(&id)
+	err := tx.QueryRow(`SELECT id FROM monitors WHERE name=? AND retired_at IS NULL AND tenant_id=? AND workspace_id=?`, name, tenant, workspace).Scan(&id)
 	if err == nil {
 		return id, nil
 	}
@@ -125,7 +146,7 @@ func activeOrNew(tx *sql.Tx, name, hash string, now int64) (int64, error) {
 		return 0, err
 	}
 	if hash != "" {
-		err = tx.QueryRow(`SELECT id FROM monitors WHERE name=? AND def_hash=? AND retired_at IS NOT NULL ORDER BY retired_at DESC LIMIT 1`, name, hash).Scan(&id)
+		err = tx.QueryRow(`SELECT id FROM monitors WHERE tenant_id=? AND name=? AND def_hash=? AND workspace_id=? AND retired_at IS NOT NULL ORDER BY retired_at DESC LIMIT 1`, tenant, name, hash, workspace).Scan(&id)
 		if err == nil {
 			_, err = tx.Exec(`UPDATE monitors SET retired_at=NULL WHERE id=?`, id)
 			return id, err
@@ -134,16 +155,30 @@ func activeOrNew(tx *sql.Tx, name, hash string, now int64) (int64, error) {
 			return 0, err
 		}
 	}
-	res, err := tx.Exec(`INSERT INTO monitors(name, def_hash, created_at) VALUES(?,?,?)`, name, hash, now)
+	res, err := tx.Exec(`INSERT INTO monitors(tenant_id,workspace_id,name, def_hash, created_at) VALUES(?,?,?,?,?)`, tenant, workspace, name, hash, now)
 	if err != nil {
 		return 0, err
 	}
 	return res.LastInsertId()
 }
 
-// SyncMonitors makes the active monitors those of the configuration:
+// SyncMonitors is the default-tenant runtime compatibility adapter:
 // new names get an id (or their retired one back), missing ones retire.
 func (s *Store) SyncMonitors(defs []MonitorDef) error {
+	return s.syncMonitors(s.defaultTenant, nil, defs)
+}
+
+func (s *Store) syncMonitors(tenant TenantID, ctx *TenantContext, defs []MonitorDef) error {
+	return s.syncWorkspaceMonitors(tenant, ctx, "", defs)
+}
+func (s *Store) syncWorkspaceMonitors(tenant TenantID, ctx *TenantContext, workspace WorkspaceID, defs []MonitorDef) error {
+	return s.syncWorkspaceMonitorsPublish(tenant, ctx, workspace, defs, nil)
+}
+
+func (s *Store) syncWorkspaceMonitorsPublish(tenant TenantID, ctx *TenantContext, workspace WorkspaceID, defs []MonitorDef, publish func(*sql.Tx) error) error {
+	if (ctx == nil && tenant != s.defaultTenant) || (ctx != nil && ctx.TenantID != tenant) {
+		return ErrTenantAccess
+	}
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
 	tx, err := s.core.Begin()
@@ -151,10 +186,33 @@ func (s *Store) SyncMonitors(defs []MonitorDef) error {
 		return err
 	}
 	defer tx.Rollback()
+	var defaultWorkspace WorkspaceID
+	if err = tx.QueryRow(`SELECT id FROM workspaces WHERE tenant_id=? AND is_default=1`, tenant).Scan(&defaultWorkspace); err != nil {
+		return tenantAccessError(err)
+	}
+	if ctx != nil {
+		if workspace != "" {
+			err = authorizeWorkspace(tx, WorkspaceContext{*ctx, workspace}, true)
+		} else {
+			err = authorizeMonitors(tx, *ctx, true)
+		}
+		if err != nil {
+			return err
+		}
+	} else {
+		if workspace != "" && workspace != defaultWorkspace {
+			return ErrTenantAccess
+		}
+		workspace = defaultWorkspace
+	}
+	newWorkspace := workspace
+	if newWorkspace == "" {
+		newWorkspace = defaultWorkspace
+	}
 	now := ms(s.now())
 	active := map[string]int64{}
 	hashes := map[string]string{}
-	rows, err := tx.Query(`SELECT id, name, def_hash FROM monitors WHERE retired_at IS NULL`)
+	rows, err := tx.Query(`SELECT id, name, def_hash FROM monitors WHERE retired_at IS NULL AND tenant_id=? AND (?='' OR workspace_id=?)`, tenant, workspace, workspace)
 	if err != nil {
 		return err
 	}
@@ -166,6 +224,10 @@ func (s *Store) SyncMonitors(defs []MonitorDef) error {
 			return err
 		}
 		active[name], hashes[name] = id, hash
+	}
+	if err = rows.Err(); err != nil {
+		rows.Close()
+		return err
 	}
 	rows.Close()
 	ids := make(map[string]int64, len(defs))
@@ -180,7 +242,7 @@ func (s *Store) SyncMonitors(defs []MonitorDef) error {
 			delete(active, d.Name)
 			continue
 		}
-		id, err := activeOrNew(tx, d.Name, d.DefHash, now)
+		id, err := activeOrNewWorkspace(tx, tenant, newWorkspace, d.Name, d.DefHash, now)
 		if err != nil {
 			return err
 		}
@@ -191,11 +253,40 @@ func (s *Store) SyncMonitors(defs []MonitorDef) error {
 			return err
 		}
 	}
+	cacheIDs := map[string]int64{}
+	rows, err = tx.Query(`SELECT name,id FROM monitors WHERE tenant_id=? AND workspace_id=? AND retired_at IS NULL`, tenant, defaultWorkspace)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var name string
+		var id int64
+		if err = rows.Scan(&name, &id); err != nil {
+			rows.Close()
+			return err
+		}
+		cacheIDs[name] = id
+	}
+	if err = rows.Err(); err != nil {
+		rows.Close()
+		return err
+	}
+	rows.Close()
+	if publish != nil {
+		if err := publish(tx); err != nil {
+			return err
+		}
+	}
 	if err := tx.Commit(); err != nil {
 		return err
 	}
 	s.ids.mu.Lock()
-	s.ids.byName = ids
+	c := s.ids.byTenant[tenant]
+	if c == nil {
+		c = &monitorCache{aliases: map[string]string{}}
+		s.ids.byTenant[tenant] = c
+	}
+	c.byName = cacheIDs
 	s.ids.mu.Unlock()
 	return nil
 }
@@ -212,12 +303,19 @@ func (s *Store) RenameMonitor(oldName, newName string) error {
 	}
 	defer tx.Rollback()
 	now := ms(s.now())
+	var foreign int
+	if err = tx.QueryRow(`SELECT COUNT(*) FROM monitors WHERE tenant_id=? AND name IN (?,?) AND retired_at IS NULL AND workspace_id NOT IN (SELECT id FROM workspaces WHERE tenant_id=? AND is_default=1)`, s.defaultTenant, oldName, newName, s.defaultTenant).Scan(&foreign); err != nil {
+		return err
+	}
+	if foreign != 0 {
+		return ErrTenantAccess
+	}
 	// A monitor already active under the new name is replaced.
-	if _, err := tx.Exec(`UPDATE monitors SET retired_at=? WHERE name=? AND retired_at IS NULL`, now, newName); err != nil {
+	if _, err := tx.Exec(`UPDATE monitors SET retired_at=? WHERE name=? AND retired_at IS NULL AND tenant_id=?`, now, newName, s.defaultTenant); err != nil {
 		return err
 	}
 	for _, q := range []string{
-		`UPDATE monitors SET name=? WHERE name=? AND retired_at IS NULL`,
+		`UPDATE monitors SET name=? WHERE name=? AND retired_at IS NULL AND tenant_id=(SELECT id FROM tenants WHERE is_default=1)`,
 		`UPDATE incidents SET monitor=? WHERE monitor=?`,
 		`UPDATE events SET monitor=? WHERE monitor=?`,
 		`UPDATE deliveries SET monitor=? WHERE monitor=?`,
@@ -238,22 +336,22 @@ func (s *Store) RenameMonitor(oldName, newName string) error {
 			return err
 		}
 	}
-	if _, err := tx.Exec(`DELETE FROM monitor_state WHERE name=?`, newName); err != nil {
+	if _, err := tx.Exec(`DELETE FROM monitor_state WHERE workspace_id IN (SELECT id FROM workspaces WHERE is_default=1) AND tenant_id=(SELECT id FROM tenants WHERE is_default=1) AND name=?`, newName); err != nil {
 		return err
 	}
-	if _, err := tx.Exec(`UPDATE monitor_state SET name=? WHERE name=?`, newName, oldName); err != nil {
+	if _, err := tx.Exec(`UPDATE monitor_state SET name=? WHERE workspace_id IN (SELECT id FROM workspaces WHERE is_default=1) AND tenant_id=(SELECT id FROM tenants WHERE is_default=1) AND name=?`, newName, oldName); err != nil {
 		return err
 	}
 	if err := tx.Commit(); err != nil {
 		return err
 	}
 	s.ids.mu.Lock()
-	if id, ok := s.ids.byName[oldName]; ok {
-		delete(s.ids.byName, oldName)
-		s.ids.byName[newName] = id
+	if id, ok := s.ids.byTenant[s.defaultTenant].byName[oldName]; ok {
+		delete(s.ids.byTenant[s.defaultTenant].byName, oldName)
+		s.ids.byTenant[s.defaultTenant].byName[newName] = id
 	}
-	s.ids.aliases[oldName] = newName
-	delete(s.ids.aliases, newName)
+	s.ids.byTenant[s.defaultTenant].aliases[oldName] = newName
+	delete(s.ids.byTenant[s.defaultTenant].aliases, newName)
 	s.ids.mu.Unlock()
 	return nil
 }

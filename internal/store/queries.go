@@ -308,8 +308,11 @@ type Uptime struct {
 // UptimeOf computes availability = up / (up + down) over [from, to),
 // prorating the buckets at the start of the window.
 func (s *Store) UptimeOf(monitor string, from, to time.Time) (Uptime, error) {
+	return s.uptimeOfID(s.MonitorID(monitor), from, to)
+}
+
+func (s *Store) uptimeOfID(mid int64, from, to time.Time) (Uptime, error) {
 	var u Uptime
-	mid := s.MonitorID(monitor)
 	if mid == 0 || !to.After(from) {
 		return u, nil
 	}
@@ -348,6 +351,10 @@ var severity = map[string]int{"": 0, "pending": 1, "paused": 1, "maintenance": 1
 // Cells splits [from, to) into n slots for the heartbeat bar: from the
 // rounds while they are kept, from the aggregates beyond.
 func (s *Store) Cells(monitor string, from, to time.Time, n int) ([]Cell, error) {
+	return s.cellsByID(s.MonitorID(monitor), from, to, n)
+}
+
+func (s *Store) cellsByID(mid int64, from, to time.Time, n int) ([]Cell, error) {
 	if n <= 0 || n > 500 || !to.After(from) {
 		return nil, fmt.Errorf("invalid range")
 	}
@@ -356,7 +363,6 @@ func (s *Store) Cells(monitor string, from, to time.Time, n int) ([]Cell, error)
 	for i := range cells {
 		cells[i].T = from.Add(time.Duration(i) * slot)
 	}
-	mid := s.MonitorID(monitor)
 	if mid == 0 {
 		return cells, nil
 	}
@@ -418,8 +424,11 @@ type LatencyPoint struct {
 // Latency returns latency points over [from, to): every round while they
 // are kept, 5-minute or hourly averages beyond.
 func (s *Store) Latency(monitor string, from, to time.Time) ([]LatencyPoint, error) {
+	return s.latencyByID(s.MonitorID(monitor), from, to)
+}
+
+func (s *Store) latencyByID(mid int64, from, to time.Time) ([]LatencyPoint, error) {
 	out := []LatencyPoint{}
-	mid := s.MonitorID(monitor)
 	if mid == 0 {
 		return out, nil
 	}

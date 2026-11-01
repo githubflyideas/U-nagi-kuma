@@ -209,9 +209,10 @@ export function MonitorDetail({ name }) {
         </div>
         <div class="row">
           <button class="btn" onClick=${check}>${t('ui.mon.check_now')}</button>
-          <button class="btn" onClick=${pause}>${row.disabled ? t('ui.mon.resume') : t('ui.mon.pause')}</button>
-          <a class="btn" href=${'#/monitors/' + enc(name) + '/edit'}>${t('ui.edit')}</a>
-          <button class="btn danger" onClick=${remove}>${t('ui.delete')}</button>
+          ${!d.data.readonly && html`<button class="btn" onClick=${pause}>${row.disabled ? t('ui.mon.resume') : t('ui.mon.pause')}</button>
+                    <a class="btn" href=${'#/monitors/' + enc(name) + '/edit'}>${t('ui.edit')}</a>
+                    <button class="btn danger" onClick=${remove}>${t('ui.delete')}</button>`}
+                    ${d.data.readonly && html`<a class="btn" href="#/zones">${t('ui.zone.title')}</a>`}
         </div>
       </div>
       ${status !== 'ok' && status !== 'pending' && (row.reason || row.unknown_reason) && html`<div class=${'banner ' + (status === 'critical' ? 'error' : 'warning')} style=${{ marginTop: '12px' }}>
@@ -241,7 +242,7 @@ export function MonitorDetail({ name }) {
 
     ${row.votes && html`<${Votes} row=${row} />`}
 
-    <${Card} title=${t('ui.mon.history')} actions=${html`<${Seg} value=${range} onChange=${setRange} options=${['1h', '6h', '24h', '7d', '30d'].map(r => [r, r])} />`}>
+    <${Card} title=${t('ui.mon.history')} actions=${html`<${Seg} value=${range} onChange=${setRange} options=${['5m', '15m', '30m', '1h', '6h', '12h', '24h', '7d', '30d'].map(r => [r, r])} />`}>
       <div class="col" style=${{ gap: '14px' }}>
         <${Beats} big cells=${beats.data && beats.data.items[name]} />
         <${LatencyChart} name=${name} range=${range} />

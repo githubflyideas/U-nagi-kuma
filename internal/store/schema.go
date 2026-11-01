@@ -108,6 +108,12 @@ var coreMigrations = []string{
 	CREATE INDEX decisions_incident ON decisions(incident_id);
 	CREATE INDEX decisions_monitor_at ON decisions(monitor, at);
 	CREATE INDEX decisions_at ON decisions(at);`,
+	// Registry only: business data remains in the legacy default instance.
+	tenantFoundationMigration,
+	tenantMonitorMigration,
+	workspaceMigration,
+	workspaceSecretMigration,
+	workspaceConfigMigration,
 }
 
 var historyMigrations = []string{

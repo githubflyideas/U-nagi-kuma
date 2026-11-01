@@ -12,7 +12,36 @@
 
 [English](README.md) · [中文](README.zh.md) · [हिन्दी](README.hi.md) · [Español](README.es.md) · [العربية](README.ar.md) · [Français](README.fr.md) · [বাংলা](README.bn.md) · [Português](README.pt.md) · [Русский](README.ru.md) · [Bahasa Indonesia](README.id.md) · **اردو** · [Deutsch](README.de.md) · [日本語](README.ja.md) · [Tiếng Việt](README.vi.md) · [한국어](README.ko.md)
 
-![Unagikuma کے ویب انٹرفیس کا ایک مختصر جائزہ](docs/images/tour.gif)
+## موجودہ انٹرفیس
+
+> ابھی غیر جاری شدہ ورکنگ سورس سے نئی بلڈ، حقیقی مقامی بیک اینڈ اور عارضی نمائشی ڈیٹا کے ساتھ۔ اطلاعات صرف مقامی لاگ میں جاتی ہیں؛ یہ حقیقی پیداواری واقعات یا حتمی ریلیز کی تصاویر نہیں ہیں۔
+
+![Midnight ڈیش بورڈ](docs/images/current/dashboard-midnight.png)
+
+<details>
+<summary>تھیم، الرٹ چینل، آن کال گردش، روزانہ رپورٹ اور موبائل منظر</summary>
+
+**Paper ڈیش بورڈ**
+
+![Paper ڈیش بورڈ](docs/images/current/dashboard-paper.png)
+
+**الرٹ چینل**
+
+![الرٹ چینل](docs/images/current/alerts-midnight.png)
+
+**آن کال کیلنڈر**
+
+![آن کال کیلنڈر](docs/images/current/oncall-paper.png)
+
+**روزانہ رپورٹ: موجودہ حالت، گزشتہ 24 گھنٹوں کی تاریخ نہیں**
+
+![روزانہ رپورٹ: موجودہ حالت، گزشتہ 24 گھنٹوں کی تاریخ نہیں](docs/images/current/daily-report-midnight.png)
+
+**موبائل رپورٹ**
+
+<img src="docs/images/current/mobile-paper.png" alt="موبائل رپورٹ" width="390">
+
+</details>
 
 <div dir="rtl">
 

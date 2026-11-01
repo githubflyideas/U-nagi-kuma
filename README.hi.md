@@ -8,7 +8,36 @@
 
 [English](README.md) · [中文](README.zh.md) · **हिन्दी** · [Español](README.es.md) · [العربية](README.ar.md) · [Français](README.fr.md) · [বাংলা](README.bn.md) · [Português](README.pt.md) · [Русский](README.ru.md) · [Bahasa Indonesia](README.id.md) · [اردو](README.ur.md) · [Deutsch](README.de.md) · [日本語](README.ja.md) · [Tiếng Việt](README.vi.md) · [한국어](README.ko.md)
 
-![Unagikuma वेब इंटरफ़ेस की एक छोटी झलक](docs/images/tour.gif)
+## वर्तमान इंटरफ़ेस
+
+> अभी जारी नहीं किए गए कार्यशील स्रोत से नया बिल्ड, वास्तविक स्थानीय बैकएंड और अस्थायी उदाहरण डेटा के साथ। सूचनाएँ केवल स्थानीय लॉग में जाती हैं; ये उत्पादन की घटनाएँ या अंतिम रिलीज़ के स्क्रीनशॉट नहीं हैं।
+
+![Midnight डैशबोर्ड](docs/images/current/dashboard-midnight.png)
+
+<details>
+<summary>थीम, अलर्ट चैनल, ऑन-कॉल रोटेशन, दैनिक रिपोर्ट और मोबाइल दृश्य</summary>
+
+**Paper डैशबोर्ड**
+
+![Paper डैशबोर्ड](docs/images/current/dashboard-paper.png)
+
+**अलर्ट चैनल**
+
+![अलर्ट चैनल](docs/images/current/alerts-midnight.png)
+
+**ऑन-कॉल कैलेंडर**
+
+![ऑन-कॉल कैलेंडर](docs/images/current/oncall-paper.png)
+
+**दैनिक रिपोर्ट: वर्तमान स्थिति, पिछले 24 घंटों का इतिहास नहीं**
+
+![दैनिक रिपोर्ट: वर्तमान स्थिति, पिछले 24 घंटों का इतिहास नहीं](docs/images/current/daily-report-midnight.png)
+
+**मोबाइल रिपोर्ट**
+
+<img src="docs/images/current/mobile-paper.png" alt="मोबाइल रिपोर्ट" width="390">
+
+</details>
 
 ## Unagikuma क्यों
 

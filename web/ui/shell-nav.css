@@ -1,0 +1,22 @@
+/* Navigation-only overrides; load after app.css and other shell styling. */
+.shell .side-close { display: none; }
+.shell .brand > div { min-width: 0; text-align: start; }
+.shell .brand-name, .shell .brand-version { display: block; }
+.shell .brand-version { margin-top: 3px; font-size: 11px; font-weight: 400; letter-spacing: 0; line-height: 1.35; color: var(--muted); overflow-wrap: anywhere; }
+.shell .side, .shell .top { background: var(--panel); backdrop-filter: none; }
+@media (max-width: 860px) {
+  .shell .side { visibility: hidden; height: 100dvh; overflow-y: auto; overscroll-behavior: contain; transition: none; max-width: calc(100vw - 48px); }
+  .shell .side.open { visibility: visible; }
+  .shell .side-close { display: inline-flex; align-self: flex-end; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; flex-shrink: 0; }
+  .side-backdrop { position: fixed; inset: 0; z-index: 19; background: rgb(0 0 0 / .4); }
+  .shell .side .nav a { min-height: 44px; }
+  .shell .top { gap: 8px; }
+  .shell .top .crumbs { flex-shrink: 1; }
+  .shell .top .verdict { max-width: 32vw; overflow: hidden; text-overflow: ellipsis; display: block; padding-inline: 8px; }
+  .shell .top button.search { display: inline-flex; align-items: center; justify-content: center; width: 44px; min-width: 44px; height: 44px; max-width: none; padding: 0; flex-shrink: 0; cursor: pointer; font-size: 24px; }
+  .shell .top button.search .spacer, .shell .top button.search kbd { display: none; }
+  .shell .top > button:first-child { min-width: 44px; min-height: 44px; flex-shrink: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shell .side, .side-backdrop { transition: none; animation: none; }
+}

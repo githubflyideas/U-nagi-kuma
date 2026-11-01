@@ -257,6 +257,9 @@ func (e *Engine) enqueue(in *Intent) bool {
 	in.UpdatedAt = in.CreatedAt
 	if err := e.deps.Sink.SaveIntent(in); err != nil {
 		e.log.Error("cannot persist notification intent", "err", err)
+		// Persistence is an admission boundary, not a best-effort log. A
+		// rejected intent (including an ownership denial) must never send.
+		return false
 	}
 	if len(in.Delivery.Steps) == 0 {
 		in.State = IntentFailed

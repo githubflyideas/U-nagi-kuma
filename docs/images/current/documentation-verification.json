@@ -1,0 +1,11 @@
+{
+  "readmesVerified": 15,
+  "localImageReferencesVerified": 105,
+  "screenshots": 6,
+  "originalPngBytes": 667608,
+  "optimizedPngBytes": 664214,
+  "removedObsoleteTourBytes": 352426,
+  "installCommandBlocksUnchanged": true,
+  "pixelEqualityVerified": true,
+  "visualReview": "All six final captures inspected; desktop overview is a viewport capture; other pages full-page; no horizontal overflow or browser page errors"
+}

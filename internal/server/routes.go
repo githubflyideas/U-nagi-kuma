@@ -47,6 +47,14 @@ func (s *Server) routes() {
 	s.handle("GET /api/v1/events", "read", s.events)
 	s.handle("GET /api/v1/notifications", "read", s.notifications)
 
+	// Zones may carry executable checks and trust bindings: admin only.
+	s.handle("GET /api/v1/zones", "admin", global(s.zonesList))
+	s.handle("POST /api/v1/zones/preview", "admin", global(s.zonesPreview))
+	s.handle("POST /api/v1/zones/import", "admin", global(s.zonesImport))
+	s.handle("POST /api/v1/zones/{id}/apply", "admin", global(s.zonesApply))
+	s.handle("GET /api/v1/zones/{id}/export", "admin", global(s.zonesExport))
+	s.handle("POST /api/v1/zones/{id}/rebind", "admin", global(s.zonesRebind))
+
 	// Configuration.
 	s.handle("GET /api/v1/config", "read", s.configGet)
 	s.handle("PUT /api/v1/config", "write", global(s.configPut))

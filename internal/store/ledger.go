@@ -111,7 +111,10 @@ type RoundRow struct {
 // while raw history is kept), at most limit.
 func (s *Store) Rounds(monitor string, from, to time.Time, limit int) ([]RoundRow, error) {
 	s.Flush()
-	mid := s.MonitorID(monitor)
+	return s.roundsByID(s.MonitorID(monitor), from, to, limit)
+}
+
+func (s *Store) roundsByID(mid int64, from, to time.Time, limit int) ([]RoundRow, error) {
 	if mid == 0 {
 		return nil, nil
 	}

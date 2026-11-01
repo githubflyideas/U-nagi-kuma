@@ -8,7 +8,36 @@
 
 [English](README.md) · **中文** · [हिन्दी](README.hi.md) · [Español](README.es.md) · [العربية](README.ar.md) · [Français](README.fr.md) · [বাংলা](README.bn.md) · [Português](README.pt.md) · [Русский](README.ru.md) · [Bahasa Indonesia](README.id.md) · [اردو](README.ur.md) · [Deutsch](README.de.md) · [日本語](README.ja.md) · [Tiếng Việt](README.vi.md) · [한국어](README.ko.md)
 
-![Unagikuma 网页界面快速导览](docs/images/tour.gif)
+## 当前界面
+
+> 基于尚未发布的当前工作树重新构建，连接真实本地后端，使用隔离、可丢弃的演示数据。通知仅写入本地日志；图中并非生产事故，也不是最终发布版截图。
+
+![午夜蓝总览](docs/images/current/dashboard-midnight.png)
+
+<details>
+<summary>主题、告警渠道、值班轮换、日报与移动端</summary>
+
+**暖纸色总览**
+
+![暖纸色总览](docs/images/current/dashboard-paper.png)
+
+**告警渠道**
+
+![告警渠道](docs/images/current/alerts-midnight.png)
+
+**值班日历**
+
+![值班日历](docs/images/current/oncall-paper.png)
+
+**日报——当前快照，并非过去 24 小时的历史统计**
+
+![日报——当前快照，并非过去 24 小时的历史统计](docs/images/current/daily-report-midnight.png)
+
+**移动端日报**
+
+<img src="docs/images/current/mobile-paper.png" alt="移动端日报" width="390">
+
+</details>
 
 ## 为什么选择 Unagikuma
 
@@ -21,6 +50,11 @@
 - **随你一起成长。** 需要时可以从多个地点同时检测(预览功能)。
 - **轻松迁移。** 可以把 Uptime Kuma 或 Nagios 里的监控搬过来。
 - **说你的语言。** 界面支持 15 种语言。
+- **适合日常运维的控制台。** 提供深色、浅色、午夜蓝和暖纸色主题，并支持小屏幕响应式导航。
+- **告警和值班集中管理。** 搜索通知渠道、查看策略引用，通过日历管理值班轮换、临时代班和换班。
+- **语义明确的日报。** 预览当前服务与主机状态、查看待处理问题，并将报告加入发送队列。它是当前快照，不是过去 24 小时的可用率或历史统计。
+
+> **预览功能边界：** 多地点监测仍为预览功能。Zone 同步、邀请和投票仍在集成中；本 README 不承诺完整 HA、自动共识／故障切换或脚本上传。上方图片展示当前工作树界面，并非已发布的 v1.5.7 成品。
 
 ## 快速上手
 

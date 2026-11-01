@@ -42,6 +42,10 @@ var ErrOnCall = errors.New("on-call")
 
 // AddOverride arranges a stand-in and applies it at once.
 func (a *App) AddOverride(o oncall.Override) (oncall.Override, error) {
+	// The store persists Unix seconds. Validate and return that same
+	// precision so a positive subsecond interval cannot become empty.
+	o.From = o.From.Truncate(time.Second)
+	o.Until = o.Until.Truncate(time.Second)
 	r := rotations(a.Config().Config)[o.Rotation]
 	switch {
 	case r == nil:

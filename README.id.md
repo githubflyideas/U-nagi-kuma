@@ -8,7 +8,36 @@ Pemantauan self-hosted yang mudah: langsung tahu saat situs atau server Anda mat
 
 [English](README.md) · [中文](README.zh.md) · [हिन्दी](README.hi.md) · [Español](README.es.md) · [العربية](README.ar.md) · [Français](README.fr.md) · [বাংলা](README.bn.md) · [Português](README.pt.md) · [Русский](README.ru.md) · **Bahasa Indonesia** · [اردو](README.ur.md) · [Deutsch](README.de.md) · [日本語](README.ja.md) · [Tiếng Việt](README.vi.md) · [한국어](README.ko.md)
 
-![Tur singkat antarmuka web Unagikuma](docs/images/tour.gif)
+## Antarmuka saat ini
+
+> Dibangun ulang dari pohon kerja yang belum dirilis, memakai backend lokal nyata dan data demo sekali pakai. Notifikasi hanya masuk ke log lokal; bukan insiden produksi atau tangkapan layar rilis final.
+
+![Dasbor Midnight](docs/images/current/dashboard-midnight.png)
+
+<details>
+<summary>Tema, kanal peringatan, rotasi piket, laporan harian dan seluler</summary>
+
+**Dasbor Paper**
+
+![Dasbor Paper](docs/images/current/dashboard-paper.png)
+
+**Kanal peringatan**
+
+![Kanal peringatan](docs/images/current/alerts-midnight.png)
+
+**Kalender piket**
+
+![Kalender piket](docs/images/current/oncall-paper.png)
+
+**Laporan harian: cuplikan saat ini, bukan riwayat 24 jam**
+
+![Laporan harian: cuplikan saat ini, bukan riwayat 24 jam](docs/images/current/daily-report-midnight.png)
+
+**Laporan seluler**
+
+<img src="docs/images/current/mobile-paper.png" alt="Laporan seluler" width="390">
+
+</details>
 
 ## Mengapa Unagikuma
 

@@ -1,0 +1,113 @@
+/* Console refinement: hierarchy before decoration. Local fonts, solid surfaces,
+   no visual dependencies or perpetual animation. Public pages do not load this. */
+body { background-image: none; }
+.shell { --radius: 14px; }
+.shell .side, .shell .top { background: var(--panel); backdrop-filter: none; }
+.shell .side { padding: 20px 12px 12px; }
+.shell .brand { flex-direction: row; gap: 10px; padding: 0 8px 22px; font-size: 17px; font-weight: 650; letter-spacing: -.35px; }
+.shell .brand img { width: 44px; height: 44px; }
+.shell .nav { display: flex; flex-direction: column; gap: 4px; }
+.shell .nav a { min-height: 42px; padding: 10px 12px; border-radius: 10px; }
+.shell .nav a.on { box-shadow: inset 3px 0 var(--accent); }
+[dir="rtl"] .shell .nav a.on { box-shadow: inset -3px 0 var(--accent); }
+.shell .side .foot { gap: 8px; padding-top: 18px; border-top: 1px solid var(--border); }
+.shell .top { min-height: 66px; padding-inline: 28px; }
+.shell .verdict i { box-shadow: none; }
+.shell .page { padding: 26px 28px 44px; gap: 22px; }
+.shell .search { min-height: 36px; border-color: var(--border); }
+.shell .btn { border-radius: 9px; min-height: 36px; }
+.shell .btn.sm { min-height: 30px; }
+.shell .btn.primary { padding-inline: 18px; font-weight: 600; }
+.shell :is(button, a, select):focus-visible { outline: 2px solid var(--link); outline-offset: 3px; }
+.shell .tabs { padding: 4px; gap: 4px; border-radius: 11px; }
+.shell .tabs :is(a, button) { border-radius: 8px; }
+.shell .card { box-shadow: none; }
+.shell .card > .hd { padding: 16px 20px; }
+.shell .card > .bd:not(.flush) { padding: 18px 20px; }
+.shell .empty { padding-block: 48px; }
+.shell.mini .brand { flex-direction: column; }
+.shell.mini .brand img { width: 36px; height: 36px; }
+
+/* A clear heading, an actionable summary, then the working list. */
+.channels-view { gap: 22px; }
+.channels-heading { padding-block: 2px 4px; }
+.channels-heading h2 { font-size: clamp(24px, 2.2vw, 30px); font-weight: 650; letter-spacing: -.6px; }
+.channels-heading p { line-height: 1.65; max-width: 66ch; }
+.channels-overview { gap: 14px; }
+.channel-stat { padding: 20px 22px; gap: 15px; box-shadow: none; border-radius: 14px; }
+.channel-stat strong { font-size: 36px; letter-spacing: -1px; font-weight: 600; }
+.channel-stat[aria-pressed="true"] { background: var(--panel); border-color: var(--accent); box-shadow: inset 0 3px var(--accent); }
+.channels-toolbar input { min-height: 42px; padding-inline: 14px; border-radius: 10px; border-color: var(--border-strong); }
+.channels-table th { background: var(--panel-2); padding-block: 13px; font-size: 12px; font-weight: 500; letter-spacing: 0; }
+.channels-table td { padding-block: 16px; vertical-align: middle; }
+.channels-table td:first-child > b { font-size: 14px; font-weight: 600; }
+.channels-table tbody tr:hover { background: var(--panel-2); }
+.channel-kind { border: 0; padding: 4px 9px; border-radius: 6px; }
+.channel-actions { gap: 8px; }
+.channel-actions .btn { border-color: var(--border); }
+.channel-actions .btn.danger { border-color: transparent; background: transparent; }
+.channel-actions .btn.danger:hover { background: var(--critical-soft); border-color: var(--critical); }
+.channel-test-result { padding: 11px 12px; border-radius: 9px; }
+.channel-test-hint { border-radius: 0 8px 8px 0; line-height: 1.65; }
+.channel-form .field { gap: 7px; }
+.channel-form :is(input:not([type=checkbox]), select) { min-height: 40px; border-radius: 8px; }
+
+/* The person on duty is the headline; the calendar is supporting detail. */
+.oc-rot > .hd h3 { color: var(--text); font-size: 18px; font-weight: 600; letter-spacing: -.25px; text-transform: none; }
+.oc-summary { gap: 16px; }
+.oc-summary .oc-now, .oc-handoff { padding: 20px; border-radius: 12px; gap: 10px; }
+.oc-summary .oc-now { background: var(--accent-soft); border-color: transparent; border-inline-start: 3px solid var(--accent); }
+.oc-summary .oc-now > b { font-size: 30px; font-weight: 600; letter-spacing: -.6px; line-height: 1.2; }
+.oc-summary .oc-now > .muted { color: var(--text); }
+.oc-handoff { background: var(--panel-2); }
+.oc-handoff b { font-size: 19px; font-weight: 600; letter-spacing: -.3px; }
+.oc-bar { gap: 10px; }
+.oc-bar > b { font-size: 18px; font-weight: 600; letter-spacing: -.25px; }
+.oc-bar .seg { border: 1px solid var(--border); border-radius: 10px; padding: 3px; background: var(--panel-2); gap: 3px; }
+.oc-bar .seg button { border: 0; border-radius: 7px; background: transparent; min-height: 32px; }
+.oc-bar .seg button.on { background: var(--accent); }
+.oc-rot .oc-cal { gap: 4px; border: 0; background: transparent; }
+.oc-cal .oc-day { background: var(--panel-2); border: 1px solid var(--border); border-radius: 9px; padding: 8px; }
+.oc-cal .oc-day.other { background: var(--panel); }
+.oc-cal .oc-head { padding-block: 8px; background: transparent; }
+.oc-cal .oc-date { padding: 1px 3px 5px; }
+.oc-rot .oc-seg { min-height: 28px; }
+.oc-legend { padding-top: 14px; gap: 12px; }
+.oc-kpis > div b { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 1100px) and (min-width: 721px) {
+  .oc-cal .oc-day { padding: 4px; }
+  .oc-rot .oc-seg { padding-inline: 4px; }
+}
+@media (max-width: 860px) {
+  .shell .top { min-height: 64px; padding-inline: 12px; gap: 8px; }
+  .shell .top > .btn { min-width: 44px; min-height: 44px; }
+  .shell .page { padding: 20px 14px 36px; gap: 18px; }
+  .shell .nav a { min-height: 44px; }
+  .shell .side .foot select { min-height: 44px; }
+}
+@media (max-width: 720px) {
+  .shell .card > .hd, .shell .card > .bd:not(.flush) { padding: 16px; }
+  .channels-view { gap: 18px; }
+  .channels-heading { gap: 14px; }
+  .channels-heading > .btn { align-self: stretch; min-height: 44px; }
+  .channels-heading h2 { font-size: 26px; }
+  .channels-overview { gap: 7px; }
+  .channel-stat { padding: 14px 10px; gap: 12px; border-radius: 11px; }
+  .channel-stat strong { font-size: 30px; }
+  .channels-toolbar input { min-height: 44px; }
+  .channels-table td { padding-block: 0; }
+  .channel-actions .btn { min-height: 44px; padding-inline: 12px; }
+  .oc-summary .oc-now, .oc-handoff { padding: 16px; }
+  .oc-summary .oc-now > b { font-size: 28px; }
+  .oc-handoff b { font-size: 17px; }
+  .oc-rot .oc-cal { gap: 8px; }
+  .oc-cal .oc-day { border-radius: 10px; }
+  .oc-rot > .hd { gap: 10px; }
+  .oc-rot > .hd .btn, .oc-bar .btn, .oc-bar .seg button { min-height: 44px; }
+  .oc-rot > .hd .btn { flex: 1; }
+  .oc-bar .btn { min-width: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shell, .shell *, .shell *::before, .shell *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

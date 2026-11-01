@@ -8,7 +8,36 @@ Einfaches, selbst gehostetes Monitoring: Sie wissen sofort, wenn Ihre Websites o
 
 [English](README.md) · [中文](README.zh.md) · [हिन्दी](README.hi.md) · [Español](README.es.md) · [العربية](README.ar.md) · [Français](README.fr.md) · [বাংলা](README.bn.md) · [Português](README.pt.md) · [Русский](README.ru.md) · [Bahasa Indonesia](README.id.md) · [اردو](README.ur.md) · **Deutsch** · [日本語](README.ja.md) · [Tiếng Việt](README.vi.md) · [한국어](README.ko.md)
 
-![Ein kurzer Rundgang durch die Weboberfläche von Unagikuma](docs/images/tour.gif)
+## Aktuelle Oberfläche
+
+> Frisch aus dem noch unveröffentlichten Arbeitsstand gebaut, mit echtem lokalem Backend und wegwerfbaren Demodaten. Benachrichtigungen landen nur im lokalen Log; keine Produktionsvorfälle und keine Bilder der endgültigen Veröffentlichung.
+
+![Midnight-Übersicht](docs/images/current/dashboard-midnight.png)
+
+<details>
+<summary>Themes, Alarmkanäle, Bereitschaft, Tagesbericht und Mobilansicht</summary>
+
+**Paper-Übersicht**
+
+![Paper-Übersicht](docs/images/current/dashboard-paper.png)
+
+**Alarmkanäle**
+
+![Alarmkanäle](docs/images/current/alerts-midnight.png)
+
+**Bereitschaftskalender**
+
+![Bereitschaftskalender](docs/images/current/oncall-paper.png)
+
+**Tagesbericht: aktueller Stand, keine 24-Stunden-Historie**
+
+![Tagesbericht: aktueller Stand, keine 24-Stunden-Historie](docs/images/current/daily-report-midnight.png)
+
+**Mobiler Bericht**
+
+<img src="docs/images/current/mobile-paper.png" alt="Mobiler Bericht" width="390">
+
+</details>
 
 ## Warum Unagikuma
 

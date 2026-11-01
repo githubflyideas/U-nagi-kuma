@@ -156,6 +156,15 @@ func (a *App) validators() config.Options {
 		AllowEnv:    a.opts.AllowEnv,
 		Location:    a.opts.Location,
 		SecretKnown: a.secrets.Has,
+		ValidateName: func(name string) error {
+			if rest, ok := strings.CutPrefix(name, "zone-"); ok {
+				id, _, dot := strings.Cut(rest, ".")
+				if dot && config.ValidZoneID(id) {
+					return fmt.Errorf("record name is reserved for zone runtime identities")
+				}
+			}
+			return nil
+		},
 		ValidateMonitor: func(m *config.Monitor) error {
 			s, err := ProbeSpec(m, nil)
 			if err != nil {
@@ -185,12 +194,15 @@ func (a *App) validators() config.Options {
 // Monitors whose secrets cannot be resolved still run: the probe abstains
 // with secret_unavailable so the operator sees why.
 func (a *App) engineConfig(cfg *config.Config) engine.Config {
+	return a.engineConfigResolved(cfg, a.resolver())
+}
+
+func (a *App) engineConfigResolved(cfg *config.Config, resolve func(string) (string, error)) engine.Config {
 	ec := engine.Config{
 		Serial: cfg.Serial, Instance: a.instance(), Lang: a.messageLang(), BaseURL: a.baseURL(),
 		Location: a.opts.Location, Tunables: cfg.Tunables, LocalDetect: true,
 		Policies: map[string]engine.PolicySpec{}, Channels: map[string]engine.ChannelSpec{},
 	}
-	resolve := a.resolver()
 	degradedMax := cfg.Tunables.Int("notify.degraded-max")
 	selfProbes, probers := clusterNodes(cfg, &ec)
 	for _, m := range cfg.Monitors {

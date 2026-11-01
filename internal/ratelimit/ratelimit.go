@@ -104,6 +104,19 @@ func (k *Keyed) Allow(key string, now time.Time) (bool, time.Duration) {
 	return false, b.Delay(now)
 }
 
+// Check reports availability without consuming a token or allocating a key.
+// A Check followed by Allow is not atomic; callers needing failure-only
+// accounting must serialize their validation and charging sequence.
+func (k *Keyed) Check(key string, now time.Time) (bool, time.Duration) {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	if b := k.m[key]; b != nil {
+		delay := b.Delay(now)
+		return delay == 0, delay
+	}
+	return true, 0
+}
+
 // SetRate updates every bucket (hot reload of a tunable).
 func (k *Keyed) SetRate(perSecond float64, burst int) {
 	k.mu.Lock()

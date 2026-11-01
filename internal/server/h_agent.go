@@ -7,28 +7,28 @@ import (
 	"github.com/githubflyideas/unagikuma/internal/cluster"
 )
 
-// agentConnect upgrades a probe agent's connection. Attempts share the
-// login limiter: a token is a credential and must not be guessable at
-// network speed.
+// agentConnect upgrades a validated node under its own reconnect budget.
 func (s *Server) agentConnect(w http.ResponseWriter, r *http.Request) {
-	if ok, wait := s.login.Allow(s.ip(r), s.now()); !ok {
-		writeError(w, rateLimited(wait))
+	release, ok := s.admitAgent(w, r, false)
+	if !ok {
 		return
 	}
+	defer release()
 	s.app.Cluster().ServeHTTP(w, r)
 }
 
-// agentState serves the master's state to a standby node.
+// agentState serves the master's state under a separate standby budget.
 func (s *Server) agentState(w http.ResponseWriter, r *http.Request) {
-	if ok, wait := s.login.Allow(s.ip(r), s.now()); !ok {
-		writeError(w, rateLimited(wait))
+	release, ok := s.admitAgent(w, r, true)
+	if !ok {
 		return
 	}
+	defer release()
 	s.app.Cluster().ServeState(w, r)
 }
 
 // agentRetire takes the signed notice of the master that replaced this
-// one: it steps down.
+// one: it steps down. Signature verification remains login-rate limited.
 func (s *Server) agentRetire(w http.ResponseWriter, r *http.Request) {
 	if ok, wait := s.login.Allow(s.ip(r), s.now()); !ok {
 		writeError(w, rateLimited(wait))

@@ -119,6 +119,7 @@ var defs = []Def{
 	{Key: "heartbeat.timeout", Kind: Duration, Default: "10s", Min: "1s", Max: "1m", Desc: "timeout of one external heartbeat call", DescZH: "单次外部心跳调用的超时"},
 
 	// ---- multi-node ----
+	{Key: "cluster.discovery-interval", Kind: Duration, Default: "5m", Min: "1m", Max: "24h", Desc: "how often configured cluster membership is reconciled; independent of heartbeat and vote freshness (no network discovery)", DescZH: "配置集群成员的定期核对间隔；独立于心跳和票的新鲜度（不进行网络自动发现）"},
 	{Key: "cluster.node-timeout", Kind: Duration, Default: "60s", Min: "10s", Max: "1h", Desc: "agent disconnected this long is offline", DescZH: "Agent 断开多久判为离线", Override: "NODE node-timeout="},
 	{Key: "cluster.standby-sync", Kind: Duration, Default: "5m", Min: "30s", Max: "24h", Desc: "how often standbys fetch a copy of the master's state (also after every configuration change)", DescZH: "备用节点拉取主节点状态副本的间隔（每次配置变更后也会拉取）"},
 	{Key: "cluster.standby-retry", Kind: Duration, Default: "30s", Min: "5s", Max: "10m", Desc: "wait before a standby tries again after a failed copy of the master's state (three times at most)", DescZH: "备用节点复制主节点状态失败后，再次尝试前的等待时间（最多三次）"},

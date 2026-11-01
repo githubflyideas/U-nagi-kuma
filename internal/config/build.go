@@ -24,6 +24,9 @@ type Options struct {
 	AllowEnv []string
 	// SecretKnown reports whether a secret exists (nil = don't check).
 	SecretKnown func(name string) bool
+	// ValidateName optionally reserves application-owned record namespaces.
+	// Generic config parsing remains unchanged when nil.
+	ValidateName func(name string) error
 	// ValidateMonitor checks type-specific options (the probe package).
 	ValidateMonitor func(m *Monitor) error
 	// ValidateChannel checks channel options (the notify package).
@@ -225,6 +228,12 @@ func (b *builder) build() {
 		if !ValidName(r.Name) {
 			b.errf(r.NamePos, "invalid_name", "invalid name %q: letters, digits, '_', '.', '-'; must start with a letter or digit; at most 63 characters", r.Name)
 			continue
+		}
+		if b.opt.ValidateName != nil {
+			if err := b.opt.ValidateName(r.Name); err != nil {
+				b.errf(r.NamePos, "reserved_name", "%s", err)
+				continue
+			}
 		}
 		if p, dup := b.names[r.Name]; dup {
 			b.errf(r.NamePos, "duplicate_name", "name %q already used at line %d (names are unique across all record types)", r.Name, p.Line)

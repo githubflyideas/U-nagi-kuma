@@ -12,7 +12,7 @@ import (
 // and handled (acknowledged, silenced, in maintenance) like an operations
 // console needs it.
 func (s *Server) tactical() map[string]any {
-	cfg := s.app.Config().Config
+	cfg := s.app.RuntimeConfig()
 	incs := s.incidentIndex()
 	type split struct {
 		Total     int `json:"total"`
@@ -64,7 +64,7 @@ func (s *Server) availability(w http.ResponseWriter, r *http.Request) (any, erro
 		ExcludedS float64  `json:"excluded_s"`
 		Incidents int      `json:"incidents"`
 	}
-	cfg := s.app.Config().Config
+	cfg := s.app.RuntimeConfig()
 	counts, _ := s.app.Store().IncidentCounts(from, now)
 	status := map[string]string{}
 	for _, r := range s.app.Engine().Rows() {
@@ -91,17 +91,21 @@ func (s *Server) availability(w http.ResponseWriter, r *http.Request) (any, erro
 }
 
 type dailyJSON struct {
-	Title   string `json:"title"`
-	Body    string `json:"body"`
-	Policy  string `json:"policy"`
-	OK      bool   `json:"ok"`
-	Enabled bool   `json:"enabled"`
-	At      string `json:"at"`
+	Snapshot    engine.ReportSnapshot `json:"snapshot"`
+	GeneratedAt time.Time             `json:"generated_at"`
+	Timezone    string                `json:"timezone"`
+	Delivery    string                `json:"delivery,omitempty"`
+	Title       string                `json:"title"`
+	Body        string                `json:"body"`
+	Policy      string                `json:"policy"`
+	OK          bool                  `json:"ok"`
+	Enabled     bool                  `json:"enabled"`
+	At          string                `json:"at"`
 }
 
 func (s *Server) daily(r engine.Report) dailyJSON {
 	ts := s.app.Config().Config.Tunables
-	return dailyJSON{Title: r.Title, Body: r.Body, Policy: r.Policy, OK: r.OK, Enabled: ts.Bool("notify.daily-report"), At: ts.Raw("notify.daily-report-at")}
+	return dailyJSON{Snapshot: r.Snapshot, GeneratedAt: r.Snapshot.GeneratedAt, Timezone: r.Snapshot.Timezone, Delivery: r.Delivery, Title: r.Title, Body: r.Body, Policy: r.Policy, OK: r.OK, Enabled: ts.Bool("notify.daily-report"), At: ts.Raw("notify.daily-report-at")}
 }
 
 // dailyReport previews the daily status report as it would be sent now.

@@ -8,7 +8,36 @@ Giám sát tự lưu trữ, dễ dùng: biết ngay khi website hay máy chủ c
 
 [English](README.md) · [中文](README.zh.md) · [हिन्दी](README.hi.md) · [Español](README.es.md) · [العربية](README.ar.md) · [Français](README.fr.md) · [বাংলা](README.bn.md) · [Português](README.pt.md) · [Русский](README.ru.md) · [Bahasa Indonesia](README.id.md) · [اردو](README.ur.md) · [Deutsch](README.de.md) · [日本語](README.ja.md) · **Tiếng Việt** · [한국어](README.ko.md)
 
-![Giới thiệu nhanh giao diện web của Unagikuma](docs/images/tour.gif)
+## Giao diện hiện tại
+
+> Biên dịch mới từ cây mã nguồn đang làm việc, chưa phát hành, dùng máy chủ cục bộ thật và dữ liệu minh họa tạm thời. Thông báo chỉ ghi vào nhật ký cục bộ; không phải sự cố thực tế hay ảnh của bản phát hành cuối cùng.
+
+![Tổng quan Midnight](docs/images/current/dashboard-midnight.png)
+
+<details>
+<summary>Giao diện, kênh cảnh báo, lịch trực, báo cáo hằng ngày và di động</summary>
+
+**Tổng quan Paper**
+
+![Tổng quan Paper](docs/images/current/dashboard-paper.png)
+
+**Kênh cảnh báo**
+
+![Kênh cảnh báo](docs/images/current/alerts-midnight.png)
+
+**Lịch trực**
+
+![Lịch trực](docs/images/current/oncall-paper.png)
+
+**Báo cáo hằng ngày: trạng thái hiện tại, không phải lịch sử 24 giờ**
+
+![Báo cáo hằng ngày: trạng thái hiện tại, không phải lịch sử 24 giờ](docs/images/current/daily-report-midnight.png)
+
+**Báo cáo trên di động**
+
+<img src="docs/images/current/mobile-paper.png" alt="Báo cáo trên di động" width="390">
+
+</details>
 
 ## Vì sao chọn Unagikuma
 

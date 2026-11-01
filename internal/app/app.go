@@ -32,8 +32,8 @@ import (
 
 // Options configure the application.
 type Options struct {
-	// HandoverWait is how long a master keeps serving its state after
-	// handing over before it steps down (default 20s; tests).
+	// HandoverWait is deprecated and ignored. A timer cannot establish
+	// target readiness; coordinated handover now fails closed.
 	HandoverWait time.Duration
 	// LicenseRing replaces the release's licence keys (tests).
 	LicenseRing  *license.Keyring
@@ -75,7 +75,10 @@ type App struct {
 	dir       atomic.Pointer[directory.Directory]
 	dirReload atomic.Bool
 	// applyMu orders configuration applies with directory re-applies.
-	applyMu sync.Mutex
+	applyMu     sync.Mutex
+	zones       *ZoneStore
+	zoneApplied map[string]ZoneRecord
+	baseApplied *config.Config // pristine base; never compose the merged model again
 
 	pubMu   sync.RWMutex
 	publish func(typ string, v any)
@@ -162,11 +165,19 @@ func New(o Options) (*App, error) {
 		st.Close()
 		return nil, err
 	}
-	states, _ := st.States()
-	incidents, _ := st.OpenIncidents()
-	intents, _ := st.PendingIntents()
-	a.engine.Restore(states, incidents, intents)
+	if err := a.initZones(); err != nil {
+		st.Close()
+		return nil, err
+	}
+	if err := a.restoreDefaultRuntime(); err != nil {
+		st.Close()
+		return nil, err
+	}
 	a.applyConfig(a.cfg.current().Config)
+	if a.applied.Load() == nil {
+		st.Close()
+		return nil, fmt.Errorf("runtime monitor registration failed")
+	}
 	if !st.FirstRun {
 		// A brand-new installation was not "restarted".
 		a.engine.StartupNotice(st.PrevClean, st.PrevBeat)
@@ -242,22 +253,12 @@ func (a *App) applyConfig(cfg *config.Config) {
 func (a *App) applyLocked(cfg *config.Config) {
 	a.store.SetTunables(cfg.Tunables)
 	a.loadDirectory(cfg.Tunables)
-	defs := make([]store.MonitorDef, 0, len(cfg.Monitors))
-	for _, m := range cfg.Monitors {
-		defs = append(defs, store.MonitorDef{Name: m.Name, DefHash: m.DefHash})
+	combined, ec, err := a.composeRuntime(cfg, a.zoneApplied)
+	if err != nil {
+		a.log.Error("zone runtime configuration", "err", err)
+		return
 	}
-	if err := a.store.SyncMonitors(defs); err != nil {
-		a.log.Error("monitor ids", "err", err)
-	}
-	ec := a.engineConfig(cfg)
-	a.applied.Store(cfg)
-	if a.SupersededBy() != nil {
-		// Replaced by a newer master: check nothing, notify nothing.
-		ec.Monitors, ec.Maints = nil, nil
-	}
-	a.engine.Apply(ec)
-	a.master.SetConfigs(agentConfigs(cfg, ec))
-	go a.syncStandbys()
+	a.installRuntime(cfg, combined, ec)
 }
 
 // isAgentNode reports whether name is a remote node of the running
@@ -293,6 +294,7 @@ func (a *App) Run(ctx context.Context) error {
 		go func() { defer wg.Done(); f() }()
 	}
 	run(func() { a.engine.Run(ctx) })
+	run(func() { a.runWorkspaceSchedules(ctx) })
 	run(func() { a.heartbeat.Run(ctx) })
 	run(func() { a.runAgentMode(ctx) })
 	run(func() { a.every(ctx, 2*time.Second, a.cfg.check) })
