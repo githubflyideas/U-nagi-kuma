@@ -338,6 +338,7 @@ func (a *Agent) session(ctx context.Context) error {
 		var e ErrorMsg
 		_ = json.Unmarshal(f.Data, &e)
 		if e.Code == codeSuperseded {
+			a.follow(e.Servers)
 			return &staleError{e.Message}
 		}
 		return &AuthError{e.Message}
@@ -443,6 +444,7 @@ func (s *agentSession) reader(ctx context.Context, r *bufio.Reader) error {
 				return &AuthError{e.Message}
 			}
 			if e.Code == codeSuperseded {
+				s.a.follow(e.Servers)
 				return &staleError{e.Message}
 			}
 			return errors.New("master: " + e.Message)
@@ -778,4 +780,16 @@ func (a *Agent) caps() []string {
 		c = append(c, CapReplica)
 	}
 	return c
+}
+
+// follow adds the addresses a replaced master pointed to; the agent moves
+// on to them (the term check still guards against an older master).
+func (a *Agent) follow(servers []string) {
+	if len(servers) == 0 {
+		return
+	}
+	a.smu.Lock()
+	cur := append([]string(nil), a.servers...)
+	a.smu.Unlock()
+	a.setMasters(append(cur, servers...))
 }

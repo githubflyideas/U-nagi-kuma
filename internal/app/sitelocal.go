@@ -100,7 +100,8 @@ func (a *App) addSiteLocal(ec *engine.Config, lc *config.Config) {
 		pol[k] = v
 	}
 	for k, v := range le.Policies {
-		if _, ok := pol[k]; !ok {
+		// The site's own policy wins over a built-in one without channels.
+		if cur, ok := pol[k]; !ok || len(cur.Chain) == 0 {
 			pol[k] = v
 		}
 	}

@@ -42,6 +42,9 @@ type MasterOptions struct {
 	// Retired: this master handed over or was replaced; agents are sent
 	// on to the next address.
 	Retired func() bool
+	// Successor is the address of the master that replaced this one ("" =
+	// unknown); agents turned away are sent there.
+	Successor func() string
 	// Standby reports whether a node may fetch the master's state.
 	Standby func(node string) bool
 	// WriteState writes the state archive for a standby, encrypted with
@@ -156,8 +159,20 @@ func (m *Master) Retire(why string) {
 	}
 	m.mu.Unlock()
 	for _, p := range peers {
-		p.fail(codeSuperseded, why)
+		p.log.Info("closing agent session", "reason", why)
+		p.send(msgError, ErrorMsg{Code: codeSuperseded, Message: why, Servers: m.successor()})
+		time.AfterFunc(time.Second, p.close)
 	}
+}
+
+func (m *Master) successor() []string {
+	if m.o.Successor == nil {
+		return nil
+	}
+	if s := m.o.Successor(); s != "" {
+		return []string{s}
+	}
+	return nil
 }
 
 // NotifyState asks a connected standby to fetch the state now.
@@ -314,7 +329,7 @@ func (m *Master) session(node, token string, conn net.Conn, r *bufio.Reader, add
 		return
 	}
 	if m.o.Retired != nil && m.o.Retired() {
-		_ = writeFrame(conn, msgError, ErrorMsg{Code: codeSuperseded, Message: "this master handed over to a newer one"})
+		_ = writeFrame(conn, msgError, ErrorMsg{Code: codeSuperseded, Message: "this master handed over to a newer one", Servers: m.successor()})
 		return
 	}
 	if term := m.o.Term(); h.Term > term {

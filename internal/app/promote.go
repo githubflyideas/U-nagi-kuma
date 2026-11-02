@@ -167,7 +167,6 @@ func (a *App) demote(n cluster.RetireNotice) {
 		a.log.Warn("could not rejoin the new master as a replica", "err", err)
 		return
 	}
-	_ = os.Remove(a.dataPath(supersededFile))
 	a.log.Warn("this replaced master now follows the new one as a replica", "node", n.Node)
 	_ = a.store.Audit(auditEntry("cluster.demoted", "system", map[string]any{"node": n.Node, "term": n.Term}))
 	a.Reapply()
@@ -206,4 +205,11 @@ func (a *App) AddDiverged(site string, d store.DivergedConfig) error {
 	_ = a.store.Audit(auditEntry("cluster.config_diverged", "system", map[string]any{"site": site, "version": d.Serial, "term": d.Term}))
 	a.emit("banner", nil)
 	return nil
+}
+
+// isMember reports whether this server joined a cluster (read from disk:
+// callable with any lock held).
+func (a *App) isMember() bool {
+	_, err := os.Stat(a.dataPath(agentFile))
+	return err == nil
 }

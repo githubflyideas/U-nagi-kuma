@@ -195,6 +195,9 @@ type Promote struct {
 type ErrorMsg struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
+	// Servers, on codeSuperseded, are the addresses of the master that
+	// replaced this one, when it is known.
+	Servers []string `json:"servers,omitempty"`
 }
 
 // codeSuperseded: this master was replaced; try the next address.

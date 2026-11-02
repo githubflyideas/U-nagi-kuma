@@ -154,8 +154,17 @@ func New(o Options) (*App, error) {
 			return ts
 		},
 		Log: o.Log.With("component", "cluster"), Now: o.Now,
-		Term:       a.Term,
-		Retired:    func() bool { return a.SupersededBy() != nil },
+		Term:    a.Term,
+		Retired: func() bool { return a.SupersededBy() != nil },
+		Successor: func() string {
+			// A replaced master that rejoined sends agents to the new one.
+			a.am.mu.Lock()
+			defer a.am.mu.Unlock()
+			if a.am.member != nil {
+				return a.am.member.Server
+			}
+			return ""
+		},
 		Superseded: func(term uint64, node string) { a.supersede(term, node) },
 		Standby:    a.isStandby,
 		WriteState: a.writeState,
@@ -289,7 +298,7 @@ func (a *App) applyLocked(cfg *config.Config) {
 		// A replica that cannot reach its master checks on its own.
 		ec = lec
 	}
-	if a.SupersededBy() != nil {
+	if a.SupersededBy() != nil && !a.isMember() {
 		// Replaced by a newer master: check nothing, notify nothing.
 		ec.Monitors, ec.Maints = nil, nil
 	}
