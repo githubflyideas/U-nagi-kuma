@@ -1446,5 +1446,11 @@
 "ui.audit.site_here": "Dieser Server",
 "ui.audit.site_of": "Standort {site}",
 "ui.inc.site": "von {site}",
-"ui.inc.site_hint": "Von einem anderen Standort aufgezeichnet, während er selbst prüfte; nach Wiederherstellung der Verbindung hier zusammengeführt."
+"ui.inc.site_hint": "Von einem anderen Standort aufgezeichnet, während er selbst prüfte; nach Wiederherstellung der Verbindung hier zusammengeführt.",
+"ui.ha.promote_age": "Die Kopie ist {s} s alt (vom {at}).",
+"ui.ha.promote_sync": "Der Master ist erreichbar: Zuerst wird eine letzte Kopie geholt.",
+"ui.ha.promote_nosync": "Der Master ist nicht erreichbar: Änderungen dort nach der Kopie kommen bei seiner Rückkehr als Zusammenführung zurück und überschreiben nie neuere Daten.",
+"ui.sl.title": "Standortlokale Konfiguration",
+"ui.sl.hint": "Monitore, Kanäle und Richtlinien nur für diesen Standort, im Format der Hauptkonfiguration. In jeder Rolle hier geprüft und gemeldet; nie an andere Knoten gesendet und nie durch Master-Sync, Beitritt oder Beförderung überschrieben.",
+"ui.sl.saved": "Standortlokale Konfiguration gespeichert und angewendet"
 }

@@ -1446,5 +1446,11 @@
 "ui.audit.site_here": "Este servidor",
 "ui.audit.site_of": "Site {site}",
 "ui.inc.site": "de {site}",
-"ui.inc.site_hint": "Registrado por outro site enquanto verificava por conta própria; mesclado aqui quando o link voltou."
+"ui.inc.site_hint": "Registrado por outro site enquanto verificava por conta própria; mesclado aqui quando o link voltou.",
+"ui.ha.promote_age": "A cópia tem {s} s (obtida em {at}).",
+"ui.ha.promote_sync": "O mestre está acessível: uma cópia final é feita primeiro.",
+"ui.ha.promote_nosync": "O mestre não está acessível: as mudanças feitas lá após a cópia voltam como mesclagem quando ele retornar e nunca sobrescrevem dados mais novos.",
+"ui.sl.title": "Configuração local do site",
+"ui.sl.hint": "Monitores, canais e políticas só deste site, no formato da configuração principal. Verificados e alertados aqui em qualquer papel; nunca enviados a outros nós nem sobrescritos pela sincronização do mestre, uma adesão ou promoção.",
+"ui.sl.saved": "Configuração local salva e aplicada"
 }

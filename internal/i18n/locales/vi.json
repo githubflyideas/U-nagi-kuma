@@ -1437,5 +1437,11 @@
 "ui.audit.site_here": "Máy chủ này",
 "ui.audit.site_of": "Địa điểm {site}",
 "ui.inc.site": "từ {site}",
-"ui.inc.site_hint": "Được một địa điểm khác ghi lại khi tự kiểm tra, hợp nhất về đây sau khi kết nối trở lại."
+"ui.inc.site_hint": "Được một địa điểm khác ghi lại khi tự kiểm tra, hợp nhất về đây sau khi kết nối trở lại.",
+"ui.ha.promote_age": "Bản sao đã cũ {s} giây (lấy lúc {at}).",
+"ui.ha.promote_sync": "Máy chủ chính truy cập được: sẽ lấy bản sao cuối trước.",
+"ui.ha.promote_nosync": "Không truy cập được máy chủ chính: thay đổi ở đó sau bản sao sẽ quay về dưới dạng hợp nhất khi nó trở lại, không bao giờ ghi đè dữ liệu mới hơn.",
+"ui.sl.title": "Cấu hình riêng của địa điểm",
+"ui.sl.hint": "Giám sát, kênh và chính sách chỉ cho địa điểm này, cùng định dạng với cấu hình chính. Được kiểm tra và cảnh báo tại đây ở mọi vai trò; không gửi tới nút khác và không bao giờ bị đồng bộ của máy chủ chính, tham gia hay thăng cấp ghi đè.",
+"ui.sl.saved": "Đã lưu và áp dụng cấu hình riêng của địa điểm"
 }

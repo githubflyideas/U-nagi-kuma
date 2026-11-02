@@ -1446,5 +1446,11 @@
 "ui.audit.site_here": "Este servidor",
 "ui.audit.site_of": "Sitio {site}",
 "ui.inc.site": "de {site}",
-"ui.inc.site_hint": "Registrado por otro sitio mientras comprobaba por su cuenta; fusionado aquí al volver el enlace."
+"ui.inc.site_hint": "Registrado por otro sitio mientras comprobaba por su cuenta; fusionado aquí al volver el enlace.",
+"ui.ha.promote_age": "Su copia tiene {s} s (tomada el {at}).",
+"ui.ha.promote_sync": "El maestro es accesible: primero se toma una copia final.",
+"ui.ha.promote_nosync": "No se puede alcanzar el maestro: los cambios hechos allí tras la copia vuelven como fusión cuando regrese y nunca sobrescriben datos más nuevos.",
+"ui.sl.title": "Configuración local del sitio",
+"ui.sl.hint": "Monitores, canales y políticas solo de este sitio, con el formato de la configuración principal. Se comprueban y alertan aquí en cualquier rol; nunca se envían a otros nodos ni los sobrescribe la sincronización del maestro, una unión o una promoción.",
+"ui.sl.saved": "Configuración local guardada y aplicada"
 }

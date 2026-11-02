@@ -1446,5 +1446,11 @@
 "ui.audit.site_here": "Ce serveur",
 "ui.audit.site_of": "Site {site}",
 "ui.inc.site": "de {site}",
-"ui.inc.site_hint": "Enregistré par un autre site pendant qu'il vérifiait seul, fusionné ici au retour du lien."
+"ui.inc.site_hint": "Enregistré par un autre site pendant qu'il vérifiait seul, fusionné ici au retour du lien.",
+"ui.ha.promote_age": "Sa copie date de {s} s (prise le {at}).",
+"ui.ha.promote_sync": "Le maître est joignable : une dernière copie est prise d'abord.",
+"ui.ha.promote_nosync": "Le maître est injoignable : ses changements après la copie reviendront en fusion à son retour, sans jamais écraser des données plus récentes.",
+"ui.sl.title": "Configuration locale au site",
+"ui.sl.hint": "Moniteurs, canaux et politiques propres à ce site, au format de la configuration principale. Vérifiés et alertés ici quel que soit le rôle ; jamais envoyés aux autres nœuds ni écrasés par la synchro du maître, une adhésion ou une promotion.",
+"ui.sl.saved": "Configuration locale enregistrée et appliquée"
 }

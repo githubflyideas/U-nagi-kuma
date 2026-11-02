@@ -116,6 +116,8 @@ func (s *Server) routes() {
 	s.handle("GET /api/v1/cluster/agent", "read", s.clusterAgent)
 	s.handle("DELETE /api/v1/cluster/agent", "admin", s.clusterLeave)
 	s.handle("POST /api/v1/cluster/promote", "admin", s.clusterPromote)
+	s.handle("GET /api/v1/cluster/site-local", "admin", s.siteLocal)
+	s.handle("PUT /api/v1/cluster/site-local", "admin", s.siteLocalSave)
 	s.handle("POST /api/v1/nodes/{name}/handover", "admin", s.nodeHandover)
 	s.handle("GET /api/v1/nodes", "read", s.nodesList)
 	s.handle("POST /api/v1/nodes", "admin", s.nodeAdd)

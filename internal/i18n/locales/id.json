@@ -1437,5 +1437,11 @@
 "ui.audit.site_here": "Server ini",
 "ui.audit.site_of": "Situs {site}",
 "ui.inc.site": "dari {site}",
-"ui.inc.site_hint": "Dicatat oleh situs lain saat memeriksa sendiri, digabung ke sini setelah tautan kembali."
+"ui.inc.site_hint": "Dicatat oleh situs lain saat memeriksa sendiri, digabung ke sini setelah tautan kembali.",
+"ui.ha.promote_age": "Salinannya berumur {s} dtk (diambil {at}).",
+"ui.ha.promote_sync": "Master dapat dijangkau: salinan terakhir diambil dulu.",
+"ui.ha.promote_nosync": "Master tidak dapat dijangkau: perubahan di sana setelah salinan kembali sebagai penggabungan saat ia kembali, tanpa menimpa data yang lebih baru.",
+"ui.sl.title": "Konfigurasi lokal situs",
+"ui.sl.hint": "Monitor, kanal, dan kebijakan khusus situs ini, dalam format konfigurasi utama. Diperiksa dan diberi peringatan di sini dalam peran apa pun; tidak dikirim ke node lain dan tidak pernah ditimpa sinkronisasi master, bergabung, atau promosi.",
+"ui.sl.saved": "Konfigurasi lokal situs disimpan dan diterapkan"
 }

@@ -269,6 +269,16 @@ func (a *App) applyLocked(cfg *config.Config) {
 			defs = append(defs, store.MonitorDef{Name: m.Name, DefHash: m.DefHash})
 		}
 	}
+	siteLocal := a.loadSiteLocal()
+	have := map[string]bool{}
+	for _, d := range defs {
+		have[d.Name] = true
+	}
+	for _, d := range siteLocalDefs(siteLocal) {
+		if !have[d.Name] {
+			defs = append(defs, d)
+		}
+	}
 	if err := a.store.SyncMonitors(defs); err != nil {
 		a.log.Error("monitor ids", "err", err)
 	}
@@ -282,8 +292,10 @@ func (a *App) applyLocked(cfg *config.Config) {
 		// Replaced by a newer master: check nothing, notify nothing.
 		ec.Monitors, ec.Maints = nil, nil
 	}
+	agentEC := ec
+	a.addSiteLocal(&ec, siteLocal)
 	a.engine.Apply(ec)
-	a.master.SetConfigs(agentConfigs(cfg, ec))
+	a.master.SetConfigs(agentConfigs(cfg, agentEC))
 	go a.syncStandbys()
 }
 

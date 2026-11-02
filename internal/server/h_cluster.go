@@ -110,3 +110,26 @@ func (s *Server) clusterPromote(w http.ResponseWriter, r *http.Request) (any, er
 func (s *Server) clusterLeave(w http.ResponseWriter, r *http.Request) (any, error) {
 	return map[string]any{"ok": true}, s.app.LeaveCluster()
 }
+
+// siteLocal shows this site's own configuration (never synced).
+func (s *Server) siteLocal(w http.ResponseWriter, r *http.Request) (any, error) {
+	return map[string]any{"text": s.app.SiteLocal()}, nil
+}
+
+// siteLocalSave replaces this site's own configuration.
+func (s *Server) siteLocalSave(w http.ResponseWriter, r *http.Request) (any, error) {
+	var req struct {
+		Text string `json:"text"`
+	}
+	if err := decodeJSON(r, s.maxBody(), &req); err != nil {
+		return nil, err
+	}
+	diags, err := s.app.SetSiteLocal(req.Text, authOf(r).user)
+	if err != nil {
+		if diags != nil {
+			return map[string]any{"ok": false, "diagnostics": diags}, nil
+		}
+		return nil, err
+	}
+	return map[string]any{"ok": true}, nil
+}

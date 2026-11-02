@@ -59,6 +59,7 @@ export function Nodes({ embedded }) {
       <tbody>${d.nodes.map(n => html`<${NodeRow} n=${n} onToken=${newToken} onRevoke=${revoke} onRemove=${remove} onEdit=${setEditing} onHandover=${handover} />`)}</tbody>
     </table></div></div>
     <p class="faint small ltr" style=${{ margin: 0 }}>${t('ui.node.fingerprint')}: <span class="mono">${d.fingerprint}</span></p>
+    <${SiteLocal} />
     ${form && html`<${Modal} title=${t('ui.node.add')} onClose=${() => setForm(null)}>
       <form class="form" onSubmit=${add}>
         <${Field} label=${t('ui.name')} hint=${t('ui.node.name_hint')}>
@@ -175,7 +176,10 @@ function Membership({ state, d, reload }) {
   const sb = useFetch(() => get('/cluster/agent'), []);
   const copy = sb.data && sb.data.standby;
   const promote = async () => {
-    if (!await confirmDialog(t('ui.ha.promote_confirm', { master: m.server }), { danger: true, ok: t('ui.ha.promote') })) return;
+    const age = copy && copy.fetched ? Math.max(0, Math.round((Date.now() - new Date(copy.fetched)) / 1000)) : 0;
+    const msg = t('ui.ha.promote_confirm', { master: m.server }) + ' ' + t('ui.ha.promote_age', { s: age, at: copy ? fmtTime(copy.fetched) : '–' }) + ' '
+      + t(s.connected ? 'ui.ha.promote_sync' : 'ui.ha.promote_nosync');
+    if (!await confirmDialog(msg, { danger: true, ok: t('ui.ha.promote') })) return;
     try { const r = await post('/cluster/promote', {}); toast(t('ui.ha.promoting', { term: r.term })); } catch (e) { toastError(e); }
   };
   const leave = async () => {
@@ -208,7 +212,32 @@ function Membership({ state, d, reload }) {
       })}</tbody></table>`}
     ${copy && copy.size > 0 && html`<div class="row" style=${{ marginTop: '12px' }}><p class="small muted spacer" style=${{ margin: 0 }}>${t('ui.ha.promote_hint')}</p>
       <button class="btn danger" onClick=${promote}>${t('ui.ha.promote')}</button></div>`}
-    </div></div>`;
+    </div></div>
+    <${SiteLocal} />`;
+}
+
+// SiteLocal edits this site's own configuration: checked and alerted on
+// here only, never synced, never overwritten by the master.
+function SiteLocal() {
+  const r = useFetch(() => get('/cluster/site-local'), []);
+  const [text, setText] = useState(null);
+  const [diags, setDiags] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const cur = text === null ? (r.data ? r.data.text : '') : text;
+  const save = async () => {
+    setBusy(true);
+    try {
+      const x = await put('/cluster/site-local', { text: cur });
+      if (x.ok) { toast(t('ui.sl.saved')); setDiags(null); r.reload(); } else setDiags(x.diagnostics || []);
+    } catch (e) { toastError(e); }
+    setBusy(false);
+  };
+  return html`<div class="card"><div class="hd"><h2>${t('ui.sl.title')}</h2></div><div class="bd form">
+    <p class="small muted" style=${{ margin: 0 }}>${t('ui.sl.hint')}</p>
+    <textarea class="ltr mono" rows="6" value=${cur} onInput=${(e) => setText(e.target.value)} aria-label=${t('ui.sl.title')}></textarea>
+    ${diags && html`<ul class="small err-text">${diags.map(x => html`<li>${x.pos ? x.pos.line + ': ' : ''}${x.message || x.msg}</li>`)}</ul>`}
+    <div class="row"><div class="spacer"></div><button class="btn primary" disabled=${busy || text === null} onClick=${save}>${t('ui.save')}</button></div>
+  </div></div>`;
 }
 
 function NodeRow({ n, onToken, onRevoke, onRemove, onEdit, onHandover }) {
