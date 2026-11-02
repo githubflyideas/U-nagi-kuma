@@ -10,7 +10,7 @@ Friendly, self-hosted monitoring: know the moment your websites and servers go d
 
 ## Current interface
 
-> Freshly built from the unreleased working tree, using a real local backend and disposable illustrative demo data. Notifications go to local logs only; these are not production incidents or final-release screenshots.
+> Captured from the extracted v1.5.7-rc.1 Windows candidate package, using a real local backend and disposable illustrative demo data. Notifications go to local logs only; these are not production incidents or final-release screenshots.
 
 ![Midnight dashboard](docs/images/current/dashboard-midnight.png)
 
@@ -54,7 +54,7 @@ Friendly, self-hosted monitoring: know the moment your websites and servers go d
 - **Alerts and on-call in one place.** Search notification channels, see policy usage, and manage rotations with a calendar, stand-ins and shift swaps.
 - **An honest daily report.** Preview current service and host states, see outstanding issues, and queue the report for delivery. It is a current snapshot, not a 24-hour uptime/history report.
 
-> **Preview boundary:** multi-location monitoring remains a preview. Zone synchronization, invitations and voting are still being integrated; this README does not promise full HA, automatic consensus/failover, or script upload. Screenshots above document the current working UI, not a released v1.5.7 artifact.
+> **Preview boundary:** multi-location monitoring remains a preview. Zone synchronization, invitations and voting are still being integrated; this README does not promise full HA, automatic consensus/failover, or script upload. Screenshots above document the extracted v1.5.7-rc.1 Windows candidate package, not a final release or multi-platform acceptance.
 
 ## Quick start
 

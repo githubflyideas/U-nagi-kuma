@@ -10,6 +10,7 @@ import (
 )
 
 func (s *Server) routes() {
+	s.workspaceRoutes()
 	// Setup and session.
 	s.handle("GET /api/v1/setup/status", "", s.setupStatus)
 	s.handle("POST /api/v1/setup", "", s.setup)

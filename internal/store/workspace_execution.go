@@ -18,12 +18,13 @@ func WorkspaceMonitorKey(workspace WorkspaceID, name string) string {
 	return "workspace:" + base64.RawURLEncoding.EncodeToString([]byte(workspace)) + ":" + base64.RawURLEncoding.EncodeToString([]byte(name))
 }
 
-// WorkspaceRuntimeWriter is trusted supervisor glue. It has no user identity,
-// arbitrary scope selection, incident, notification, evidence or event methods.
+// WorkspaceRuntimeWriter is trusted supervisor glue bound to immutable scope and
+// generation. Its incident/outbox operations never call the legacy global Sink.
 // It is deliberately not an engine.Sink and must never be exposed over HTTP.
 type WorkspaceRuntimeWriter struct{ reader *RuntimeSecretReader }
 
 type workspaceExecution struct {
+	ctx    context.Context
 	reader *RuntimeSecretReader
 	cancel context.CancelFunc
 }
@@ -35,7 +36,7 @@ var ErrWorkspaceRuntimeBusy = errors.New("workspace execution capacity occupied"
 // MUST be deferred by the supervisor, after its probe work has joined.
 func (w *WorkspaceRuntimeWriter) BeginExecution(parent context.Context) (context.Context, func(), error) {
 	ctx, cancel := context.WithCancel(parent)
-	lease := &workspaceExecution{cancel: cancel}
+	lease := &workspaceExecution{ctx: ctx, cancel: cancel}
 	err := w.access(func(*sql.Tx) error {
 		if err := ctx.Err(); err != nil {
 			return err
@@ -207,7 +208,16 @@ func (w *WorkspaceRuntimeWriter) Pause(id int64) error {
 // incident/notification/event loop. History commits synchronously. Core and
 // history remain separate databases: a core commit failure can leave a history
 // sample without updated state; callers MUST report failure, never retry blindly.
-func (w *WorkspaceRuntimeWriter) Record(id int64, result probe.Result, interval time.Duration, params engine.StepParams) (state engine.StateRecord, err error) {
+func (w *WorkspaceRuntimeWriter) Record(id int64, result probe.Result, interval time.Duration, params engine.StepParams) (engine.StateRecord, error) {
+	return w.record(id, result, interval, params, nil)
+}
+
+// RecordNotification commits state, incident transition, event and durable intent
+// in one core transaction. History remains a separate database (see Record).
+func (w *WorkspaceRuntimeWriter) RecordNotification(id int64, result probe.Result, interval time.Duration, params engine.StepParams, plan WorkspaceNotificationPlan) (engine.StateRecord, error) {
+	return w.record(id, result, interval, params, &plan)
+}
+func (w *WorkspaceRuntimeWriter) record(id int64, result probe.Result, interval time.Duration, params engine.StepParams, plan *WorkspaceNotificationPlan) (state engine.StateRecord, err error) {
 	flushMu.Lock()
 	defer flushMu.Unlock()
 	err = w.access(func(tx *sql.Tx) error {
@@ -246,6 +256,11 @@ func (w *WorkspaceRuntimeWriter) Record(id int64, result probe.Result, interval 
 		v := engine.VerdictRecord{Monitor: name, At: at, Verdict: kind, Status: state.Status, Hard: next.Hard, Reason: result.Reason, LatencyMS: state.LatencyMS, Excluded: kind == engine.VerdictUnknown, Interval: interval}
 		if e = saveMonitorState(tx, r.tenant, state); e != nil {
 			return e
+		}
+		if plan != nil {
+			if e = w.recordIncident(tx, id, state, *plan); e != nil {
+				return e
+			}
 		}
 		if !r.s.batch.flushHistory([]item{{mid: id, verdict: &v}}) {
 			return errors.New("workspace history write failed")

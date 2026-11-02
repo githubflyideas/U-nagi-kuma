@@ -1,0 +1,261 @@
+{
+  "candidate": "v1.5.7-rc.1",
+  "platform": "windows/amd64",
+  "status": "passed-windows-amd64-scoped-acceptance",
+  "started_utc": "2026-11-02T03:00:29.526360+00:00",
+  "commands": [
+    {
+      "argv": [
+        "go",
+        "test",
+        "-tags",
+        "e2e",
+        "-c",
+        "-o",
+        "C:\\Users\\fengyongxiao.LAPTOP-05HDB6FR\\package-acceptance\\v1.5.7-rc.1\\final-verification\\e2e.test.exe",
+        "./e2e"
+      ],
+      "exit_code": 0,
+      "log": "C:\\Users\\fengyongxiao.LAPTOP-05HDB6FR\\package-acceptance\\v1.5.7-rc.1\\final-verification\\compile-harness.log"
+    },
+    {
+      "argv": [
+        "C:\\Users\\fengyongxiao.LAPTOP-05HDB6FR\\AppData\\Local\\hermes\\installs\\f26c24eb482ca277\\environments\\5d8d94e62c1a4b68b61969a1bb401401\\venv\\Scripts\\python.exe",
+        "scripts/package-acceptance-harness-test.py",
+        "C:\\Users\\fengyongxiao.LAPTOP-05HDB6FR\\package-acceptance\\v1.5.7-rc.1\\final-verification\\e2e.test.exe"
+      ],
+      "exit_code": 0,
+      "log": "C:\\Users\\fengyongxiao.LAPTOP-05HDB6FR\\package-acceptance\\v1.5.7-rc.1\\final-verification\\harness-green.log"
+    },
+    {
+      "argv": [
+        "go",
+        "test",
+        "-tags",
+        "e2e",
+        "-count=1",
+        "-timeout=25m",
+        "-json",
+        "./e2e"
+      ],
+      "exit_code": 0,
+      "log": "C:\\Users\\fengyongxiao.LAPTOP-05HDB6FR\\package-acceptance\\v1.5.7-rc.1\\final-verification\\e2e.jsonl"
+    }
+  ],
+  "report": "C:\\Users\\fengyongxiao.LAPTOP-05HDB6FR\\package-acceptance\\v1.5.7-rc.1\\final-verification\\report.json",
+  "free_bytes_before": 18301054976,
+  "revision": "811336c4065749254e3f1eb1c51d2093e98d1ad2",
+  "archive": "C:\\Users\\fengyongxiao.LAPTOP-05HDB6FR\\package-acceptance\\v1.5.7-rc.1\\unagikuma-v1.5.7-rc.1-windows-amd64.zip",
+  "archive_sha256": "7ba71436d2a01f1dbc077695d7114020d912d25ce13f9c1d2901a79b549d8f0a",
+  "extracted_binary": "C:\\Users\\fengyongxiao.LAPTOP-05HDB6FR\\package-acceptance\\v1.5.7-rc.1\\extracted-yuaizn4_\\unagikuma-v1.5.7-rc.1-windows-amd64\\unagikuma.exe",
+  "binary_sha256": "90f294cc8c5080c57c3847e986f115d1705b59d382304f5308628ab4c55ac2c5",
+  "archive_contents": {
+    "LICENSE": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5",
+    "README.ar.md": "cd5e0a1ec1dc45a4cabd023900bb05513b51ac994fc1e514bc83724305829c95",
+    "README.bn.md": "6e6c41aa933faf6aef7cb0c7d6cba8a32ded904e097f11a19ec812c6910a9d92",
+    "README.de.md": "67aca17196fd11340a88adbd45e37a472b2de3a99f444b92b3f9d4982d23b631",
+    "README.es.md": "c6de92ecdc1417b5ce51a8c52b0199d64866fece3230992b1375035b6797cd45",
+    "README.fr.md": "05a3acfa12fea11d478d3c58b890d4012fa20183b6e1b606451fbb3138635790",
+    "README.hi.md": "8055427e361b85bf06870dc5067c96f95183e4752048ad1abae9933cc50aea90",
+    "README.id.md": "dd2ba47df06a94fbd02c4916b7bd5a608c6052faa5c97e092105d0aec84f0c69",
+    "README.ja.md": "a73339b5bfb7273ee33d22e4223f76dbb9cbce72fae78ed0a7e659329973531a",
+    "README.ko.md": "fdf2dcabcee0e8af7524fa79965782d6b75ba1e4b1b76ac4d6860f1b645cbe68",
+    "README.md": "0f6bc1c1a227e607f31b8f81387df3c349347ba5826942ed20a8a8d4b7f5f650",
+    "README.pt.md": "56755c35d6133fee4c5d3c0f19a86589b2f9c45c54636d60dfc5cb3ef1b4ae6c",
+    "README.ru.md": "ed0d469cb6500bb6432181d97c725ba4fc19749e1d91bc2b905505aa5b55fbaa",
+    "README.ur.md": "b426587fae5c91f6d1406d88c4dc5f95a0c4fe6927e2b7e25b7c43d564b19190",
+    "README.vi.md": "b748246af5074b8c6e1a825ec3b17d53a4615fcb8ba0479b954470be1d0a7ed0",
+    "README.zh.md": "a5808dc0b2d06f897218033a6c4979fce96bbd5a4eb8e5b5f968d54acb229f75",
+    "THIRD_PARTY_LICENSES.txt": "6d3b9cd64c03c215cdf05c3b25cfccc8d0b98526e507fc4dc8915ef8efe58801",
+    "unagikuma.exe": "90f294cc8c5080c57c3847e986f115d1705b59d382304f5308628ab4c55ac2c5",
+    "docs\\manual.md": "cb891215f44c7bd156b851c5f3b729d144b651cdde89b2741fa953f4d8ce2aec",
+    "docs\\manual.zh-CN.md": "b611e1bfddb9688141949bfde56ac19042d2df34355b03c292ca8fdb6e3882e0",
+    "docs\\spec\\monitors-bind.md": "c3f0af5839bde8696d8d62f49616b19ebc2975c2a060219d19451589e5c4d030"
+  },
+  "tests": [
+    {
+      "Time": "2026-11-02T12:01:45.8427161+09:00",
+      "Action": "pass",
+      "Package": "github.com/githubflyideas/unagikuma/e2e",
+      "Test": "TestFailover",
+      "Elapsed": 68.81,
+      "coverage_kind": "extracted-executable"
+    },
+    {
+      "Time": "2026-11-02T12:02:57.5256314+09:00",
+      "Action": "pass",
+      "Package": "github.com/githubflyideas/unagikuma/e2e",
+      "Test": "TestImportAdaptersUI",
+      "Elapsed": 72.21,
+      "coverage_kind": "extracted-executable"
+    },
+    {
+      "Time": "2026-11-02T12:03:28.2316981+09:00",
+      "Action": "pass",
+      "Package": "github.com/githubflyideas/unagikuma/e2e",
+      "Test": "TestStandbyWindowsSupervisedRecovery",
+      "Elapsed": 30.71,
+      "coverage_kind": "extracted-executable"
+    },
+    {
+      "Time": "2026-11-02T12:03:47.3613433+09:00",
+      "Action": "pass",
+      "Package": "github.com/githubflyideas/unagikuma/e2e",
+      "Test": "TestUI",
+      "Elapsed": 19.13,
+      "coverage_kind": "extracted-executable"
+    },
+    {
+      "Time": "2026-11-02T12:03:52.1032145+09:00",
+      "Action": "pass",
+      "Package": "github.com/githubflyideas/unagikuma/e2e",
+      "Test": "TestZonesUI",
+      "Elapsed": 4.74,
+      "coverage_kind": "extracted-executable"
+    },
+    {
+      "Time": "2026-11-02T12:03:55.2034868+09:00",
+      "Action": "pass",
+      "Package": "github.com/githubflyideas/unagikuma/e2e",
+      "Test": "TestUIComponents/themes.mjs",
+      "Elapsed": 2.95,
+      "coverage_kind": "browser-fixture"
+    },
+    {
+      "Time": "2026-11-02T12:04:04.9302422+09:00",
+      "Action": "pass",
+      "Package": "github.com/githubflyideas/unagikuma/e2e",
+      "Test": "TestUIComponents/channels-ui.mjs",
+      "Elapsed": 9.73,
+      "coverage_kind": "browser-fixture"
+    },
+    {
+      "Time": "2026-11-02T12:04:12.9302676+09:00",
+      "Action": "pass",
+      "Package": "github.com/githubflyideas/unagikuma/e2e",
+      "Test": "TestUIComponents/oncall-ui.mjs",
+      "Elapsed": 8,
+      "coverage_kind": "browser-fixture"
+    },
+    {
+      "Time": "2026-11-02T12:04:22.0153445+09:00",
+      "Action": "pass",
+      "Package": "github.com/githubflyideas/unagikuma/e2e",
+      "Test": "TestUIComponents/shell-ui.mjs",
+      "Elapsed": 9.09,
+      "coverage_kind": "browser-fixture"
+    },
+    {
+      "Time": "2026-11-02T12:05:55.9869579+09:00",
+      "Action": "pass",
+      "Package": "github.com/githubflyideas/unagikuma/e2e",
+      "Test": "TestUIComponents/version-history-ui.mjs",
+      "Elapsed": 93.97,
+      "coverage_kind": "browser-fixture"
+    },
+    {
+      "Time": "2026-11-02T12:06:02.8587642+09:00",
+      "Action": "pass",
+      "Package": "github.com/githubflyideas/unagikuma/e2e",
+      "Test": "TestUIComponents/report-ui.mjs",
+      "Elapsed": 6.87,
+      "coverage_kind": "browser-fixture"
+    },
+    {
+      "Time": "2026-11-02T12:06:09.0358216+09:00",
+      "Action": "pass",
+      "Package": "github.com/githubflyideas/unagikuma/e2e",
+      "Test": "TestUIComponents/node-discovery-ui.mjs",
+      "Elapsed": 6.18,
+      "coverage_kind": "browser-fixture"
+    },
+    {
+      "Time": "2026-11-02T12:06:11.2193563+09:00",
+      "Action": "pass",
+      "Package": "github.com/githubflyideas/unagikuma/e2e",
+      "Test": "TestUIComponents/zones-ui.mjs",
+      "Elapsed": 2.18,
+      "coverage_kind": "browser-fixture"
+    },
+    {
+      "Time": "2026-11-02T12:06:11.2193563+09:00",
+      "Action": "pass",
+      "Package": "github.com/githubflyideas/unagikuma/e2e",
+      "Test": "TestUIComponents",
+      "Elapsed": 139.12,
+      "coverage_kind": "browser-fixture"
+    },
+    {
+      "Time": "2026-11-02T12:06:11.9713748+09:00",
+      "Action": "pass",
+      "Package": "github.com/githubflyideas/unagikuma/e2e",
+      "Test": "TestWorkspaceRuntimeRejectsLegacyActivation",
+      "Elapsed": 0.75,
+      "coverage_kind": "source-in-process"
+    },
+    {
+      "Time": "2026-11-02T12:06:16.9427163+09:00",
+      "Action": "pass",
+      "Package": "github.com/githubflyideas/unagikuma/e2e",
+      "Test": "TestWorkspaceScheduleRecursAndRestarts",
+      "Elapsed": 4.97,
+      "coverage_kind": "source-in-process"
+    },
+    {
+      "Time": "2026-11-02T12:06:18.0377538+09:00",
+      "Action": "pass",
+      "Package": "github.com/githubflyideas/unagikuma/e2e",
+      "Test": "TestZoneRuntimeSurvivesRestart",
+      "Elapsed": 1.09,
+      "coverage_kind": "source-in-process"
+    },
+    {
+      "Time": "2026-11-02T12:06:18.504797+09:00",
+      "Action": "pass",
+      "Package": "github.com/githubflyideas/unagikuma/e2e",
+      "Test": "TestZoneRuntimeStandalone",
+      "Elapsed": 0.47,
+      "coverage_kind": "source-in-process"
+    },
+    {
+      "Time": "2026-11-02T12:06:20.2506777+09:00",
+      "Action": "pass",
+      "Package": "github.com/githubflyideas/unagikuma/e2e",
+      "Test": "TestZoneRuntimeInvalidCASAndRecovery",
+      "Elapsed": 1.75,
+      "coverage_kind": "source-in-process"
+    },
+    {
+      "Time": "2026-11-02T12:06:21.9270115+09:00",
+      "Action": "pass",
+      "Package": "github.com/githubflyideas/unagikuma/e2e",
+      "Test": "TestZoneSyncSourceLossAndSecondaryRestart",
+      "Elapsed": 1.68,
+      "coverage_kind": "source-in-process"
+    }
+  ],
+  "top_level_counts": {
+    "pass": 12,
+    "fail": 0,
+    "skip": 0
+  },
+  "external_tests_expected": [
+    "TestFailover",
+    "TestImportAdaptersUI",
+    "TestStandbyWindowsSupervisedRecovery",
+    "TestUI",
+    "TestZonesUI"
+  ],
+  "binary_unchanged_after_tests": true,
+  "archive_unchanged_after_tests": true,
+  "limitations": [
+    "Windows amd64 only; no other platform acceptance",
+    "Not an official tagged/published release",
+    "Windows supervisor test is NOT SCM install/recovery acceptance",
+    "UI components use mocked API fixtures; runtime engine tests execute source in process",
+    "Packaged README images are existing repository documentation; final candidate capture is separate"
+  ],
+  "finished_utc": "2026-11-02T03:06:22.186923+00:00",
+  "initial_report": "C:\\Users\\fengyongxiao.LAPTOP-05HDB6FR\\package-acceptance\\v1.5.7-rc.1\\report.json",
+  "harness_revision_note": "Windows TestFailover explicitly supervises exit 3; retirement wait spans the documented one-minute retry interval; product binary unchanged"
+}

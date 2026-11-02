@@ -83,10 +83,11 @@ type App struct {
 	pubMu   sync.RWMutex
 	publish func(typ string, v any)
 
-	restart      chan struct{}
-	restartOnce  sync.Once
-	stateBusy    atomic.Bool
-	stateRetries atomic.Int32 // failed state copies in a row
+	restart            chan struct{}
+	restartOnce        sync.Once
+	workspaceLifecycle workspaceLifecycleStatus
+	stateBusy          atomic.Bool
+	stateRetries       atomic.Int32 // failed state copies in a row
 }
 
 // New opens the store, loads the configuration and prepares the engine.

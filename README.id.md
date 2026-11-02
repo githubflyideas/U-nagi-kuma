@@ -10,7 +10,7 @@ Pemantauan self-hosted yang mudah: langsung tahu saat situs atau server Anda mat
 
 ## Antarmuka saat ini
 
-> Dibangun ulang dari pohon kerja yang belum dirilis, memakai backend lokal nyata dan data demo sekali pakai. Notifikasi hanya masuk ke log lokal; bukan insiden produksi atau tangkapan layar rilis final.
+> Diambil dari paket kandidat v1.5.7-rc.1 Windows yang telah diekstrak, memakai backend lokal nyata dan data demo sekali pakai. Notifikasi hanya masuk ke log lokal; bukan insiden produksi atau tangkapan layar rilis final.
 
 ![Dasbor Midnight](docs/images/current/dashboard-midnight.png)
 

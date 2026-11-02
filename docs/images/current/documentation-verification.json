@@ -1,11 +1,150 @@
 {
+  "verifiedAt": "2026-11-02T03:22:51.789969+00:00",
+  "captureTime": "2026-11-02T03:09:42.432Z",
+  "runtimeVersion": "v1.5.7-rc.1",
+  "platform": "windows/amd64",
+  "captureManifestSha256": "7f725ca51870129817c01a9410216336f2b249a377a7e295c04979e2f7f0e1a2",
+  "binarySha256": "90f294cc8c5080c57c3847e986f115d1705b59d382304f5308628ab4c55ac2c5",
+  "binaryHashMatchesCandidateAndExtractedExecutable": true,
   "readmesVerified": 15,
+  "additionalDocumentationReadmesVerified": 1,
   "localImageReferencesVerified": 105,
+  "uniqueLocalImageTargets": 7,
   "screenshots": 6,
-  "originalPngBytes": 667608,
-  "optimizedPngBytes": 664214,
-  "removedObsoleteTourBytes": 352426,
+  "currentPngBytes": 666095,
+  "imageSizesAndDimensionsMatchManifest": true,
   "installCommandBlocksUnchanged": true,
-  "pixelEqualityVerified": true,
-  "visualReview": "All six final captures inspected; desktop overview is a viewport capture; other pages full-page; no horizontal overflow or browser page errors"
+  "allFencedBlocksUnchanged": true,
+  "fencedBlocksVerified": 122,
+  "comparisonBaseline": "Pre-edit working-tree snapshot; all fenced blocks compared exactly after newline normalization. Root README changes limited to screenshot provenance sentences; other prose and feature limitations preserved.",
+  "fencedBlocksByFile": [
+    {
+      "file": "README.ar.md",
+      "fencedBlocks": 8,
+      "sha256": "9b23bdb25412607c67dce66a702ee04eabfbf8406afff69da3af06b65be4dbe8"
+    },
+    {
+      "file": "README.bn.md",
+      "fencedBlocks": 8,
+      "sha256": "9b23bdb25412607c67dce66a702ee04eabfbf8406afff69da3af06b65be4dbe8"
+    },
+    {
+      "file": "README.de.md",
+      "fencedBlocks": 8,
+      "sha256": "9b23bdb25412607c67dce66a702ee04eabfbf8406afff69da3af06b65be4dbe8"
+    },
+    {
+      "file": "README.es.md",
+      "fencedBlocks": 8,
+      "sha256": "9b23bdb25412607c67dce66a702ee04eabfbf8406afff69da3af06b65be4dbe8"
+    },
+    {
+      "file": "README.fr.md",
+      "fencedBlocks": 8,
+      "sha256": "9b23bdb25412607c67dce66a702ee04eabfbf8406afff69da3af06b65be4dbe8"
+    },
+    {
+      "file": "README.hi.md",
+      "fencedBlocks": 8,
+      "sha256": "9b23bdb25412607c67dce66a702ee04eabfbf8406afff69da3af06b65be4dbe8"
+    },
+    {
+      "file": "README.id.md",
+      "fencedBlocks": 8,
+      "sha256": "9b23bdb25412607c67dce66a702ee04eabfbf8406afff69da3af06b65be4dbe8"
+    },
+    {
+      "file": "README.ja.md",
+      "fencedBlocks": 8,
+      "sha256": "9b23bdb25412607c67dce66a702ee04eabfbf8406afff69da3af06b65be4dbe8"
+    },
+    {
+      "file": "README.ko.md",
+      "fencedBlocks": 8,
+      "sha256": "9b23bdb25412607c67dce66a702ee04eabfbf8406afff69da3af06b65be4dbe8"
+    },
+    {
+      "file": "README.md",
+      "fencedBlocks": 9,
+      "sha256": "bc3a1205903bd2781c7aaaf85378a3a261a8603e1a9a6aff75d186e6e1ba3f59"
+    },
+    {
+      "file": "README.pt.md",
+      "fencedBlocks": 8,
+      "sha256": "9b23bdb25412607c67dce66a702ee04eabfbf8406afff69da3af06b65be4dbe8"
+    },
+    {
+      "file": "README.ru.md",
+      "fencedBlocks": 8,
+      "sha256": "9b23bdb25412607c67dce66a702ee04eabfbf8406afff69da3af06b65be4dbe8"
+    },
+    {
+      "file": "README.ur.md",
+      "fencedBlocks": 8,
+      "sha256": "9b23bdb25412607c67dce66a702ee04eabfbf8406afff69da3af06b65be4dbe8"
+    },
+    {
+      "file": "README.vi.md",
+      "fencedBlocks": 8,
+      "sha256": "9b23bdb25412607c67dce66a702ee04eabfbf8406afff69da3af06b65be4dbe8"
+    },
+    {
+      "file": "README.zh.md",
+      "fencedBlocks": 8,
+      "sha256": "9b23bdb25412607c67dce66a702ee04eabfbf8406afff69da3af06b65be4dbe8"
+    },
+    {
+      "file": "docs/images/current/README.md",
+      "fencedBlocks": 1,
+      "sha256": "c9837c34ba03e521051d7b2d69b94c5591ded45f7298cb24745f8b1ad63228b5"
+    }
+  ],
+  "images": [
+    {
+      "file": "dashboard-midnight.png",
+      "bytes": 111797,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "f3c50cded336df9f389dedf0b1505207e2e8f430865b0ad92432f2e52adc9675"
+    },
+    {
+      "file": "dashboard-paper.png",
+      "bytes": 108133,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "e2a82de4e9cc5201320abec0fe288215f4ccd636d72a868201d7aa68dcccd4a1"
+    },
+    {
+      "file": "alerts-midnight.png",
+      "bytes": 103610,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "c63a6f138f8988f6ed4335ce03d92aef2331da8d4cf7dccb09a0ffe984e0a707"
+    },
+    {
+      "file": "oncall-paper.png",
+      "bytes": 197057,
+      "width": 1440,
+      "height": 1755,
+      "sha256": "3ce952d30d1c2b71ff75be5a36053c71c0a74d73304815703a34d1a08f033082"
+    },
+    {
+      "file": "daily-report-midnight.png",
+      "bytes": 90603,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "a62d3dc2a046ae770c9620d939457fec41910276f3b41d83aaec80a72c782c10"
+    },
+    {
+      "file": "mobile-paper.png",
+      "bytes": 54895,
+      "width": 390,
+      "height": 1084,
+      "sha256": "61ac3e8c088a22e673f1d12ed4ad941183fbdf7b1f845626bc8029f0b9f64ae3"
+    }
+  ],
+  "optimization": "Not performed or verified for this capture set; no historical compression or pixel-equality claims retained.",
+  "visualReview": "Not performed by this documentation-only verification; prior capture-set visual claims are not reused.",
+  "captureErrorsRecorded": [],
+  "acceptanceBoundary": "Windows amd64 candidate only; not final release, multi-platform or SCM acceptance."
 }

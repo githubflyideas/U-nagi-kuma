@@ -10,7 +10,7 @@ Giám sát tự lưu trữ, dễ dùng: biết ngay khi website hay máy chủ c
 
 ## Giao diện hiện tại
 
-> Biên dịch mới từ cây mã nguồn đang làm việc, chưa phát hành, dùng máy chủ cục bộ thật và dữ liệu minh họa tạm thời. Thông báo chỉ ghi vào nhật ký cục bộ; không phải sự cố thực tế hay ảnh của bản phát hành cuối cùng.
+> Ảnh chụp từ gói ứng viên phát hành v1.5.7-rc.1 cho Windows đã giải nén, dùng máy chủ cục bộ thật và dữ liệu minh họa tạm thời. Thông báo chỉ ghi vào nhật ký cục bộ; không phải sự cố thực tế hay ảnh của bản phát hành cuối cùng.
 
 ![Tổng quan Midnight](docs/images/current/dashboard-midnight.png)
 

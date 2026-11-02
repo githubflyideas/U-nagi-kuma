@@ -10,7 +10,7 @@ Monitorización autoalojada y sencilla: entérate en cuanto tus webs o servidore
 
 ## Interfaz actual
 
-> Compilación nueva del árbol de trabajo aún no publicado, con un servidor local real y datos de demostración desechables. Las notificaciones solo van al registro local; no son incidentes de producción ni capturas de la versión final.
+> Capturas del paquete candidato v1.5.7-rc.1 para Windows ya extraído, con un servidor local real y datos de demostración desechables. Las notificaciones solo van al registro local; no son incidentes de producción ni capturas de la versión final.
 
 ![Panel Midnight](docs/images/current/dashboard-midnight.png)
 

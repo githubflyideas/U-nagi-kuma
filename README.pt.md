@@ -10,7 +10,7 @@ Monitoramento auto-hospedado e descomplicado: saiba na hora quando seus sites e 
 
 ## Interface atual
 
-> Nova compilação da árvore de trabalho ainda não publicada, com backend local real e dados de demonstração descartáveis. Notificações apenas no log local; não são incidentes de produção nem imagens da versão final.
+> Capturas do pacote candidato v1.5.7-rc.1 para Windows após extração, com backend local real e dados de demonstração descartáveis. Notificações apenas no log local; não são incidentes de produção nem imagens da versão final.
 
 ![Painel Midnight](docs/images/current/dashboard-midnight.png)
 

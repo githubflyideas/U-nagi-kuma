@@ -33,15 +33,18 @@ func (a *App) RunWorkspaceChecks(ctx context.Context, tenant store.TenantID, wor
 // due is private supervisor state: nil means a manual full pass. Full definitions
 // are always reconciled before selecting due checks, never a partial registry.
 func (a *App) runWorkspaceChecks(ctx context.Context, tenant store.TenantID, workspace store.WorkspaceID, generation int64, due map[string]time.Time) (out WorkspaceCheckBatch, err error) {
-	out.NotificationStatus = "blocked_unscoped_notifications"
+	out.NotificationStatus = "error"
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	c, reader, err := a.RestoreWorkspaceConfig(tenant, workspace, generation)
 	if err != nil {
 		return out, err
 	}
-	// Fail closed for semantics this check-only executor cannot honor. Notification
-	// configuration is retained but explicitly blocked, never compiled/dispatched.
+	if err = ValidateWorkspaceNotifications(c); err != nil {
+		out.NotificationStatus = "blocked_unsupported_notifications"
+		return out, err
+	}
+	// Fail closed for check semantics this bounded executor cannot honor.
 	if len(c.Monitors) > 64 || len(c.Maints) > 0 {
 		return out, ErrWorkspaceExecutionUnsupported
 	}
@@ -65,6 +68,9 @@ func (a *App) runWorkspaceChecks(ctx context.Context, tenant store.TenantID, wor
 	}
 	ids, err := writer.Register(defs)
 	if err != nil {
+		return out, err
+	}
+	if out.NotificationStatus, err = a.dispatchWorkspaceNotifications(ctx, c, reader, writer); err != nil {
 		return out, err
 	}
 	for _, m := range c.Monitors {
@@ -100,7 +106,7 @@ func (a *App) runWorkspaceChecks(ctx context.Context, tenant store.TenantID, wor
 		if err = ctx.Err(); err != nil {
 			return out, err
 		}
-		state, e := writer.Record(ids[m.Name], result, m.Interval, engine.StepParams{Attempts: m.Attempts, RecoverAttempts: m.RecoverAttempts, OtherDegraded: result.Degraded, Slow: m.Degraded > 0 && result.Latency > m.Degraded})
+		state, e := writer.RecordNotification(ids[m.Name], result, m.Interval, engine.StepParams{Attempts: m.Attempts, RecoverAttempts: m.RecoverAttempts, OtherDegraded: result.Degraded, Slow: m.Degraded > 0 && result.Latency > m.Degraded}, workspaceNotificationPlan(c, m))
 		if e != nil {
 			return out, e
 		}
@@ -109,5 +115,6 @@ func (a *App) runWorkspaceChecks(ctx context.Context, tenant store.TenantID, wor
 			due[m.Name] = time.Now().Add(m.Interval)
 		}
 	}
-	return out, nil
+	out.NotificationStatus, err = a.dispatchWorkspaceNotifications(ctx, c, reader, writer)
+	return out, err
 }

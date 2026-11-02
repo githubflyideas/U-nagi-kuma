@@ -6,6 +6,7 @@ package e2e
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -24,6 +25,40 @@ import (
 var bin string
 
 func TestMain(m *testing.M) {
+	// Explicit invalid paths, including empty values, must never rebuild.
+	if supplied, ok := os.LookupEnv("UNAGIKUMA_E2E_BIN"); ok {
+		fail := func(err error) {
+			fmt.Fprintf(os.Stderr, "UNAGIKUMA_E2E_BIN: %v\n", err)
+			os.Exit(2)
+		}
+		if supplied == "" {
+			fail(fmt.Errorf("explicit path is empty"))
+		}
+		path, err := filepath.Abs(supplied)
+		if err != nil {
+			fail(err)
+		}
+		info, err := os.Stat(path)
+		if err != nil {
+			fail(err)
+		}
+		if !info.Mode().IsRegular() {
+			fail(fmt.Errorf("not a regular file: %s", path))
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		out, err := exec.CommandContext(ctx, path, "version").CombinedOutput()
+		if err != nil {
+			fail(fmt.Errorf("version probe failed for %s: %w: %s", path, err, out))
+		}
+		if !strings.HasPrefix(strings.TrimSpace(string(out)), "unagikuma ") {
+			fail(fmt.Errorf("unexpected version output: %q", out))
+		}
+		bin = path
+		fmt.Fprintf(os.Stderr, "UNAGIKUMA_E2E_BIN: external executable %s (%s)\n", bin, strings.TrimSpace(string(out)))
+		os.Exit(m.Run())
+	}
+	fmt.Fprintln(os.Stderr, "e2e: building source binary (UNAGIKUMA_E2E_BIN absent)")
 	dir, err := os.MkdirTemp("", "unagikuma-e2e")
 	if err != nil {
 		panic(err)
@@ -105,7 +140,12 @@ func (s *server) url(p string) string { return fmt.Sprintf("http://127.0.0.1:%d%
 
 func (s *server) waitFor(what string, cond func() bool) {
 	s.t.Helper()
-	deadline := time.Now().Add(60 * time.Second)
+	s.waitForWithin(what, 60*time.Second, cond)
+}
+
+func (s *server) waitForWithin(what string, timeout time.Duration, cond func() bool) {
+	s.t.Helper()
+	deadline := time.Now().Add(timeout)
 	for !cond() {
 		if time.Now().After(deadline) {
 			s.t.Fatalf("%s: timed out waiting for %s", s.name, what)
@@ -223,6 +263,31 @@ func TestFailover(t *testing.T) {
 	if code := b.call("POST", "/api/v1/cluster/promote", map[string]any{}, nil); code != 200 {
 		t.Fatalf("promote: %d", code)
 	}
+	if runtime.GOOS == "windows" {
+		// Windows reexec deliberately exits 3 for a supervisor; unlike Unix
+		// it cannot replace this process itself. Model that documented contract
+		// explicitly, without claiming Windows SCM installation coverage.
+		exited := make(chan error, 1)
+		go func() { exited <- b.cmd.Wait() }()
+		select {
+		case err := <-exited:
+			if err == nil || b.cmd.ProcessState.ExitCode() != 3 {
+				t.Fatalf("expected restart exit 3, got %v (%v)", err, b.cmd.ProcessState)
+			}
+		case <-time.After(20 * time.Second):
+			_ = b.cmd.Process.Kill()
+			<-exited
+			t.Fatal("promotion did not exit for supervisor")
+		}
+		if _, err := os.Stat(filepath.Join(b.dir, "promote.json")); err != nil {
+			t.Fatalf("restart intent missing: %v", err)
+		}
+		t.Log("Windows subprocess supervisor observed exit 3; restarting once (not SCM validation)")
+		b.run()
+		if _, err := os.Stat(filepath.Join(b.dir, "promote.json")); !os.IsNotExist(err) {
+			t.Fatalf("restart intent not consumed: %v", err)
+		}
+	}
 	b.waitFor("the new master to accept the old master's admin", func() bool { return b.login("admin", "master-pass-1") })
 	b.waitFor("the master's monitor checked by the new master", func() bool {
 		for _, m := range b.monitors() {
@@ -244,7 +309,10 @@ func TestFailover(t *testing.T) {
 	if !a.login("admin", "master-pass-1") {
 		t.Fatal("old master login")
 	}
-	a.waitFor("the old master to stand down", func() bool {
+	// App.Run retries retirePrevious once a minute after its startup attempt
+	// (which happens while a is still stopped). A 60s test deadline races the
+	// first scheduled attempt; allow two intervals, retaining the same state assertion.
+	a.waitForWithin("the old master to stand down", 2*time.Minute, func() bool {
 		var r struct{ Superseded any }
 		a.call("GET", "/api/v1/overview", nil, &r)
 		return r.Superseded != nil

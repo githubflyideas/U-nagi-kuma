@@ -8,15 +8,17 @@ import {randomBytes,createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 const [go,scratch]=process.argv.slice(2);assert.ok(go&&scratch,'Go executable and disposable scratch directory required');
-const out=path.resolve('docs/images/current');await mkdir(out,{recursive:true});
+const out=path.resolve(process.env.UNAGIKUMA_CAPTURE_OUT || 'docs/images/current');await mkdir(out,{recursive:true});
 const data=await mkdtemp(path.join(path.resolve(scratch),'readme-capture-'));
-const binary=path.join(data,process.platform==='win32'?'unagikuma.exe':'unagikuma');
+const suppliedBinary=process.env.UNAGIKUMA_E2E_BIN;
+const binary=suppliedBinary ? path.resolve(suppliedBinary) : path.join(data,process.platform==='win32'?'unagikuma.exe':'unagikuma');
+if(suppliedBinary) assert.ok((await stat(binary)).isFile(),'Supplied package binary must be a regular file; never rebuild silently');
 const git=(...args)=>execFileSync('git',args,{encoding:'utf8'}).trim();
 const revision=git('rev-parse','HEAD');const statusBefore=git('status','--porcelain');
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 const diffBefore=hash(execFileSync('git',['diff','HEAD','--','internal','web','cmd','go.mod','go.sum']));
 const buildArgs=['build','-p','1','-trimpath','-o',binary,'./cmd/unagikuma'];
-execFileSync(go,buildArgs,{env:{...process.env,CGO_ENABLED:'0'},stdio:'pipe'});
+if(!suppliedBinary) execFileSync(go,buildArgs,{env:{...process.env,CGO_ENABLED:'0'},stdio:'pipe'});
 const diffAfter=hash(execFileSync('git',['diff','HEAD','--','internal','web','cmd','go.mod','go.sum']));
 assert.equal(diffBefore,diffAfter,'Tracked product source changed during build; rerun after integration stabilizes');
 const binaryHash=hash(await readFile(binary));
@@ -47,6 +49,8 @@ try{
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base);const password=randomBytes(24).toString('hex');await page.fill('input[autocomplete=username]','readme-demo');await page.locator('input[autocomplete=new-password]').nth(0).fill(password);await page.locator('input[autocomplete=new-password]').nth(1).fill(password);await page.click('.auth .btn.primary');await page.waitForSelector('nav.nav');
  const api=p=>page.evaluate(async p=>(await fetch('/api/v1'+p)).json(),p);
+ const runtimeVersion=(await api('/overview')).version;
+ if(process.env.UNAGIKUMA_EXPECT_VERSION) assert.equal(runtimeVersion,process.env.UNAGIKUMA_EXPECT_VERSION,'Package runtime version must match candidate');
  let report;for(let i=0;i<120;i++){report=await api('/reports/daily');if(report.snapshot?.issues_total===1)break;await page.waitForTimeout(250);}
  assert.equal(report.snapshot.issues_total,1);assert.equal(report.snapshot.services.total,4);assert.equal(report.snapshot.semantics,'current_snapshot');
  async function capture(name,route,theme,selector,width=1440,height=1000){
@@ -64,7 +68,7 @@ try{
  await capture('daily-report-midnight','#/notices/report','midnight','.report-totals');
  await capture('mobile-paper','#/notices/report','paper','.report-totals',390,844);
  assert.deepEqual(errors,[]);
- await writeFile(path.join(out,'capture-manifest.json'),JSON.stringify({capturedAt:new Date().toISOString(),sourceRevision:revision,sourceDirty:!!statusBefore,sourceNote:'Unreleased current working-tree UI; not a frozen final-release build. Zone integration ongoing.',trackedProductDiffSha256:diffBefore,trackedProductUnchangedDuringBuild:diffBefore===diffAfter,buildInvocation:'CGO_ENABLED=0 go build -p 1 -trimpath -o <disposable-scratch>/unagikuma.exe ./cmd/unagikuma',versionOverride:false,binarySha256:binaryHash,runtimeURLType:'loopback HTTP (127.0.0.1, ephemeral port)',data:'Disposable illustrative demo; real loopback HTTP probes, intentional 503 and passive PUSH; no production data',notifications:'Local log channels only; automatic daily report disabled',reportVerified:{services:report.snapshot.services.total,issues:report.snapshot.issues_total,semantics:report.snapshot.semantics},images,errors},null,2)+'\n');
+ await writeFile(path.join(out,'capture-manifest.json'),JSON.stringify({capturedAt:new Date().toISOString(),sourceRevision:revision,sourceDirty:!!statusBefore,sourceNote:suppliedBinary?'Captured from extracted candidate package; not a claim of final release acceptance.':'Unreleased working-tree build.',runtimeVersion,packagedBinary:!!suppliedBinary,trackedProductDiffSha256:diffBefore,trackedProductUnchangedDuringBuild:diffBefore===diffAfter,buildInvocation:suppliedBinary?'No build: supplied extracted package binary':'CGO_ENABLED=0 go build -p 1 -trimpath -o <disposable-scratch>/unagikuma ./cmd/unagikuma',versionOverride:false,binarySha256:binaryHash,runtimeURLType:'loopback HTTP (127.0.0.1, ephemeral port)',data:'Disposable illustrative demo; real loopback HTTP probes, intentional 503 and passive PUSH; no production data',notifications:'Local log channels only; automatic daily report disabled',reportVerified:{services:report.snapshot.services.total,issues:report.snapshot.issues_total,semantics:report.snapshot.semantics},images,errors},null,2)+'\n');
  console.log(JSON.stringify({ok:true,images:images.length,out,errors}));
 }finally{
  await browser.close();proc.kill();await new Promise(r=>proc.exitCode!==null?r():proc.once('exit',r));await new Promise(r=>target.close(r));await rm(data,{recursive:true,force:true});

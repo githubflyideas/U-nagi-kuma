@@ -10,7 +10,7 @@ Einfaches, selbst gehostetes Monitoring: Sie wissen sofort, wenn Ihre Websites o
 
 ## Aktuelle Oberfläche
 
-> Frisch aus dem noch unveröffentlichten Arbeitsstand gebaut, mit echtem lokalem Backend und wegwerfbaren Demodaten. Benachrichtigungen landen nur im lokalen Log; keine Produktionsvorfälle und keine Bilder der endgültigen Veröffentlichung.
+> Aufgenommen mit dem entpackten Windows-Kandidatenpaket v1.5.7-rc.1, mit echtem lokalem Backend und wegwerfbaren Demodaten. Benachrichtigungen landen nur im lokalen Log; keine Produktionsvorfälle und keine Bilder der endgültigen Veröffentlichung.
 
 ![Midnight-Übersicht](docs/images/current/dashboard-midnight.png)
 

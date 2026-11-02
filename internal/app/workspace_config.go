@@ -104,5 +104,8 @@ func (a *App) parseWorkspaceConfig(raw []byte, resolve func(string) (string, err
 			return nil, store.ErrWorkspaceConfigInvalid
 		}
 	}
+	if err := ValidateWorkspaceNotifications(c); err != nil {
+		return nil, err
+	}
 	return c, nil
 }

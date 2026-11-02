@@ -1,0 +1,40 @@
+name: v2 early-access publication
+on:
+  push:
+    branches: ['release/v2.0.0-preview']
+permissions:
+  contents: write
+concurrency:
+  group: publish-v2.0.0-preview
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Refuse to replace an existing version
+        run: |
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v2.0.0" >/dev/null 2>&1; then
+            echo 'v2.0.0 already exists; use a new version instead of overwriting artifacts.'; exit 1
+          fi
+      # Explicit maintainer-requested build-first publication. Normal ci.yml
+      # remains enabled; this job does not assert that its tests have passed.
+      - name: Build distribution archives
+        run: scripts/dist.sh v2.0.0
+      - name: Verify archive checksums
+        run: cd dist && sha256sum -c SHA256SUMS
+      - name: Publish non-latest pre-release
+        run: |
+          gh release create v2.0.0 dist/unagikuma-* dist/SHA256SUMS \
+            --target "$GITHUB_SHA" --title 'unagikuma v2.0.0 — early access' \
+            --notes-file docs/releases/v2.0.0-preview.md --prerelease --latest=false
+      - name: Verify published state
+        run: |
+          gh release view v2.0.0 --json tagName,isDraft,isPrerelease,assets,targetCommitish
+          test "$(gh release view v2.0.0 --json isPrerelease -q .isPrerelease)" = true
+          test "$(gh release view v2.0.0 --json isDraft -q .isDraft)" = false

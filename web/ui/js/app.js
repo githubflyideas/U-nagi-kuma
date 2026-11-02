@@ -17,6 +17,7 @@ import { OnCall } from './views/oncall.js';
 import { Settings } from './views/settings.js';
 import { Nodes } from './views/nodes.js';
 import { Zones } from './views/zones.js';
+import { Workspaces } from './views/workspaces.js';
 import { Expiry } from './views/expiry.js';
 import { IncidentReport } from './views/incident.js';
 import { DrawerHost } from './views/drawer.js';
@@ -139,6 +140,7 @@ const NAV = [
   ['/notices', 'ui.nav.notices', '⚑'],
   ['/config', 'ui.nav.config', '{}'],
   ['/zones', 'ui.zone.title', '▧'],
+  ['/workspaces', 'Workspaces', '▦'],
   ['/nodes', 'ui.nav.nodes', '⌖'],
   ['/settings', 'ui.nav.settings', '⚙'],
 ];
@@ -237,6 +239,7 @@ function Shell({ user, onLogout, onLang }) {
     case 'config': view = html`<${ConfigView} tab=${p[1] || 'edit'} />`; break;
     case 'settings': view = html`<${Settings} tab=${p[1] || 'general'} user=${user} />`; break;
     case 'zones': view = html`<${Zones} />`; break;
+    case 'workspaces': view = html`<${Workspaces} />`; break;
     case 'nodes': view = html`<div class="page"><${Nodes} /></div>`; break;
     default: view = html`<div class="page"><div class="empty"><b>404</b></div></div>`;
   }

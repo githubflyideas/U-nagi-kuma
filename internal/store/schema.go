@@ -114,6 +114,7 @@ var coreMigrations = []string{
 	workspaceMigration,
 	workspaceSecretMigration,
 	workspaceConfigMigration,
+	workspaceIncidentMigration,
 }
 
 var historyMigrations = []string{

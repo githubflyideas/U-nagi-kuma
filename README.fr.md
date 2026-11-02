@@ -10,7 +10,7 @@ Une supervision auto-hébergée et simple : sachez dès qu’un site ou un serve
 
 ## Interface actuelle
 
-> Nouvelle compilation du travail en cours non publié, avec un véritable serveur local et des données de démonstration jetables. Les notifications restent dans les journaux locaux : ni incidents de production, ni captures de la version finale.
+> Captures du paquet candidat v1.5.7-rc.1 pour Windows après extraction, avec un véritable serveur local et des données de démonstration jetables. Les notifications restent dans les journaux locaux : ni incidents de production, ni captures de la version finale.
 
 ![Tableau de bord Midnight](docs/images/current/dashboard-midnight.png)
 
