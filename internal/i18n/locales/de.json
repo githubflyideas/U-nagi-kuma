@@ -1413,5 +1413,9 @@
 "ui.oc.prev": "Zurück",
 "ui.oc.next": "Weiter",
 "ui.oc.today": "Heute",
-"ui.oc.your_tz": "Zeiten in Ihrer Zeitzone ({tz})"
+"ui.oc.your_tz": "Zeiten in Ihrer Zeitzone ({tz})",
+"msg.site": "Standort: {site}",
+"sys.title.master": "Master nicht erreichbar: dieser Standort prüft und alarmiert selbst",
+"sys.resolved.master": "Master wieder erreichbar: die Prüfung geht an ihn zurück",
+"sys.master_unreachable": "Der Master {master} ist seit {time} nicht erreichbar. Dieser Standort führt die Monitore des Masters mit der letzten Kopie seiner Konfiguration aus und alarmiert selbst, bis der Master zurück ist."
 }

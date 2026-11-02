@@ -27,6 +27,19 @@ func (e *Engine) StorageFailing(on bool, since time.Time, why string, lost int64
 	})
 }
 
+// MasterUnreachable opens the replica's "checking on its own" incident
+// while the master is out of reach and resolves it once it is back.
+func (e *Engine) MasterUnreachable(on bool, master string, since time.Time) {
+	e.do(func() {
+		now := e.now()
+		if on {
+			e.openSystem(SystemMaster, now, e.text("master_unreachable", master, since))
+			return
+		}
+		e.resolveSystem(SystemMaster, now, "")
+	})
+}
+
 // openSystem opens (or keeps) a system incident; it is notified through the
 // "system" policy.
 func (e *Engine) openSystem(key string, now time.Time, detail string) *Incident {

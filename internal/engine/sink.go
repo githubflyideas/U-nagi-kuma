@@ -78,6 +78,7 @@ const (
 	SystemOverload     = "overload"
 	SystemAllFailed    = "all_failed"
 	SystemStorage      = "storage" // results and events cannot be written
+	SystemMaster       = "master"  // a replica cannot reach its master and checks on its own
 )
 
 // Incident is a problem with its notification state.

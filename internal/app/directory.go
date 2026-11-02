@@ -41,6 +41,9 @@ func (a *App) DirectoryChanged() {
 // as nonexistent; once one crosses the threshold the channels are
 // re-applied without it.
 func (a *App) send(ctx context.Context, ch notify.Channel, m *notify.Message) notify.Attempt {
+	if m.Site == "" {
+		m.Site = a.site()
+	}
 	at := a.sender.Send(ctx, ch, m)
 	if len(at.Bounces) == 0 {
 		return at

@@ -1404,5 +1404,9 @@
 "ui.oc.prev": "上一页",
 "ui.oc.next": "下一页",
 "ui.oc.today": "今天",
-"ui.oc.your_tz": "时间按你的时区显示（{tz}）"
+"ui.oc.your_tz": "时间按你的时区显示（{tz}）",
+"msg.site": "站点：{site}",
+"sys.title.master": "无法连接主节点：本站点独立检查并告警",
+"sys.resolved.master": "主节点已恢复连接：检查交还给主节点",
+"sys.master_unreachable": "自 {time} 起无法连接主节点 {master}。本站点使用最近一次复制的配置运行主节点的监控，并独立发送告警，直到主节点恢复。"
 }

@@ -32,10 +32,13 @@ type Message struct {
 	Time       time.Time     `json:"time"`
 	Delayed    time.Duration `json:"delayed,omitempty"` // >0 when delivered late
 	DryRun     bool          `json:"dry_run,omitempty"`
-	Instance   string        `json:"instance"`       // unagikuma instance name (multi-instance setups)
-	DeliveryID string        `json:"delivery_id"`    // idempotency key, also X-Unagikuma-Delivery-Id
-	Lang       string        `json:"lang"`           // zh or en
-	Body       string        `json:"body,omitempty"` // preformatted body for SYSTEM/DIGEST kinds
+	Instance   string        `json:"instance"` // unagikuma instance name (multi-instance setups)
+	// Site names the site (cluster node) that sent the message; empty on
+	// a single machine. Sites never deduplicate each other's messages.
+	Site       string `json:"site,omitempty"`
+	DeliveryID string `json:"delivery_id"`    // idempotency key, also X-Unagikuma-Delivery-Id
+	Lang       string `json:"lang"`           // zh or en
+	Body       string `json:"body,omitempty"` // preformatted body for SYSTEM/DIGEST kinds
 	// Class is what the failure is: business (the service answers wrongly),
 	// network, uncertain (cannot be reached) or system.
 	Class string `json:"class,omitempty"`

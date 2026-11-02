@@ -638,3 +638,16 @@ func (p *peer) reader(r *bufio.Reader, maxMsg int) error {
 		}
 	}
 }
+
+// HasCap reports whether a connected node announced a capability.
+func (m *Master) HasCap(node, c string) bool {
+	m.mu.Lock()
+	p := m.peers[node]
+	m.mu.Unlock()
+	if p == nil {
+		return false
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.caps[c]
+}

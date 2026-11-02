@@ -67,6 +67,9 @@ type App struct {
 	pki    *cluster.PKI
 	master *cluster.Master
 	am     agentMode // membership of a cluster this server joined
+	// replica is the copy of the master this server checks with while
+	// the master is out of reach.
+	replica replicaState
 	// applied is the configuration the engine runs, readable without the
 	// configuration lock (agent sessions consult it while a new one is
 	// being applied).
@@ -158,6 +161,7 @@ func New(o Options) (*App, error) {
 	})
 	a.master.SetSink(a.engine)
 	a.loadMembership()
+	a.loadReplica()
 	if err := a.cfg.load(); err != nil {
 		st.Close()
 		return nil, err
@@ -251,6 +255,10 @@ func (a *App) applyLocked(cfg *config.Config) {
 	}
 	ec := a.engineConfig(cfg)
 	a.applied.Store(cfg)
+	if lec, ok := a.localEngineConfig(); ok {
+		// A replica that cannot reach its master checks on its own.
+		ec = lec
+	}
 	if a.SupersededBy() != nil {
 		// Replaced by a newer master: check nothing, notify nothing.
 		ec.Monitors, ec.Maints = nil, nil
@@ -295,6 +303,7 @@ func (a *App) Run(ctx context.Context) error {
 	run(func() { a.engine.Run(ctx) })
 	run(func() { a.heartbeat.Run(ctx) })
 	run(func() { a.runAgentMode(ctx) })
+	run(func() { a.runReplica(ctx) })
 	run(func() { a.every(ctx, 2*time.Second, a.cfg.check) })
 	run(func() { a.every(ctx, 30*time.Second, func() { _ = a.store.Beat() }) })
 	run(func() { a.every(ctx, 15*time.Second, a.watchStorage) })

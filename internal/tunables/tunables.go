@@ -123,6 +123,7 @@ var defs = []Def{
 	{Key: "cluster.standby-sync", Kind: Duration, Default: "5m", Min: "30s", Max: "24h", Desc: "how often standbys fetch a copy of the master's state (also after every configuration change)", DescZH: "备用节点拉取主节点状态副本的间隔（每次配置变更后也会拉取）"},
 	{Key: "cluster.standby-retry", Kind: Duration, Default: "30s", Min: "5s", Max: "10m", Desc: "wait before a standby tries again after a failed copy of the master's state (three times at most)", DescZH: "备用节点复制主节点状态失败后，再次尝试前的等待时间（最多三次）"},
 	{Key: "cluster.vote-grace", Kind: Duration, Default: "5s", Min: "0s", Max: "1m", Desc: "extra time agents get to answer a round, beyond the check timeout", DescZH: "一轮探测中，在检查超时之外再给 Agent 回票的余量"},
+	{Key: "cluster.replica-after", Kind: Duration, Default: "1m", Min: "10s", Max: "1h", Desc: "a replica that cannot reach the master this long checks and alerts on its own", DescZH: "副本联系不上主节点多久后开始独立检查和告警"},
 	{Key: "cluster.emergency-after", Kind: Duration, Default: "3m", Min: "30s", Max: "1h", Desc: "an agent that cannot reach the master this long sends its emergency notification", DescZH: "Agent 联系不上 master 多久后发送应急通知"},
 	{Key: "cluster.join-code-ttl", Kind: Duration, Default: "1h", Min: "5m", Max: "7d", Desc: "how long a join code can be used", DescZH: "加入码的有效期"},
 	{Key: "cluster.ping-interval", Kind: Duration, Default: "20s", Min: "100ms", Max: "5m", Desc: "how often the master pings each agent; three missed intervals end the session", DescZH: "Master 多久 ping 一次 Agent；连续三个周期没有响应则断开会话"},

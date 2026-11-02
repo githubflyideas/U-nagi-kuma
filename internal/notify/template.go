@@ -29,7 +29,7 @@ func templateData(m *Message, o map[string]string, escapeJSON bool) map[string]a
 		"Status": m.Status, "Reason": m.Reason, "Detail": esc(sanitize(m.Detail, detailCap)), "Quorum": esc(m.Quorum),
 		"Count": m.Count, "Max": m.Max, "IncidentID": m.IncidentID, "Duration": m.Duration, "DetailURL": esc(m.DetailURL),
 		"AckURL": esc(m.DetailURL), "Tags": m.Tags, "Time": m.Time, "Delayed": m.Delayed, "DryRun": m.DryRun,
-		"Instance": esc(m.Instance), "DeliveryID": m.DeliveryID,
+		"Instance": esc(m.Instance), "Site": esc(m.Site), "DeliveryID": m.DeliveryID,
 	}
 	for k, v := range o {
 		if _, taken := d[k]; !taken {

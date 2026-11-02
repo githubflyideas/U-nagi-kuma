@@ -1404,5 +1404,9 @@
 "ui.oc.prev": "前へ",
 "ui.oc.next": "次へ",
 "ui.oc.today": "今日",
-"ui.oc.your_tz": "時刻はあなたのタイムゾーン（{tz}）で表示"
+"ui.oc.your_tz": "時刻はあなたのタイムゾーン（{tz}）で表示",
+"msg.site": "サイト: {site}",
+"sys.title.master": "マスターに接続できません: このサイトが単独で監視・通知します",
+"sys.resolved.master": "マスターに再接続しました: 監視をマスターに戻します",
+"sys.master_unreachable": "{time} からマスター {master} に接続できません。このサイトは最後にコピーした設定でマスターのモニターを実行し、マスターが戻るまで単独で通知します。"
 }

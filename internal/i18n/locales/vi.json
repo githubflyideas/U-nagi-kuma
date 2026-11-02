@@ -1404,5 +1404,9 @@
 "ui.oc.prev": "Trước",
 "ui.oc.next": "Sau",
 "ui.oc.today": "Hôm nay",
-"ui.oc.your_tz": "Giờ theo múi giờ của bạn ({tz})"
+"ui.oc.your_tz": "Giờ theo múi giờ của bạn ({tz})",
+"msg.site": "Địa điểm: {site}",
+"sys.title.master": "Không kết nối được máy chủ chính: địa điểm này tự kiểm tra và cảnh báo",
+"sys.resolved.master": "Đã kết nối lại máy chủ chính: việc kiểm tra được trả lại",
+"sys.master_unreachable": "Máy chủ chính {master} không kết nối được từ {time}. Địa điểm này chạy các giám sát của máy chủ chính bằng bản sao cấu hình gần nhất và tự gửi cảnh báo cho đến khi nó trở lại."
 }

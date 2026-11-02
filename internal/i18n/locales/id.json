@@ -1404,5 +1404,9 @@
 "ui.oc.prev": "Sebelumnya",
 "ui.oc.next": "Berikutnya",
 "ui.oc.today": "Hari ini",
-"ui.oc.your_tz": "Waktu dalam zona waktu Anda ({tz})"
+"ui.oc.your_tz": "Waktu dalam zona waktu Anda ({tz})",
+"msg.site": "Situs: {site}",
+"sys.title.master": "Master tidak terjangkau: situs ini memeriksa dan memberi peringatan sendiri",
+"sys.resolved.master": "Master terjangkau lagi: pemeriksaan dikembalikan kepadanya",
+"sys.master_unreachable": "Master {master} tidak terjangkau sejak {time}. Situs ini menjalankan monitor master dengan salinan konfigurasi terakhir dan mengirim peringatannya sendiri sampai master kembali."
 }

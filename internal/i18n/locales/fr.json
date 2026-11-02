@@ -1413,5 +1413,9 @@
 "ui.oc.prev": "Précédent",
 "ui.oc.next": "Suivant",
 "ui.oc.today": "Aujourd'hui",
-"ui.oc.your_tz": "Heures dans votre fuseau horaire ({tz})"
+"ui.oc.your_tz": "Heures dans votre fuseau horaire ({tz})",
+"msg.site": "Site : {site}",
+"sys.title.master": "Maître injoignable : ce site vérifie et alerte seul",
+"sys.resolved.master": "Maître de nouveau joignable : la vérification lui est rendue",
+"sys.master_unreachable": "Le maître {master} est injoignable depuis {time}. Ce site exécute les moniteurs du maître avec la dernière copie de sa configuration et envoie ses propres alertes jusqu'à son retour."
 }

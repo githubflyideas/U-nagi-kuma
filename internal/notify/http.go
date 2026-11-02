@@ -173,7 +173,7 @@ func (s *Sender) buildWebhook(ctx context.Context, o map[string]string, m *Messa
 			"reason": m.Reason, "class": m.Class, "detail": sanitize(m.Detail, detailCap), "quorum": m.Quorum, "count": m.Count, "max": m.Max,
 			"incident_id": m.IncidentID, "duration_s": int(m.Duration.Seconds()), "detail_url": m.DetailURL,
 			"tags": append([]string{}, m.Tags...), "time": m.Time, "delayed_s": int(m.Delayed.Seconds()), "drill": m.DryRun,
-			"instance": m.Instance, "delivery_id": m.DeliveryID,
+			"instance": m.Instance, "site": m.Site, "delivery_id": m.DeliveryID,
 		}
 		body = jsonBody(payload)
 		ct = "json"

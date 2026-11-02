@@ -105,7 +105,8 @@ func (a *App) supersede(term uint64, by string) {
 func (a *App) isStandby(node string) bool {
 	if c := a.applied.Load(); c != nil {
 		if n := c.FindNode(node); n != nil {
-			return n.Standby != ""
+			// A declared standby, or any server that joined (a replica).
+			return n.Standby != "" || a.master.HasCap(node, cluster.CapReplica)
 		}
 	}
 	return false
@@ -136,7 +137,7 @@ func (a *App) syncStandbys() {
 		return
 	}
 	for _, n := range c.Nodes {
-		if n.Standby != "" {
+		if n.Name != c.MName && a.isStandby(n.Name) {
 			a.master.NotifyState(n.Name)
 		}
 	}
@@ -210,6 +211,9 @@ func (a *App) fetchState(ctx context.Context, ag *cluster.Agent) (StandbyState, 
 	}
 	meta = StandbyState{Term: term, Fetched: a.now(), Size: fi.Size(), Key: key}
 	a.saveStandby(meta)
+	if err := a.keepReplicaCopy(filepath.Join(dir, stateFile), key); err != nil {
+		a.log.Warn("could not keep the master's configuration for checking on its own", "err", err)
+	}
 	a.log.Info("master state copied", "term", term, "bytes", fi.Size())
 	return meta, nil
 }

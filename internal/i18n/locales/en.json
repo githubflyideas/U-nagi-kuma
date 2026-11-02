@@ -1414,5 +1414,9 @@
 "ui.oc.prev": "Previous",
 "ui.oc.next": "Next",
 "ui.oc.today": "Today",
-"ui.oc.your_tz": "Times in your time zone ({tz})"
+"ui.oc.your_tz": "Times in your time zone ({tz})",
+"msg.site": "Site: {site}",
+"sys.title.master": "Master out of reach: this site checks and alerts on its own",
+"sys.resolved.master": "Master reachable again: checking is handed back to it",
+"sys.master_unreachable": "The master {master} has been out of reach since {time}. This site runs the master's monitors with the last copy of its configuration and sends its own alerts until the master is back."
 }

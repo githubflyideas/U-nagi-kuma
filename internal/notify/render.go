@@ -53,6 +53,9 @@ func Render(m *Message) (title, body string) {
 	if m.DryRun {
 		prefix = append(prefix, i18n.T(lang, "msg.drill"))
 	}
+	if m.Site != "" && m.Kind != "STATUS" {
+		prefix = append(prefix, "["+sanitize(m.Site, 60)+"]")
+	}
 	if m.Kind == "STATUS" {
 		// A status page's message to its subscribers: their words only.
 		return sanitize(m.Title, 200), sanitize(m.Body, 8000)
@@ -70,6 +73,9 @@ func Render(m *Message) (title, body string) {
 		}
 		if m.Instance != "" && m.Kind != "TEST" {
 			body = strings.TrimSpace(body + "\n" + i18n.T(lang, "msg.instance", "instance", m.Instance))
+		}
+		if m.Site != "" {
+			body = strings.TrimSpace(body + "\n" + i18n.T(lang, "msg.site", "site", sanitize(m.Site, 60)))
 		}
 		return title, body
 	}
@@ -123,6 +129,9 @@ func Render(m *Message) (title, body string) {
 	}
 	if m.Instance != "" {
 		lines = append(lines, i18n.T(lang, "msg.instance", "instance", m.Instance))
+	}
+	if m.Site != "" {
+		lines = append(lines, i18n.T(lang, "msg.site", "site", sanitize(m.Site, 60)))
 	}
 	return title, strings.Join(lines, "\n")
 }

@@ -1413,5 +1413,9 @@
 "ui.oc.prev": "Anterior",
 "ui.oc.next": "Siguiente",
 "ui.oc.today": "Hoy",
-"ui.oc.your_tz": "Horas en tu zona horaria ({tz})"
+"ui.oc.your_tz": "Horas en tu zona horaria ({tz})",
+"msg.site": "Sitio: {site}",
+"sys.title.master": "Maestro inalcanzable: este sitio comprueba y alerta por su cuenta",
+"sys.resolved.master": "Maestro alcanzable de nuevo: la comprobación vuelve a él",
+"sys.master_unreachable": "El maestro {master} está inalcanzable desde {time}. Este sitio ejecuta los monitores del maestro con la última copia de su configuración y envía sus propias alertas hasta que vuelva."
 }

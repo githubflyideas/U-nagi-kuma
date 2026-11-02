@@ -1413,5 +1413,9 @@
 "ui.oc.prev": "Anterior",
 "ui.oc.next": "Seguinte",
 "ui.oc.today": "Hoje",
-"ui.oc.your_tz": "Horários no seu fuso horário ({tz})"
+"ui.oc.your_tz": "Horários no seu fuso horário ({tz})",
+"msg.site": "Site: {site}",
+"sys.title.master": "Mestre inacessível: este site verifica e alerta por conta própria",
+"sys.resolved.master": "Mestre acessível de novo: a verificação volta para ele",
+"sys.master_unreachable": "O mestre {master} está inacessível desde {time}. Este site executa os monitores do mestre com a última cópia da configuração e envia os próprios alertas até ele voltar."
 }

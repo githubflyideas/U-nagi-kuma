@@ -244,6 +244,7 @@ unagikuma agent --server https://master.example.com:8077 --node bj \
   其他节点根本收不到这些监控项。单个监控上的 `nodes=bj,sh`（或 `nodes=region:north`）效果相同，并且优先于段落。每一轮由 `quorum=`（默认多数）决定；离线的节点会降低法定票数，而不会让判断卡住。
 - 只有部分节点看到的故障显示为“局部”；持续 `partial-escalate`（30 分钟）后变成一条低优先级的区域性告警。长时间断开的节点按它的 `policy=` 报告。
 - 也可以在网页上加入，不用复制命令：在 master 的 **设置 › 节点 › 加入码** 生成一次性代码（有效期 `cluster.join-code-ttl`，默认 1 小时），在另一台服务器的 **设置 › 节点 › 加入集群** 中粘贴。之后这台服务器作为 master 的节点运行。它原有的监控项会被删除；也可以选择导入到 master，放在以它命名的段落里并处于暂停状态，在 master 上检查后再恢复。
+- 通过加入集群的**服务器**（不是单独的 `unagikuma agent`）是**副本**，类似 DNS 的辅服务器：它保存主节点的配置、密钥和数据副本。连续 `cluster.replica-after`（1 分钟）联系不上主节点时，它会独立运行主节点的监控、保存结果并用主节点的通道发送告警，直到主节点恢复。每条消息都带有发送它的站点名（标题中的 `[站点]`，Webhook 载荷中的 `site`）；站点之间不互相去重。
 - 在 agent 上加 `--emergency-webhook URL`（或 `feishu:URL`、`dingtalk:URL` 等）后，master 持续 `cluster.emergency-after`（3 分钟）联系不上时，agent 会直接发一条通知，恢复时再发一条，因为 master 无法报告自己的故障。
 - `unagikuma node list`、`node token 名称`（生成新令牌，旧令牌立即失效）和 `node revoke 名称` 用来管理令牌；被吊销的 agent 会在一个 ping 周期内断开。
 

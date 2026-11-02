@@ -1404,5 +1404,9 @@
 "ui.oc.prev": "이전",
 "ui.oc.next": "다음",
 "ui.oc.today": "오늘",
-"ui.oc.your_tz": "시각은 내 시간대({tz}) 기준"
+"ui.oc.your_tz": "시각은 내 시간대({tz}) 기준",
+"msg.site": "사이트: {site}",
+"sys.title.master": "마스터에 연결할 수 없음: 이 사이트가 단독으로 점검하고 알립니다",
+"sys.resolved.master": "마스터에 다시 연결됨: 점검을 마스터에 넘깁니다",
+"sys.master_unreachable": "{time}부터 마스터 {master}에 연결할 수 없습니다. 이 사이트는 마지막으로 복사한 설정으로 마스터의 모니터를 실행하고 마스터가 돌아올 때까지 직접 알림을 보냅니다."
 }

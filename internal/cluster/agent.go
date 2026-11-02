@@ -69,6 +69,9 @@ type AgentOptions struct {
 	// to take over as master.
 	OnState   func()
 	OnPromote func(term uint64)
+	// Replica: this node is a full server that keeps a copy of the
+	// master's state and checks on its own while the master is away.
+	Replica bool
 }
 
 // staleError: the master reached was replaced by a newer one.
@@ -316,7 +319,7 @@ func (a *Agent) session(ctx context.Context) error {
 	maxMsg := a.ts.Int("cluster.max-message")
 	a.mu.Unlock()
 	if err := writeFrame(conn, msgHello, Hello{Proto: ProtoVersion, Node: a.o.Node, Version: a.o.Version,
-		Platform: runtime.GOOS + "/" + runtime.GOARCH, Time: time.Now(), Term: a.Term(), Caps: LocalCaps()}); err != nil {
+		Platform: runtime.GOOS + "/" + runtime.GOARCH, Time: time.Now(), Term: a.Term(), Caps: a.caps()}); err != nil {
 		return err
 	}
 	f, err := readFrame(br, maxMsg)
@@ -748,4 +751,13 @@ func (a *Agent) FetchState(ctx context.Context, w io.Writer) (key string, term u
 		return "", 0, err
 	}
 	return key, term, nil
+}
+
+// caps are the capabilities announced in the hello.
+func (a *Agent) caps() []string {
+	c := LocalCaps()
+	if a.o.Replica {
+		c = append(c, CapReplica)
+	}
+	return c
 }

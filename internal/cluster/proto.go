@@ -132,6 +132,10 @@ type Hello struct {
 	Caps []string `json:"caps,omitempty"`
 }
 
+// CapReplica: the node is a full server keeping a copy of the master's
+// state (a replica), not a probe-only agent.
+const CapReplica = "replica"
+
 // legacyCaps are the capabilities of nodes that do not announce any: the
 // check types every release before 1.0 had.
 var legacyCaps = []string{"check:HTTP", "check:TCP", "check:PING", "check:UDP", "check:EXEC", "check:DOCKER"}
