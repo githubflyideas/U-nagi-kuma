@@ -28,7 +28,10 @@ type AuditEntry struct {
 	Addr   string         `json:"addr,omitempty"`
 	Risk   string         `json:"risk,omitempty"` // "high" for actions worth a second look
 	Hash   string         `json:"hash,omitempty"`
+	Site   string         `json:"site,omitempty"` // merged from another site of the cluster
 }
+
+func unmarshalDetail(s string, v *map[string]any) error { return json.Unmarshal([]byte(s), v) }
 
 // highRisk lists actions (or their prefixes, ending in ".") that change
 // who may do what, remove things, or move the whole installation.

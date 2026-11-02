@@ -108,6 +108,22 @@ var coreMigrations = []string{
 	CREATE INDEX decisions_incident ON decisions(incident_id);
 	CREATE INDEX decisions_monitor_at ON decisions(monitor, at);
 	CREATE INDEX decisions_at ON decisions(at);`,
+	// Records merged from other sites of a cluster: tagged with the site
+	// and the master term they were written under. Each site's audit log
+	// keeps its own hash chain; marks make merging idempotent.
+	`ALTER TABLE incidents ADD COLUMN site TEXT NOT NULL DEFAULT '';
+	ALTER TABLE incidents ADD COLUMN term INTEGER NOT NULL DEFAULT 0;
+	ALTER TABLE events ADD COLUMN site TEXT NOT NULL DEFAULT '';
+	ALTER TABLE decisions ADD COLUMN site TEXT NOT NULL DEFAULT '';
+	ALTER TABLE deliveries ADD COLUMN site TEXT NOT NULL DEFAULT '';
+	CREATE TABLE site_audit (site TEXT NOT NULL, term INTEGER NOT NULL DEFAULT 0, origin_id INTEGER NOT NULL, at INTEGER NOT NULL,
+		actor TEXT NOT NULL, action TEXT NOT NULL, target TEXT NOT NULL DEFAULT '', area TEXT NOT NULL DEFAULT '',
+		detail TEXT NOT NULL DEFAULT '', addr TEXT NOT NULL DEFAULT '', risk TEXT NOT NULL DEFAULT '',
+		prev TEXT NOT NULL DEFAULT '', hash TEXT NOT NULL DEFAULT '', PRIMARY KEY (site, origin_id));
+	CREATE INDEX site_audit_at ON site_audit(at);
+	CREATE TABLE merge_marks (site TEXT NOT NULL, tbl TEXT NOT NULL, last_id INTEGER NOT NULL, PRIMARY KEY (site, tbl));
+	CREATE TABLE merged (site TEXT NOT NULL, tbl TEXT NOT NULL, origin_id INTEGER NOT NULL, local_id INTEGER NOT NULL,
+		PRIMARY KEY (site, tbl, origin_id));`,
 }
 
 var historyMigrations = []string{
@@ -129,6 +145,8 @@ var historyMigrations = []string{
 		deg_s REAL NOT NULL, lat_sum REAL NOT NULL, lat_n INTEGER NOT NULL, lat_max REAL NOT NULL, PRIMARY KEY (mid, t)) WITHOUT ROWID;
 	CREATE TABLE hourly (mid INTEGER NOT NULL, t INTEGER NOT NULL, up_s REAL NOT NULL, down_s REAL NOT NULL, ex_s REAL NOT NULL,
 		deg_s REAL NOT NULL, lat_sum REAL NOT NULL, lat_n INTEGER NOT NULL, lat_max REAL NOT NULL, PRIMARY KEY (mid, t)) WITHOUT ROWID;`,
+	`ALTER TABLE rounds ADD COLUMN site TEXT NOT NULL DEFAULT '';
+	CREATE TABLE merge_marks (site TEXT NOT NULL, tbl TEXT NOT NULL, last_id INTEGER NOT NULL, PRIMARY KEY (site, tbl));`,
 }
 
 func (s *Store) migrate() error {

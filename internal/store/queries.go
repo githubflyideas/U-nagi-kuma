@@ -198,6 +198,34 @@ type IncidentRow struct {
 	AckComment string               `json:"ack_comment,omitempty"` // the latest; Acks has them all
 	State      engine.IncidentState `json:"state"`
 	Acks       []AckRecord          `json:"acks,omitempty"`
+	Site       string               `json:"site,omitempty"` // merged from another site of the cluster
+}
+
+// incidentSites returns the site of the incidents among ids that were
+// merged from another site.
+func (s *Store) incidentSites(rows []IncidentRow) {
+	if len(rows) == 0 {
+		return
+	}
+	idx := map[int64]int{}
+	ph := make([]string, 0, len(rows))
+	args := make([]any, 0, len(rows))
+	for i, r := range rows {
+		idx[r.ID] = i
+		ph, args = append(ph, "?"), append(args, r.ID)
+	}
+	q, err := s.core.Query(`SELECT id,site FROM incidents WHERE site!='' AND id IN (`+strings.Join(ph, ",")+`)`, args...)
+	if err != nil {
+		return
+	}
+	defer q.Close()
+	for q.Next() {
+		var id int64
+		var site string
+		if q.Scan(&id, &site) == nil {
+			rows[idx[id]].Site = site
+		}
+	}
 }
 
 // IncidentRowOf is the listing row of an incident.
@@ -276,6 +304,7 @@ func (s *Store) Incidents(filter, monitor string, before int64, limit int) (Page
 		c := out.Items[lim-1].ID
 		out.NextCursor = &c
 	}
+	s.incidentSites(out.Items)
 	return out, nil
 }
 
@@ -286,6 +315,9 @@ func (s *Store) Incident(id int64) (*IncidentRow, error) {
 		return nil, err
 	}
 	row := IncidentRowOf(*incs[0])
+	one := []IncidentRow{row}
+	s.incidentSites(one)
+	row = one[0]
 	row.Acks, err = s.Acks(id)
 	return &row, err
 }
