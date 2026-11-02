@@ -1440,5 +1440,11 @@
 "ui.verdict.ok_hint": "Alcanzable desde este nodo.",
 "ui.verdict.witnesses": "{n} nodos lo confirman",
 "ui.gw.title": "Enlace de notificación",
-"ui.gw.none": "nada enviado aún"
+"ui.gw.none": "nada enviado aún",
+"ui.audit.site": "Sitio",
+"ui.audit.site_hint": "Cada sitio mantiene su propia cadena de auditoría; los registros de otros sitios llegan aquí al fusionarse tras una separación.",
+"ui.audit.site_here": "Este servidor",
+"ui.audit.site_of": "Sitio {site}",
+"ui.inc.site": "de {site}",
+"ui.inc.site_hint": "Registrado por otro sitio mientras comprobaba por su cuenta; fusionado aquí al volver el enlace."
 }

@@ -1431,5 +1431,11 @@
 "ui.verdict.ok_hint": "このノードから到達可能です。",
 "ui.verdict.witnesses": "{n} ノードが確認",
 "ui.gw.title": "通知経路",
-"ui.gw.none": "まだ送信なし"
+"ui.gw.none": "まだ送信なし",
+"ui.audit.site": "サイト",
+"ui.audit.site_hint": "各サイトは独自の監査チェーンを持ちます。他サイトのログは分断後の統合時にここへ届きます。",
+"ui.audit.site_here": "このサーバー",
+"ui.audit.site_of": "サイト {site}",
+"ui.inc.site": "{site} から",
+"ui.inc.site_hint": "別のサイトが単独で監視中に記録し、回線復旧後にここへ統合されました。"
 }

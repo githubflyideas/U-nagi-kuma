@@ -1431,5 +1431,11 @@
 "ui.verdict.ok_hint": "Terjangkau dari node ini.",
 "ui.verdict.witnesses": "{n} node mengonfirmasi",
 "ui.gw.title": "Jalur notifikasi",
-"ui.gw.none": "belum ada yang dikirim"
+"ui.gw.none": "belum ada yang dikirim",
+"ui.audit.site": "Situs",
+"ui.audit.site_hint": "Setiap situs menyimpan rantai audit sendiri; log situs lain masuk ke sini saat digabung setelah terputus.",
+"ui.audit.site_here": "Server ini",
+"ui.audit.site_of": "Situs {site}",
+"ui.inc.site": "dari {site}",
+"ui.inc.site_hint": "Dicatat oleh situs lain saat memeriksa sendiri, digabung ke sini setelah tautan kembali."
 }

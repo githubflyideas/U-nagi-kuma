@@ -256,16 +256,25 @@ func (a *App) applyConfig(cfg *config.Config) {
 func (a *App) applyLocked(cfg *config.Config) {
 	a.store.SetTunables(cfg.Tunables)
 	a.loadDirectory(cfg.Tunables)
+	lec, local := a.localEngineConfig()
 	defs := make([]store.MonitorDef, 0, len(cfg.Monitors))
 	for _, m := range cfg.Monitors {
 		defs = append(defs, store.MonitorDef{Name: m.Name, DefHash: m.DefHash})
+	}
+	if local {
+		// A replica checking on its own keeps history for the master's
+		// monitors it runs.
+		defs = defs[:0]
+		for _, m := range lec.Monitors {
+			defs = append(defs, store.MonitorDef{Name: m.Name, DefHash: m.DefHash})
+		}
 	}
 	if err := a.store.SyncMonitors(defs); err != nil {
 		a.log.Error("monitor ids", "err", err)
 	}
 	ec := a.engineConfig(cfg)
 	a.applied.Store(cfg)
-	if lec, ok := a.localEngineConfig(); ok {
+	if local {
 		// A replica that cannot reach its master checks on its own.
 		ec = lec
 	}

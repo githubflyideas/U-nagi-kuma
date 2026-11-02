@@ -1431,5 +1431,11 @@
 "ui.verdict.ok_hint": "Kết nối được từ nút này.",
 "ui.verdict.witnesses": "{n} nút xác nhận",
 "ui.gw.title": "Đường gửi thông báo",
-"ui.gw.none": "chưa gửi gì"
+"ui.gw.none": "chưa gửi gì",
+"ui.audit.site": "Địa điểm",
+"ui.audit.site_hint": "Mỗi địa điểm giữ chuỗi kiểm toán riêng; nhật ký của địa điểm khác đến đây khi hợp nhất sau khi bị chia cắt.",
+"ui.audit.site_here": "Máy chủ này",
+"ui.audit.site_of": "Địa điểm {site}",
+"ui.inc.site": "từ {site}",
+"ui.inc.site_hint": "Được một địa điểm khác ghi lại khi tự kiểm tra, hợp nhất về đây sau khi kết nối trở lại."
 }

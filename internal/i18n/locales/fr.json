@@ -1440,5 +1440,11 @@
 "ui.verdict.ok_hint": "Joignable depuis ce nœud.",
 "ui.verdict.witnesses": "{n} nœuds confirment",
 "ui.gw.title": "Liaison de notification",
-"ui.gw.none": "rien envoyé"
+"ui.gw.none": "rien envoyé",
+"ui.audit.site": "Site",
+"ui.audit.site_hint": "Chaque site garde sa propre chaîne d'audit ; les journaux des autres sites arrivent ici lors de la fusion après une coupure.",
+"ui.audit.site_here": "Ce serveur",
+"ui.audit.site_of": "Site {site}",
+"ui.inc.site": "de {site}",
+"ui.inc.site_hint": "Enregistré par un autre site pendant qu'il vérifiait seul, fusionné ici au retour du lien."
 }

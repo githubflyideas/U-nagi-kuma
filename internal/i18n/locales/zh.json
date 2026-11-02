@@ -1431,5 +1431,11 @@
 "ui.verdict.ok_hint": "从本节点可达。",
 "ui.verdict.witnesses": "{n} 个节点确认",
 "ui.gw.title": "通知通道连通性",
-"ui.gw.none": "尚未发送"
+"ui.gw.none": "尚未发送",
+"ui.audit.site": "站点",
+"ui.audit.site_hint": "每个站点保留自己的审计链；其他站点的日志在断连恢复合并后出现在这里。",
+"ui.audit.site_here": "本服务器",
+"ui.audit.site_of": "站点 {site}",
+"ui.inc.site": "来自 {site}",
+"ui.inc.site_hint": "由另一站点在独立检查期间记录，链路恢复后合并到此处。"
 }

@@ -451,7 +451,8 @@ function Registration() {
 }
 
 function Audit() {
-  const [f, setF] = useState({ actor: '', action: '', area: '', addr: '', range: '', risk: '' });
+  const [f, setF] = useState({ actor: '', action: '', area: '', addr: '', range: '', risk: '', site: '' });
+  const [sites, setSites] = useState([]);
   const [items, setItems] = useState(null);
   const [more, setMore] = useState(false);
   const [err, setErr] = useState(null);
@@ -462,7 +463,7 @@ function Audit() {
     return q;
   };
   const verify = async () => {
-    try { setCheck(await get('/audit/verify')); } catch (e) { toastError(e); }
+    try { setCheck(await get('/audit/verify' + (f.site ? '?site=' + encodeURIComponent(f.site) : ''))); } catch (e) { toastError(e); }
   };
   const load = async (before) => {
     const q = query();
@@ -471,11 +472,12 @@ function Audit() {
     try {
       const r = await get('/audit?' + q);
       setItems(before ? [...items, ...r.items] : r.items);
-      setMore(r.items.length === 100);
+      setMore(!f.site && r.items.length === 100);
+      setSites(r.sites || []);
       setErr(null);
     } catch (e) { setErr(e); }
   };
-  useEffect(() => { load(); }, [f.action, f.range, f.risk]);
+  useEffect(() => { load(); setCheck(null); }, [f.action, f.range, f.risk, f.site]);
   if (err && err.code === 'registration_required') return html`<div class="card"><div class="bd col" style=${{ gap: '10px' }}>
     <b>${t('ui.audit.locked')}</b><p class="small muted" style=${{ margin: 0 }}>${t('ui.audit.locked_hint')}</p>
     <div><a class="btn primary" href="#/settings/registration">${t('ui.set.tab.registration')}</a></div></div></div>`;
@@ -495,6 +497,10 @@ function Audit() {
         ${['24h', '7d', '30d', '90d'].map(r => html`<option value=${r}>${r}</option>`)}
       </select>
       <label class="row small" style=${{ gap: '4px' }}><input type="checkbox" checked=${f.risk === 'high'} onChange=${(e) => setF({ ...f, risk: e.target.checked ? 'high' : '' })} />${t('ui.audit.high_only')}</label>
+      ${sites.length > 0 && html`<select value=${f.site} onChange=${set('site')} aria-label=${t('ui.audit.site')} title=${t('ui.audit.site_hint')}>
+        <option value="">${t('ui.audit.site_here')}</option>
+        ${sites.map((x) => html`<option value=${x}>${t('ui.audit.site_of', { site: x })}</option>`)}
+      </select>`}
       <button class="btn">${t('ui.audit.filter')}</button>
       <div class="spacer"></div>
       <a class="btn" href=${'/api/v1/audit/export?format=csv&' + query()} download>${t('ui.audit.export_csv')}</a>

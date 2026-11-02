@@ -30,11 +30,14 @@ const (
 
 // replicaState is what a replica runs while it cannot reach the master.
 type replicaState struct {
-	mu     sync.Mutex
-	cfg    *config.Config // master configuration copy (nil: none yet)
-	local  bool           // checking on its own right now
-	since  time.Time      // when local checking started
-	copied time.Time      // when the copy was taken
+	mu    sync.Mutex
+	cfg   *config.Config // master configuration copy (nil: none yet)
+	local bool           // checking on its own right now
+	since time.Time      // when local checking started
+
+	merging bool      // a merge push is running
+	merged  time.Time // last merge push that went through
+	copied  time.Time // when the copy was taken
 }
 
 // ReplicaStatus is shown on the node's own pages.
@@ -189,6 +192,8 @@ func (a *App) watchReplica() {
 	r.mu.Unlock()
 	if local {
 		a.feedPeers()
+	} else {
+		a.maybePushMerge(change)
 	}
 	if !change {
 		return

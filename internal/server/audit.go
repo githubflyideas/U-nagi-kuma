@@ -140,12 +140,22 @@ func withAudit(r *http.Request) (*http.Request, *auditRec) {
 
 // auditLog lists the audit log for administrators.
 func (s *Server) auditLog(w http.ResponseWriter, r *http.Request) (any, error) {
+	sites, _ := s.app.Store().MergedSites()
+	if site := r.URL.Query().Get("site"); site != "" {
+		// Another site's own log, as merged after a split.
+		limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+		items, err := s.app.Store().SiteAudit(site, limit)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{"items": items, "sites": sites}, nil
+	}
 	aq := s.auditQuery(r)
 	items, err := s.app.Store().AuditLog(aq)
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{"items": items}, nil
+	return map[string]any{"items": items, "sites": sites}, nil
 }
 
 func (s *Server) auditQuery(r *http.Request) store.AuditQuery {
@@ -199,6 +209,14 @@ func (s *Server) auditExport(w http.ResponseWriter, r *http.Request) (any, error
 
 // auditVerify checks the hash chain.
 func (s *Server) auditVerify(w http.ResponseWriter, r *http.Request) (any, error) {
+	if site := r.URL.Query().Get("site"); site != "" {
+		n, err := s.app.Store().VerifySiteAudit(site)
+		res := map[string]any{"ok": err == nil, "entries": n, "head": ""}
+		if err != nil {
+			res["problem"] = err.Error()
+		}
+		return res, nil
+	}
 	c, err := s.app.Store().VerifyAudit()
 	if err != nil {
 		return nil, err

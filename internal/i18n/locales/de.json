@@ -1440,5 +1440,11 @@
 "ui.verdict.ok_hint": "Von diesem Knoten erreichbar.",
 "ui.verdict.witnesses": "{n} Knoten bestätigen",
 "ui.gw.title": "Benachrichtigungsweg",
-"ui.gw.none": "noch nichts gesendet"
+"ui.gw.none": "noch nichts gesendet",
+"ui.audit.site": "Standort",
+"ui.audit.site_hint": "Jeder Standort führt seine eigene Audit-Kette; Protokolle anderer Standorte kommen hier an, wenn sie nach einer Trennung zusammengeführt werden.",
+"ui.audit.site_here": "Dieser Server",
+"ui.audit.site_of": "Standort {site}",
+"ui.inc.site": "von {site}",
+"ui.inc.site_hint": "Von einem anderen Standort aufgezeichnet, während er selbst prüfte; nach Wiederherstellung der Verbindung hier zusammengeführt."
 }

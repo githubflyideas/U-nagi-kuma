@@ -245,3 +245,7 @@ type Ping struct {
 	Seq  uint64    `json:"seq"`
 	Time time.Time `json:"time"`
 }
+
+// MergePath is where a node sends what it wrote while it checked on its
+// own (GET: the master's marks for it; POST: a store.MergeBatch).
+const MergePath = "/api/v1/agent/merge"

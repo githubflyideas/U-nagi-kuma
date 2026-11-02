@@ -1431,5 +1431,11 @@
 "ui.verdict.ok_hint": "이 노드에서 연결 가능합니다.",
 "ui.verdict.witnesses": "{n}개 노드가 확인",
 "ui.gw.title": "알림 경로",
-"ui.gw.none": "아직 보낸 것 없음"
+"ui.gw.none": "아직 보낸 것 없음",
+"ui.audit.site": "사이트",
+"ui.audit.site_hint": "각 사이트는 자체 감사 체인을 유지합니다. 다른 사이트의 로그는 분리 후 병합될 때 여기에 들어옵니다.",
+"ui.audit.site_here": "이 서버",
+"ui.audit.site_of": "사이트 {site}",
+"ui.inc.site": "{site}에서",
+"ui.inc.site_hint": "다른 사이트가 단독 점검 중 기록했으며, 연결 복구 후 여기에 병합되었습니다."
 }

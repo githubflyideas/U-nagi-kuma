@@ -1441,5 +1441,11 @@
 "ui.verdict.ok_hint": "Reachable from this node.",
 "ui.verdict.witnesses": "{n} nodes confirm",
 "ui.gw.title": "Notification uplink",
-"ui.gw.none": "nothing sent yet"
+"ui.gw.none": "nothing sent yet",
+"ui.audit.site": "Site",
+"ui.audit.site_hint": "Each site keeps its own audit chain; logs of other sites arrive here when they merge after a split.",
+"ui.audit.site_here": "This server",
+"ui.audit.site_of": "Site {site}",
+"ui.inc.site": "from {site}",
+"ui.inc.site_hint": "Recorded by another site while it checked on its own, merged here after the link came back."
 }

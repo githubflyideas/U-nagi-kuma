@@ -87,6 +87,7 @@ export function IncidentList({ items, reload, compact, selectable, selected, set
         <div class="body">
           ${link ? html`<a class="name" href=${link}>${inc.title}</a>` : html`<span class="name">${inc.title}</span>`}
           ${inc.system && html` <span class="tag">${t('ui.inc.system')}</span>`}
+          ${inc.site && html` <span class="tag" title=${t('ui.inc.site_hint')}>${t('ui.inc.site', { site: inc.site })}</span>`}
           <p>${reasonText(inc.reason, inc.detail)}</p>
           <${AckTrail} inc=${inc} tag="p" />
           <p class="faint">${meta} · <a href=${href('/incidents/' + inc.id)}>${t('ui.inc.report')}</a></p>
@@ -113,6 +114,7 @@ export function IncidentList({ items, reload, compact, selectable, selected, set
         <td>
           <div class="row">${link ? html`<a class="name" href=${link}>${inc.title}</a>` : html`<span class="name">${inc.title}</span>`}
             ${inc.system && html`<span class="tag">${t('ui.inc.system')}</span>`}
+            ${inc.site && html`<span class="tag" title=${t('ui.inc.site_hint')}>${t('ui.inc.site', { site: inc.site })}</span>`}
             ${st.acked && html`<span class="tag">${t('ui.inc.acked_by', { who: st.acked_by })}</span>`}
             ${silenced && html`<span class="tag">${t('ui.inc.silenced_until')} <${Ago} at=${st.silenced_until} /></span>`}
             ${st.capped && html`<span class="tag warn">${t('ui.inc.capped')}</span>`}
