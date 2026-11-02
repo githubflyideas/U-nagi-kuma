@@ -1443,5 +1443,11 @@
 "ui.ha.promote_nosync": "Master tidak dapat dijangkau: perubahan di sana setelah salinan kembali sebagai penggabungan saat ia kembali, tanpa menimpa data yang lebih baru.",
 "ui.sl.title": "Konfigurasi lokal situs",
 "ui.sl.hint": "Monitor, kanal, dan kebijakan khusus situs ini, dalam format konfigurasi utama. Diperiksa dan diberi peringatan di sini dalam peran apa pun; tidak dikirim ke node lain dan tidak pernah ditimpa sinkronisasi master, bergabung, atau promosi.",
-"ui.sl.saved": "Konfigurasi lokal situs disimpan dan diterapkan"
+"ui.sl.saved": "Konfigurasi lokal situs disimpan dan diterapkan",
+"ui.config.term_hint": "Masa jabatan master saat versi ini ditulis; versi dari masa berbeda mungkin telah menyimpang.",
+"ui.dv.title": "Konfigurasi yang menyimpang",
+"ui.dv.hint": "Master yang diganti menyimpan konfigurasi berbeda dari yang diambil alih master ini. Tidak diterapkan: bandingkan dan pindahkan yang perlu secara manual.",
+"ui.dv.versions": "versi {v} (masa {term}), diambil alih dengan {base}",
+"ui.dv.view": "Lihat",
+"ui.dv.dismiss": "Abaikan"
 }

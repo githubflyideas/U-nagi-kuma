@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/githubflyideas/unagikuma/internal/store"
 )
@@ -47,4 +48,39 @@ func (s *Server) agentMerge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, res)
+}
+
+// agentDiverged keeps the configuration a replaced master kept changing.
+func (s *Server) agentDiverged(w http.ResponseWriter, r *http.Request) {
+	m := s.app.Cluster()
+	node, err := m.AuthAgent(r)
+	if err != nil {
+		if ok, wait := s.login.Allow(s.ip(r), s.now()); !ok {
+			writeError(w, rateLimited(wait))
+			return
+		}
+		writeError(w, Errorf(http.StatusUnauthorized, CodeUnauthorized, "%v", err))
+		return
+	}
+	var d store.DivergedConfig
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 8<<20)).Decode(&d); err != nil {
+		writeError(w, Errorf(http.StatusBadRequest, CodeInvalid, "%v", err))
+		return
+	}
+	if err := s.app.AddDiverged(node, d); err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+// diverged lists kept diverged configurations (with ?id= one with text).
+func (s *Server) diverged(w http.ResponseWriter, r *http.Request) (any, error) {
+	items, err := s.app.Store().Diverged(r.URL.Query().Get("text") != "")
+	return map[string]any{"items": items}, err
+}
+
+func (s *Server) divergedDismiss(w http.ResponseWriter, r *http.Request) (any, error) {
+	id, _ := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	return map[string]any{"ok": true}, s.app.Store().DismissDiverged(id)
 }

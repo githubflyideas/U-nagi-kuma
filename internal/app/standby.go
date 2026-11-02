@@ -332,17 +332,29 @@ func applyPromote(dir, configPath string) (bool, error) {
 	// The master this standby followed: it is told to step down once it
 	// can be reached, in case it was only cut off and comes back.
 	var prev []string
+	var self string
 	if b, err := os.ReadFile(filepath.Join(dir, agentFile)); err == nil {
 		var m Membership
 		if json.Unmarshal(b, &m) == nil && m.Server != "" {
 			prev = append(prev, m.Server)
+			self = m.Node
 		}
 	}
-	// The node's own databases are replaced by the master's.
+	// The node's own databases are replaced by the master's; they are kept
+	// aside and what this site wrote on its own is merged in after start.
+	own := filepath.Join(dir, standbyDir, ownDir)
+	_ = os.RemoveAll(own)
+	_ = os.MkdirAll(own, 0o700)
 	for _, name := range []string{"core.db", "history.db"} {
 		for _, suffix := range []string{"", "-wal", "-shm"} {
-			_ = os.Remove(filepath.Join(dir, name+suffix))
+			if err := os.Rename(filepath.Join(dir, name+suffix), filepath.Join(own, name+suffix)); err != nil {
+				_ = os.Remove(filepath.Join(dir, name+suffix))
+			}
 		}
+	}
+	pb, _ := json.Marshal(promoted{Self: self, Term: req.Term, PrevTerm: meta.Term})
+	if err := os.WriteFile(filepath.Join(dir, promotedFile), pb, 0o600); err != nil {
+		return false, err
 	}
 	if _, err := backup.Restore(f, dir, configPath, meta.Key, true); err != nil {
 		return false, fmt.Errorf("restore the master's state: %w", err)
@@ -390,6 +402,7 @@ func (a *App) retirePrevious(ctx context.Context) {
 	if err != nil {
 		return
 	}
+	a.rejoinOffer(&n)
 	var left []string
 	for _, srv := range prev {
 		sctx, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -419,5 +432,8 @@ func (a *App) AcceptRetire(n cluster.RetireNotice) error {
 		return fmt.Errorf("term %d is not newer than this master's %d", n.Term, a.Term())
 	}
 	a.supersede(n.Term, "the new master")
+	if n.Join != "" {
+		go a.demote(n)
+	}
 	return nil
 }

@@ -522,16 +522,17 @@ type Snapshot struct {
 	SHA256  string         `json:"sha256"`
 	Summary map[string]int `json:"summary,omitempty"`
 	Text    string         `json:"text,omitempty"`
+	Term    uint64         `json:"term"` // master term that wrote it
 }
 
 // SaveSnapshot records an applied configuration (replacing the same serial).
 func (s *Store) SaveSnapshot(sn Snapshot, keep int) error {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
-	_, err := s.core.Exec(`INSERT INTO config_snapshots(serial,at,source,author,message,text,sha256,summary) VALUES(?,?,?,?,?,?,?,?)
+	_, err := s.core.Exec(`INSERT INTO config_snapshots(serial,at,source,author,message,text,sha256,summary,term) VALUES(?,?,?,?,?,?,?,?,?)
 		ON CONFLICT(serial) DO UPDATE SET at=excluded.at,source=excluded.source,author=excluded.author,message=excluded.message,
-		text=excluded.text,sha256=excluded.sha256,summary=excluded.summary`,
-		sn.Serial, ms(sn.At), sn.Source, sn.Author, sn.Message, sn.Text, sn.SHA256, mustJSON(sn.Summary))
+		text=excluded.text,sha256=excluded.sha256,summary=excluded.summary,term=excluded.term`,
+		sn.Serial, ms(sn.At), sn.Source, sn.Author, sn.Message, sn.Text, sn.SHA256, mustJSON(sn.Summary), sn.Term)
 	if err == nil && keep > 0 {
 		_, err = s.core.Exec(`DELETE FROM config_snapshots WHERE serial NOT IN (SELECT serial FROM config_snapshots ORDER BY serial DESC LIMIT ?)`, keep)
 	}
@@ -540,7 +541,7 @@ func (s *Store) SaveSnapshot(sn Snapshot, keep int) error {
 
 // Snapshots lists configuration history (without texts), newest first.
 func (s *Store) Snapshots(limit int) ([]Snapshot, error) {
-	rows, err := s.core.Query(`SELECT serial,at,source,author,message,sha256,summary FROM config_snapshots ORDER BY serial DESC LIMIT ?`, limitOf(limit))
+	rows, err := s.core.Query(`SELECT serial,at,source,author,message,sha256,summary,term FROM config_snapshots ORDER BY serial DESC LIMIT ?`, limitOf(limit))
 	if err != nil {
 		return nil, err
 	}
@@ -550,7 +551,7 @@ func (s *Store) Snapshots(limit int) ([]Snapshot, error) {
 		var sn Snapshot
 		var at int64
 		var src, author, msg, sum sql.NullString
-		if err := rows.Scan(&sn.Serial, &at, &src, &author, &msg, &sn.SHA256, &sum); err != nil {
+		if err := rows.Scan(&sn.Serial, &at, &src, &author, &msg, &sn.SHA256, &sum, &sn.Term); err != nil {
 			return nil, err
 		}
 		sn.At, sn.Source, sn.Author, sn.Message = fromMS(at), src.String, author.String, msg.String
@@ -565,8 +566,8 @@ func (s *Store) SnapshotText(serial uint32) (Snapshot, error) {
 	var sn Snapshot
 	var at int64
 	var src, author, msg sql.NullString
-	err := s.core.QueryRow(`SELECT serial,at,source,author,message,sha256,text FROM config_snapshots WHERE serial=?`, serial).
-		Scan(&sn.Serial, &at, &src, &author, &msg, &sn.SHA256, &sn.Text)
+	err := s.core.QueryRow(`SELECT serial,at,source,author,message,sha256,text,term FROM config_snapshots WHERE serial=?`, serial).
+		Scan(&sn.Serial, &at, &src, &author, &msg, &sn.SHA256, &sn.Text, &sn.Term)
 	sn.At, sn.Source, sn.Author, sn.Message = fromMS(at), src.String, author.String, msg.String
 	return sn, err
 }
@@ -681,4 +682,13 @@ func (s *Store) pruneRounds(before int64) error {
 			return nil
 		}
 	}
+}
+
+// SnapshotsAt returns the newest configuration version written under a
+// term (or before it).
+func (s *Store) SnapshotsAt(term uint64) (Snapshot, error) {
+	var sn Snapshot
+	err := s.core.QueryRow(`SELECT serial,sha256,term FROM config_snapshots WHERE term<=? ORDER BY serial DESC LIMIT 1`, term).
+		Scan(&sn.Serial, &sn.SHA256, &sn.Term)
+	return sn, err
 }

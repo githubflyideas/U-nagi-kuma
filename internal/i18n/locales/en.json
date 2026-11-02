@@ -1453,5 +1453,11 @@
 "ui.ha.promote_nosync": "The master cannot be reached: changes made there after the copy come back as a merge when it returns, and never overwrite newer data.",
 "ui.sl.title": "Site-local configuration",
 "ui.sl.hint": "Monitors, channels and policies for this site only, in the same format as the main configuration. Checked and alerted on here in every role; never sent to other nodes and never overwritten by the master's sync, a join or a promotion.",
-"ui.sl.saved": "Site-local configuration saved and applied"
+"ui.sl.saved": "Site-local configuration saved and applied",
+"ui.config.term_hint": "The master term this version was written under; versions of different terms may have diverged.",
+"ui.dv.title": "Diverged configurations",
+"ui.dv.hint": "A replaced master kept a configuration different from the one this master took over with. It was not applied: compare it and carry over what you need by hand.",
+"ui.dv.versions": "version {v} (term {term}), taken over with {base}",
+"ui.dv.view": "View",
+"ui.dv.dismiss": "Dismiss"
 }

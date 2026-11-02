@@ -124,6 +124,13 @@ var coreMigrations = []string{
 	CREATE TABLE merge_marks (site TEXT NOT NULL, tbl TEXT NOT NULL, last_id INTEGER NOT NULL, PRIMARY KEY (site, tbl));
 	CREATE TABLE merged (site TEXT NOT NULL, tbl TEXT NOT NULL, origin_id INTEGER NOT NULL, local_id INTEGER NOT NULL,
 		PRIMARY KEY (site, tbl, origin_id));`,
+	// Configuration versions are scoped by the master term that wrote
+	// them; a configuration a replaced master kept changing is kept aside,
+	// shown, and never applied by itself.
+	`ALTER TABLE config_snapshots ADD COLUMN term INTEGER NOT NULL DEFAULT 0;
+	CREATE TABLE diverged_configs (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, site TEXT NOT NULL,
+		term INTEGER NOT NULL, serial INTEGER NOT NULL, sha256 TEXT NOT NULL, text TEXT NOT NULL, base_serial INTEGER NOT NULL DEFAULT 0,
+		UNIQUE(site, sha256));`,
 }
 
 var historyMigrations = []string{

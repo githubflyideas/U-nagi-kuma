@@ -76,7 +76,7 @@ function HistoryTab() {
   return html`<div class="card"><div class="bd flush tbl-wrap"><table class="tbl">
     <thead><tr><th>${t('ui.config.serial')}</th><th>${t('ui.time')}</th><th>${t('ui.config.source')}</th><th>${t('ui.config.message')}</th><th></th></tr></thead>
     <tbody>${h.data.items.map((s, i) => html`<tr>
-      <td class="mono">${s.serial}${i === 0 ? html` <span class="tag">${t('ui.config.current')}</span>` : ''}</td>
+      <td class="mono">${s.serial}${s.term > 0 ? html` <span class="tag" title=${t('ui.config.term_hint')}>${t('ui.ha.term', { n: s.term })}</span>` : ''}${i === 0 ? html` <span class="tag">${t('ui.config.current')}</span>` : ''}</td>
       <td class="nowrap small">${fmtTime(s.at)}</td>
       <td class="small">${t('ui.config.src.' + s.source)}${s.author ? ' · ' + s.author : ''}</td>
       <td class="small">${s.message || ''}${s.summary ? html`<div class="muted">${Object.entries(s.summary).filter(([, v]) => v).map(([k, v]) => `${t('ui.change.' + k)} ${v}`).join(' · ')}</div>` : ''}</td>

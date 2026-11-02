@@ -1452,5 +1452,11 @@
 "ui.ha.promote_nosync": "Der Master ist nicht erreichbar: Änderungen dort nach der Kopie kommen bei seiner Rückkehr als Zusammenführung zurück und überschreiben nie neuere Daten.",
 "ui.sl.title": "Standortlokale Konfiguration",
 "ui.sl.hint": "Monitore, Kanäle und Richtlinien nur für diesen Standort, im Format der Hauptkonfiguration. In jeder Rolle hier geprüft und gemeldet; nie an andere Knoten gesendet und nie durch Master-Sync, Beitritt oder Beförderung überschrieben.",
-"ui.sl.saved": "Standortlokale Konfiguration gespeichert und angewendet"
+"ui.sl.saved": "Standortlokale Konfiguration gespeichert und angewendet",
+"ui.config.term_hint": "Die Master-Amtszeit, unter der diese Version geschrieben wurde; Versionen verschiedener Amtszeiten können abweichen.",
+"ui.dv.title": "Abweichende Konfigurationen",
+"ui.dv.hint": "Ein ersetzter Master hatte eine andere Konfiguration als die, mit der dieser Master übernahm. Sie wurde nicht angewendet: vergleichen und Benötigtes von Hand übernehmen.",
+"ui.dv.versions": "Version {v} (Amtszeit {term}), übernommen mit {base}",
+"ui.dv.view": "Anzeigen",
+"ui.dv.dismiss": "Verwerfen"
 }

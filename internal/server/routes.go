@@ -117,6 +117,8 @@ func (s *Server) routes() {
 	s.handle("DELETE /api/v1/cluster/agent", "admin", s.clusterLeave)
 	s.handle("POST /api/v1/cluster/promote", "admin", s.clusterPromote)
 	s.handle("GET /api/v1/cluster/site-local", "admin", s.siteLocal)
+	s.handle("GET /api/v1/cluster/diverged", "admin", s.diverged)
+	s.handle("DELETE /api/v1/cluster/diverged/{id}", "admin", s.divergedDismiss)
 	s.handle("PUT /api/v1/cluster/site-local", "admin", s.siteLocalSave)
 	s.handle("POST /api/v1/nodes/{name}/handover", "admin", s.nodeHandover)
 	s.handle("GET /api/v1/nodes", "read", s.nodesList)
@@ -163,6 +165,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET "+cluster.StatePath, s.agentState)
 	s.mux.HandleFunc("GET "+cluster.MergePath, s.agentMerge)
 	s.mux.HandleFunc("POST "+cluster.MergePath, s.agentMerge)
+	s.mux.HandleFunc("POST "+cluster.DivergedPath, s.agentDiverged)
 	s.mux.HandleFunc("GET "+cluster.ReachPath, func(w http.ResponseWriter, r *http.Request) {
 		node, reach := s.app.ReachView()
 		cluster.ServeReach(w, node, reach)

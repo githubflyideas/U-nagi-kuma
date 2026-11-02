@@ -1452,5 +1452,11 @@
 "ui.ha.promote_nosync": "No se puede alcanzar el maestro: los cambios hechos allí tras la copia vuelven como fusión cuando regrese y nunca sobrescriben datos más nuevos.",
 "ui.sl.title": "Configuración local del sitio",
 "ui.sl.hint": "Monitores, canales y políticas solo de este sitio, con el formato de la configuración principal. Se comprueban y alertan aquí en cualquier rol; nunca se envían a otros nodos ni los sobrescribe la sincronización del maestro, una unión o una promoción.",
-"ui.sl.saved": "Configuración local guardada y aplicada"
+"ui.sl.saved": "Configuración local guardada y aplicada",
+"ui.config.term_hint": "El mandato del maestro con el que se escribió esta versión; versiones de mandatos distintos pueden haber divergido.",
+"ui.dv.title": "Configuraciones divergentes",
+"ui.dv.hint": "Un maestro reemplazado tenía una configuración distinta de la que tomó este maestro. No se aplicó: compárela y traslade a mano lo necesario.",
+"ui.dv.versions": "versión {v} (mandato {term}), tomada con {base}",
+"ui.dv.view": "Ver",
+"ui.dv.dismiss": "Descartar"
 }

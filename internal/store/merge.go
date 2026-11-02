@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 )
 
 // Merging after a split: every site of a cluster writes its own records
@@ -448,4 +449,57 @@ func (s *Store) MergedSites() ([]string, error) {
 		out = append(out, x)
 	}
 	return out, rows.Err()
+}
+
+// DivergedConfig is a configuration a replaced master kept after the copy
+// the new master took over with: shown, never applied by itself.
+type DivergedConfig struct {
+	ID         int64     `json:"id"`
+	At         time.Time `json:"at"`
+	Site       string    `json:"site"`
+	Term       uint64    `json:"term"`
+	Serial     uint32    `json:"version"`
+	BaseSerial uint32    `json:"base_version"` // the version the new master took over with
+	SHA256     string    `json:"sha256"`
+	Text       string    `json:"text,omitempty"`
+}
+
+// AddDiverged keeps a diverged configuration (once per site and content).
+func (s *Store) AddDiverged(d DivergedConfig) error {
+	s.wmu.Lock()
+	defer s.wmu.Unlock()
+	_, err := s.core.Exec(`INSERT OR IGNORE INTO diverged_configs(at,site,term,serial,sha256,text,base_serial) VALUES(?,?,?,?,?,?,?)`,
+		ms(d.At), d.Site, d.Term, d.Serial, d.SHA256, d.Text, d.BaseSerial)
+	return err
+}
+
+// Diverged lists the kept diverged configurations, newest first.
+func (s *Store) Diverged(withText bool) ([]DivergedConfig, error) {
+	rows, err := s.core.Query(`SELECT id,at,site,term,serial,sha256,text,base_serial FROM diverged_configs ORDER BY id DESC LIMIT 50`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []DivergedConfig{}
+	for rows.Next() {
+		var d DivergedConfig
+		var at int64
+		if err := rows.Scan(&d.ID, &at, &d.Site, &d.Term, &d.Serial, &d.SHA256, &d.Text, &d.BaseSerial); err != nil {
+			return nil, err
+		}
+		d.At = fromMS(at)
+		if !withText {
+			d.Text = ""
+		}
+		out = append(out, d)
+	}
+	return out, rows.Err()
+}
+
+// DismissDiverged removes a kept diverged configuration.
+func (s *Store) DismissDiverged(id int64) error {
+	s.wmu.Lock()
+	defer s.wmu.Unlock()
+	_, err := s.core.Exec(`DELETE FROM diverged_configs WHERE id=?`, id)
+	return err
 }

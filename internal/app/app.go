@@ -121,6 +121,7 @@ func New(o Options) (*App, error) {
 		return nil, err
 	}
 	a.store = st
+	a.afterPromote()
 	kek, err := store.LoadOrCreateKey(o.DataDir)
 	if err != nil {
 		st.Close()

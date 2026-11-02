@@ -249,3 +249,7 @@ type Ping struct {
 // MergePath is where a node sends what it wrote while it checked on its
 // own (GET: the master's marks for it; POST: a store.MergeBatch).
 const MergePath = "/api/v1/agent/merge"
+
+// DivergedPath is where a replaced master sends the configuration it kept
+// changing after the copy (kept aside on the master, never applied).
+const DivergedPath = "/api/v1/agent/diverged"

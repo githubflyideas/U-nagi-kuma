@@ -47,6 +47,9 @@ func (a *App) maybePushMerge(now bool) {
 
 // pushMerge sends every record above the master's marks, batch by batch.
 func (a *App) pushMerge(ag *cluster.Agent) error {
+	if err := a.pushDiverged(ag); err != nil {
+		a.log.Warn("sending the diverged configuration to the master", "err", err)
+	}
 	total := map[string]int{}
 	for i := 0; i < 1000; i++ {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

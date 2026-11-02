@@ -28,6 +28,14 @@ type RetireNotice struct {
 	Term uint64    `json:"term"`
 	At   time.Time `json:"at"`
 	Sig  string    `json:"sig"`
+	// Join, when set, is a join code of the new master: the replaced one
+	// rejoins as replica Node and offers what it wrote since the copy.
+	Join string `json:"join,omitempty"`
+	Node string `json:"node,omitempty"`
+	// Version and SHA256 are those of the configuration the new master
+	// took over with; a replaced master with another one keeps it aside.
+	Version uint32 `json:"version,omitempty"`
+	SHA256  string `json:"sha256,omitempty"`
 }
 
 func retireDigest(term uint64, at time.Time) []byte {

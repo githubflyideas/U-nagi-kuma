@@ -59,6 +59,7 @@ export function Nodes({ embedded }) {
       <tbody>${d.nodes.map(n => html`<${NodeRow} n=${n} onToken=${newToken} onRevoke=${revoke} onRemove=${remove} onEdit=${setEditing} onHandover=${handover} />`)}</tbody>
     </table></div></div>
     <p class="faint small ltr" style=${{ margin: 0 }}>${t('ui.node.fingerprint')}: <span class="mono">${d.fingerprint}</span></p>
+    <${Diverged} />
     <${SiteLocal} />
     ${form && html`<${Modal} title=${t('ui.node.add')} onClose=${() => setForm(null)}>
       <form class="form" onSubmit=${add}>
@@ -305,4 +306,28 @@ function Verdict({ v, w }) {
 function Gateway({ g }) {
   if (!g || g.length === 0) return html`<span class="faint small">${t('ui.gw.none')}</span>`;
   return html`${g.slice(0, 4).map(x => html`<span class=${'tag' + (x.ok ? '' : ' err')} title=${(x.error || '') + ' · ' + fmtTime(x.at)}>${x.ok ? '✓' : '!'} ${x.channel} (${x.kind})</span> `)}`;
+}
+
+// Diverged lists configurations a replaced master kept changing after the
+// copy this master took over with: shown for review, never applied.
+function Diverged() {
+  const r = useFetch(() => get('/cluster/diverged'), []);
+  const [open, setOpen] = useState(null);
+  if (!r.data || !r.data.items.length) return null;
+  const view = async (d) => {
+    try { const x = await get('/cluster/diverged?text=1'); setOpen(x.items.find(y => y.id === d.id)); } catch (e) { toastError(e); }
+  };
+  const dismiss = async (d) => {
+    try { await del('/cluster/diverged/' + d.id); r.reload(); } catch (e) { toastError(e); }
+  };
+  return html`<div class="card"><div class="hd"><h2>${t('ui.dv.title')}</h2></div><div class="bd">
+    <p class="small muted" style=${{ margin: '0 0 8px' }}>${t('ui.dv.hint')}</p>
+    <table class="tbl"><tbody>${r.data.items.map(d => html`<tr>
+      <td class="mono">${d.site}</td>
+      <td>${t('ui.dv.versions', { v: d.version, term: d.term, base: d.base_version })}</td>
+      <td class="small">${fmtTime(d.at)}</td>
+      <td class="right nowrap"><button class="btn sm" onClick=${() => view(d)}>${t('ui.dv.view')}</button> <button class="btn sm" onClick=${() => dismiss(d)}>${t('ui.dv.dismiss')}</button></td>
+    </tr>`)}</tbody></table>
+    ${open && html`<${Modal} title=${t('ui.dv.title')} onClose=${() => setOpen(null)}><pre class="ltr mono small" style=${{ maxHeight: '60vh', overflow: 'auto' }}>${open.text}</pre><//>`}
+  </div></div>`;
 }

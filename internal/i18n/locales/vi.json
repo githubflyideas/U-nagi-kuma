@@ -1443,5 +1443,11 @@
 "ui.ha.promote_nosync": "Không truy cập được máy chủ chính: thay đổi ở đó sau bản sao sẽ quay về dưới dạng hợp nhất khi nó trở lại, không bao giờ ghi đè dữ liệu mới hơn.",
 "ui.sl.title": "Cấu hình riêng của địa điểm",
 "ui.sl.hint": "Giám sát, kênh và chính sách chỉ cho địa điểm này, cùng định dạng với cấu hình chính. Được kiểm tra và cảnh báo tại đây ở mọi vai trò; không gửi tới nút khác và không bao giờ bị đồng bộ của máy chủ chính, tham gia hay thăng cấp ghi đè.",
-"ui.sl.saved": "Đã lưu và áp dụng cấu hình riêng của địa điểm"
+"ui.sl.saved": "Đã lưu và áp dụng cấu hình riêng của địa điểm",
+"ui.config.term_hint": "Nhiệm kỳ máy chủ chính khi viết phiên bản này; phiên bản của các nhiệm kỳ khác nhau có thể đã phân nhánh.",
+"ui.dv.title": "Cấu hình phân nhánh",
+"ui.dv.hint": "Máy chủ chính bị thay thế giữ cấu hình khác với cấu hình máy chủ này đã tiếp quản. Nó không được áp dụng: hãy so sánh và chuyển phần cần thiết thủ công.",
+"ui.dv.versions": "phiên bản {v} (nhiệm kỳ {term}), tiếp quản với {base}",
+"ui.dv.view": "Xem",
+"ui.dv.dismiss": "Bỏ qua"
 }

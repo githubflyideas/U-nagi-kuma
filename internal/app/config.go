@@ -142,7 +142,7 @@ func (cm *configManager) snapshot(source, author, message string) error {
 		}
 	}
 	return cm.app.store.SaveSnapshot(store.Snapshot{Serial: cm.cur.Serial, At: cm.app.now(), Source: source, Author: author,
-		Message: message, Text: cm.cur.Text, SHA256: cm.cur.SHA, Summary: summary}, cm.cur.Config.Tunables.Int("retention.snapshots"))
+		Message: message, Text: cm.cur.Text, SHA256: cm.cur.SHA, Summary: summary, Term: cm.app.Term()}, cm.cur.Config.Tunables.Int("retention.snapshots"))
 }
 
 // current returns the active configuration.

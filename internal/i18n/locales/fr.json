@@ -1452,5 +1452,11 @@
 "ui.ha.promote_nosync": "Le maître est injoignable : ses changements après la copie reviendront en fusion à son retour, sans jamais écraser des données plus récentes.",
 "ui.sl.title": "Configuration locale au site",
 "ui.sl.hint": "Moniteurs, canaux et politiques propres à ce site, au format de la configuration principale. Vérifiés et alertés ici quel que soit le rôle ; jamais envoyés aux autres nœuds ni écrasés par la synchro du maître, une adhésion ou une promotion.",
-"ui.sl.saved": "Configuration locale enregistrée et appliquée"
+"ui.sl.saved": "Configuration locale enregistrée et appliquée",
+"ui.config.term_hint": "Le mandat du maître sous lequel cette version a été écrite ; des versions de mandats différents peuvent avoir divergé.",
+"ui.dv.title": "Configurations divergentes",
+"ui.dv.hint": "Un maître remplacé avait une configuration différente de celle reprise ici. Elle n'a pas été appliquée : comparez et reportez à la main ce qu'il faut.",
+"ui.dv.versions": "version {v} (mandat {term}), reprise avec {base}",
+"ui.dv.view": "Voir",
+"ui.dv.dismiss": "Ignorer"
 }
