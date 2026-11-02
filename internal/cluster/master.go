@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -46,6 +47,8 @@ type MasterOptions struct {
 	// WriteState writes the state archive for a standby, encrypted with
 	// the passphrase it returns first.
 	WriteState func(w http.ResponseWriter) error
+	// Self is the master's own node name (for the peer lists).
+	Self func() string
 }
 
 // Master accepts agent connections, forwards probe requests and configs
@@ -58,6 +61,7 @@ type Master struct {
 	sink    Sink
 	peers   map[string]*peer
 	configs map[string]*AgentConfig
+	listens map[string]string // last address each node listens at
 	closed  bool
 	wg      sync.WaitGroup
 }
@@ -77,7 +81,7 @@ func NewMaster(o MasterOptions) *Master {
 	if o.Tunables == nil {
 		o.Tunables = func() tunables.Set { ts, _ := tunables.New(nil); return ts }
 	}
-	return &Master{o: o, peers: map[string]*peer{}, configs: map[string]*AgentConfig{}}
+	return &Master{o: o, peers: map[string]*peer{}, configs: map[string]*AgentConfig{}, listens: map[string]string{}}
 }
 
 // SetSink sets where agent reports go.
@@ -330,7 +334,7 @@ func (m *Master) session(node, token string, conn net.Conn, r *bufio.Reader, add
 		out: make(chan outFrame, sendQueue), cfgReady: make(chan struct{}, 1), closed: make(chan struct{}),
 		pings: map[uint64]time.Time{}, caps: capSet(h.Caps),
 		status: engine.NodeStatus{Node: node, Online: true, Since: now, LastSeen: now, Skew: h.Time.Sub(now),
-			Version: h.Version, Platform: h.Platform, Addr: addr},
+			Version: h.Version, Platform: h.Platform, Addr: addr, Listen: listenAddr(h.Listen, addr)},
 	}
 	m.mu.Lock()
 	if m.closed {
@@ -339,6 +343,9 @@ func (m *Master) session(node, token string, conn net.Conn, r *bufio.Reader, add
 	}
 	old := m.peers[node]
 	m.peers[node] = p
+	if l := p.status.Listen; l != "" {
+		m.listens[node] = l
+	}
 	cfg := m.configs[node]
 	m.mu.Unlock()
 	if old != nil {
@@ -351,6 +358,7 @@ func (m *Master) session(node, token string, conn net.Conn, r *bufio.Reader, add
 	go p.writer()
 	go p.pinger()
 	p.report()
+	m.sendPeers()
 	err = p.reader(r, maxMsg)
 	p.close()
 	m.mu.Lock()
@@ -360,6 +368,7 @@ func (m *Master) session(node, token string, conn net.Conn, r *bufio.Reader, add
 	}
 	m.mu.Unlock()
 	if current {
+		m.sendPeers()
 		st := p.snapshot()
 		st.Online, st.Since = false, m.o.Now()
 		if s := m.getSink(); s != nil {
@@ -607,6 +616,7 @@ func (p *peer) reader(r *bufio.Reader, maxMsg int) error {
 			}
 			p.mu.Lock()
 			p.status.Serial, p.status.Health, p.status.Scripts = st.Serial, st.Health, st.Scripts
+			p.status.Reach, p.status.Gateway = st.Reach, st.Gateway
 			p.mu.Unlock()
 			p.report()
 		case msgPong:
@@ -650,4 +660,71 @@ func (m *Master) HasCap(node, c string) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.caps[c]
+}
+
+// listenAddr completes an agent's announced listen address: an unspecified
+// host is the address it connected from.
+func listenAddr(listen, remote string) string {
+	if listen == "" {
+		return ""
+	}
+	host, port, err := net.SplitHostPort(listen)
+	if err != nil {
+		return ""
+	}
+	if ip := net.ParseIP(host); host == "" || ip != nil && ip.IsUnspecified() {
+		if rh, _, err := net.SplitHostPort(remote); err == nil {
+			host = rh
+		}
+	}
+	return net.JoinHostPort(host, port)
+}
+
+// sendPeers tells every connected node where the others listen, so each
+// can check them and report what it reaches.
+func (m *Master) sendPeers() {
+	self := ""
+	if m.o.Self != nil {
+		self = m.o.Self()
+	}
+	m.mu.Lock()
+	peers := make([]*peer, 0, len(m.peers))
+	for _, p := range m.peers {
+		peers = append(peers, p)
+	}
+	var addrs []PeerAddr
+	for n, l := range m.listens {
+		addrs = append(addrs, PeerAddr{Name: n, Addr: l})
+	}
+	m.mu.Unlock()
+	// Nodes removed from the configuration are not checked any more.
+	keep := addrs[:0]
+	for _, a := range addrs {
+		if m.o.Known == nil || m.o.Known(a.Name) {
+			keep = append(keep, a)
+		}
+	}
+	addrs = keep
+	sort.Slice(addrs, func(i, j int) bool { return addrs[i].Name < addrs[j].Name })
+	for _, p := range peers {
+		var others []PeerAddr
+		for _, a := range addrs {
+			if a.Name != p.node {
+				others = append(others, a)
+			}
+		}
+		p.send(msgPeers, Peers{Master: self, Nodes: others})
+	}
+}
+
+// Reach is the master's own view: the configured nodes it has a session
+// with.
+func (m *Master) Reach(nodes []string) map[string]bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := make(map[string]bool, len(nodes))
+	for _, n := range nodes {
+		out[n] = m.peers[n] != nil
+	}
+	return out
 }

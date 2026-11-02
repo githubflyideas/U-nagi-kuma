@@ -65,6 +65,16 @@ func (e *Engine) text(id string, args ...any) string {
 		return i18n.T(lang, "sys.maint_start", "title", args[0], "end", at(1), "n", args[2])
 	case id == "maint_end":
 		return i18n.T(lang, "sys.maint_end", "title", args[0])
+	case id == "node_witnesses":
+		return i18n.T(lang, "sys.node_witnesses", "n", args[0], "total", args[1])
+	case id == "peer_unreachable_title":
+		return i18n.T(lang, "sys.peer_unreachable_title", "node", args[0])
+	case id == "peer_unreachable":
+		return i18n.T(lang, "sys.peer_unreachable", "node", args[0])
+	case id == "minority_title":
+		return i18n.T(lang, "sys.minority_title")
+	case id == "minority":
+		return i18n.T(lang, "sys.minority", "reach", args[0], "total", args[1], "nodes", args[2])
 	case id == "node_back":
 		return i18n.T(lang, "sys.node_back", "node", args[0])
 	case id == "master_unreachable":

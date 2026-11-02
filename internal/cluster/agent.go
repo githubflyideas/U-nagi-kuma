@@ -72,6 +72,11 @@ type AgentOptions struct {
 	// Replica: this node is a full server that keeps a copy of the
 	// master's state and checks on its own while the master is away.
 	Replica bool
+	// Listen is where peers can reach this node (host:port; "" for an
+	// agent that does not listen).
+	Listen string
+	// Gateway reports how this node's last notifications went out.
+	Gateway func() []engine.GatewayState
 }
 
 // staleError: the master reached was replaced by a newer one.
@@ -102,6 +107,8 @@ type Agent struct {
 	ts       tunables.Set
 	sem      chan struct{}
 	conn     AgentStatus
+
+	peers peerSet
 }
 
 // AgentStatus is the agent's view of its connection, for its local UI.
@@ -209,6 +216,7 @@ func (a *Agent) Run(ctx context.Context) error {
 	if a.o.Emergency != nil {
 		go a.watchMaster(ctx)
 	}
+	go a.checkPeers(ectx)
 	a.setConnected(false, "", nil)
 	backoff := time.Second
 	for {
@@ -319,7 +327,7 @@ func (a *Agent) session(ctx context.Context) error {
 	maxMsg := a.ts.Int("cluster.max-message")
 	a.mu.Unlock()
 	if err := writeFrame(conn, msgHello, Hello{Proto: ProtoVersion, Node: a.o.Node, Version: a.o.Version,
-		Platform: runtime.GOOS + "/" + runtime.GOARCH, Time: time.Now(), Term: a.Term(), Caps: a.caps()}); err != nil {
+		Platform: runtime.GOOS + "/" + runtime.GOARCH, Time: time.Now(), Term: a.Term(), Caps: a.caps(), Listen: a.o.Listen}); err != nil {
 		return err
 	}
 	f, err := readFrame(br, maxMsg)
@@ -438,6 +446,12 @@ func (s *agentSession) reader(ctx context.Context, r *bufio.Reader) error {
 				return &staleError{e.Message}
 			}
 			return errors.New("master: " + e.Message)
+		case msgPeers:
+			var p Peers
+			if err := json.Unmarshal(f.Data, &p); err != nil {
+				return err
+			}
+			s.a.setPeers(p)
 		case msgState:
 			if s.a.o.OnState != nil {
 				go s.a.o.OnState()
@@ -527,6 +541,10 @@ func (a *Agent) status() Status {
 	a.mu.Unlock()
 	h := a.eng.Overview().Health
 	st.Health, st.Time, st.Scripts = &h, time.Now(), probe.Scripts()
+	st.Reach = a.Reach()
+	if a.o.Gateway != nil {
+		st.Gateway = a.o.Gateway()
+	}
 	return st
 }
 

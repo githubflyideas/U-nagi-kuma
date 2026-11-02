@@ -159,6 +159,10 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /metrics", s.metrics)
 	s.mux.HandleFunc("GET "+cluster.ConnectPath, s.agentConnect)
 	s.mux.HandleFunc("GET "+cluster.StatePath, s.agentState)
+	s.mux.HandleFunc("GET "+cluster.ReachPath, func(w http.ResponseWriter, r *http.Request) {
+		node, reach := s.app.ReachView()
+		cluster.ServeReach(w, node, reach)
+	})
 	s.mux.HandleFunc("POST "+cluster.RetirePath, s.agentRetire)
 	s.mux.HandleFunc("POST "+cluster.JoinPath, s.agentJoin)
 	s.mux.HandleFunc("GET /api/v1/status/{name}", s.statusPageJSON)

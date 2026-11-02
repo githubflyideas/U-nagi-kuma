@@ -40,6 +40,11 @@ type nodeView struct {
 	Platform string         `json:"platform,omitempty"`
 	Addr     string         `json:"addr,omitempty"`
 	Health   *engine.Health `json:"health,omitempty"`
+	// Majority judgement, the node's own view and its notification uplink.
+	Verdict   string                `json:"verdict,omitempty"`
+	Witnesses int                   `json:"witnesses,omitempty"`
+	Reach     map[string]bool       `json:"reach,omitempty"`
+	Gateway   []engine.GatewayState `json:"gateway,omitempty"`
 
 	Token *store.AgentToken `json:"token"`
 }
@@ -71,6 +76,7 @@ func (s *Server) nodeViews() []nodeView {
 		if st, ok := status[n.Name]; ok {
 			v.Online, v.Serial, v.Version, v.Platform, v.Addr, v.Health = st.Online, st.Serial, st.Version, st.Platform, st.Addr, st.Health
 			v.Unsupported = st.Unsupported
+			v.Verdict, v.Witnesses, v.Reach, v.Gateway = st.Verdict, st.Witnesses, st.Reach, st.Gateway
 			v.Since, v.LastSeen = tp(st.Since), tp(st.LastSeen)
 			v.RTTMS, v.SkewMS = float64(st.RTT)/1e6, float64(st.Skew)/1e6
 			v.Synced = st.Online && st.Serial == cfg.Serial
@@ -81,6 +87,8 @@ func (s *Server) nodeViews() []nodeView {
 		}
 		out = append(out, v)
 	}
+	self.Gateway, self.Verdict = s.app.GatewayStates(), engine.NodeOK
+	_, self.Reach = s.app.ReachView()
 	return append([]nodeView{self}, out...)
 }
 
@@ -99,7 +107,8 @@ func (s *Server) nodesList(w http.ResponseWriter, r *http.Request) (any, error) 
 	}
 	monitors := len(s.app.Config().Config.Monitors)
 	return map[string]any{"layout": layout, "nodes": views, "fingerprint": s.app.PKI().Fingerprint(), "server": agentServerURL(r),
-		"agent": s.app.Agent(), "instance": s.app.Instance(), "monitors": monitors}, nil
+		"agent": s.app.Agent(), "instance": s.app.Instance(), "monitors": monitors,
+		"replica": s.app.ReplicaStatus(), "peers": s.app.Peers(), "local_nodes": s.localNodes(), "gateway": s.app.GatewayStates()}, nil
 }
 
 var hostRe = regexp.MustCompile(`^(\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9.-]+)(:[0-9]{1,5})?$`)
@@ -269,4 +278,13 @@ func (s *Server) nodeHandover(w http.ResponseWriter, r *http.Request) (any, erro
 	}
 	auditOf(r).note("term", term)
 	return map[string]any{"node": name, "term": term}, nil
+}
+
+// localNodes is a replica's majority view of the other nodes while it
+// checks on its own (empty otherwise).
+func (s *Server) localNodes() []engine.NodeStatus {
+	if !s.app.ReplicaStatus().Local {
+		return []engine.NodeStatus{}
+	}
+	return s.app.Engine().Nodes()
 }

@@ -45,6 +45,7 @@ func (a *App) send(ctx context.Context, ch notify.Channel, m *notify.Message) no
 		m.Site = a.site()
 	}
 	at := a.sender.Send(ctx, ch, m)
+	a.noteGateway(ch, at)
 	if len(at.Bounces) == 0 {
 		return at
 	}

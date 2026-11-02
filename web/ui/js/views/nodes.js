@@ -16,7 +16,7 @@ export function Nodes({ embedded }) {
   const [editing, setEditing] = useState(null);
   if (!list.data) return list.error ? html`<${ErrorBox} error=${list.error} retry=${list.reload} />` : html`<${Loading} />`;
   const d = list.data;
-  if (d.agent && d.agent.member) return html`<${Membership} state=${d.agent} reload=${list.reload} />`;
+  if (d.agent && d.agent.member) return html`<${Membership} state=${d.agent} d=${d} reload=${list.reload} />`;
 
   const add = async (e) => {
     e.preventDefault();
@@ -170,7 +170,7 @@ function JoinForm({ d, onClose }) {
 }
 
 // Membership is the page of a server that joined a cluster.
-function Membership({ state, reload }) {
+function Membership({ state, d, reload }) {
   const m = state.member, s = state.status || {};
   const sb = useFetch(() => get('/cluster/agent'), []);
   const copy = sb.data && sb.data.standby;
@@ -193,8 +193,19 @@ function Membership({ state, reload }) {
       <dt>${t('ui.node.config')}</dt><dd><span class="mono">${s.serial || '–'}</span> · ${t('ui.join.monitors', { n: s.monitors || 0 })}</dd>
       <dt>${t('ui.node.fingerprint')}</dt><dd class="mono ltr small">${m.fingerprint}</dd>
       <dt>${t('ui.join.joined_at')}</dt><dd>${fmtTime(m.joined)}</dd>
-      ${copy && copy.size > 0 && html`<dt>${t('ui.ha.copy')}</dt><dd>${fmtTime(copy.fetched)} · ${t('ui.ha.term', { n: copy.term })}${copy.error ? html` <span class="err-text small">${copy.error}</span>` : ''}</dd>`}
+      ${copy && copy.size > 0 && html`<dt>${t('ui.ha.copy')}</dt><dd>${fmtTime(copy.fetched)} (<${Ago} at=${copy.fetched} />) · ${t('ui.ha.term', { n: copy.term })}${copy.error ? html` <span class="err-text small">${copy.error}</span>` : ''}</dd>`}
+      ${d.replica && d.replica.replica && html`<dt>${t('ui.rep.mode')}</dt><dd>${d.replica.local
+        ? html`<span class="tag warn">${t('ui.rep.local')}</span> <span class="small muted">${t('ui.rep.local_hint', { n: d.replica.monitors })}</span>`
+        : html`<span class="tag">${t('ui.rep.follow')}</span>`}</dd>`}
+      <dt>${t('ui.gw.title')}</dt><dd><${Gateway} g=${d.gateway} /></dd>
     </dl>
+    ${d.peers && d.peers.length > 0 && html`<h3 style=${{ margin: '14px 0 6px' }}>${t('ui.rep.peers')}</h3>
+      <table class="tbl"><tbody>${d.peers.map(p => {
+        const ln = (d.local_nodes || []).find(x => x.node === p.name);
+        return html`<tr><td class="mono">${p.name}</td><td class="mono ltr small">${p.addr}</td>
+          <td><${Dot} status=${p.ok ? 'ok' : 'critical'} /> ${p.ok ? t('ui.rep.reachable') : t('ui.rep.unreachable')}</td>
+          <td>${ln && ln.verdict && html`<${Verdict} v=${ln.verdict} w=${ln.witnesses} />`}</td></tr>`;
+      })}</tbody></table>`}
     ${copy && copy.size > 0 && html`<div class="row" style=${{ marginTop: '12px' }}><p class="small muted spacer" style=${{ margin: 0 }}>${t('ui.ha.promote_hint')}</p>
       <button class="btn danger" onClick=${promote}>${t('ui.ha.promote')}</button></div>`}
     </div></div>`;
@@ -212,6 +223,8 @@ function NodeRow({ n, onToken, onRevoke, onRemove, onEdit, onHandover }) {
       <${Dot} status=${n.online ? 'ok' : (n.last_seen ? 'critical' : 'unknown')} />
       ${' '}${n.self ? t('ui.node.online') : n.online ? t('ui.node.online') : n.last_seen ? t('ui.node.offline') : t('ui.node.never')}
       ${!n.self && n.since && html`<div class="sub"><${Ago} at=${n.since} /></div>`}
+      ${!n.self && n.verdict && n.verdict !== 'ok' && html`<div class="sub"><${Verdict} v=${n.verdict} w=${n.witnesses} /></div>`}
+      ${n.gateway && n.gateway.length > 0 && html`<div class="sub"><${Gateway} g=${n.gateway} /></div>`}
     </td>
     <td class="nowrap">
       ${n.serial ? html`<span class="mono ltr">${n.serial}</span>` : html`<span class="faint">–</span>`}
@@ -251,4 +264,16 @@ function Install({ issued, server, onClose }) {
       <pre class="code">${cmd}</pre>
     </div>
   <//>`;
+}
+
+// Verdict is the majority judgement of a node that cannot be reached.
+function Verdict({ v, w }) {
+  const cls = v === 'down' ? 'tag err' : v === 'unknown' ? 'tag weak' : 'tag warn';
+  return html`<span class=${cls} title=${t('ui.verdict.' + v + '_hint')}>${t('ui.verdict.' + v)}</span>${v === 'down' && w > 0 ? html` <span class="small muted">${t('ui.verdict.witnesses', { n: w })}</span>` : ''}`;
+}
+
+// Gateway shows whether the node's last notifications went out.
+function Gateway({ g }) {
+  if (!g || g.length === 0) return html`<span class="faint small">${t('ui.gw.none')}</span>`;
+  return html`${g.slice(0, 4).map(x => html`<span class=${'tag' + (x.ok ? '' : ' err')} title=${(x.error || '') + ' · ' + fmtTime(x.at)}>${x.ok ? '✓' : '!'} ${x.channel} (${x.kind})</span> `)}`;
 }

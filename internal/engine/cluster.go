@@ -64,7 +64,38 @@ type NodeStatus struct {
 	// Unsupported are monitors this node is meant to check but cannot:
 	// it runs an older release without their check type.
 	Unsupported []string `json:"unsupported,omitempty"`
+	// Listen is where other nodes can reach this one ("" for probe-only
+	// agents, which cannot be checked by their peers).
+	Listen string `json:"listen,omitempty"`
+	// Reach is this node's own view: which other nodes it can reach.
+	Reach map[string]bool `json:"reach,omitempty"`
+	// Gateway is how this node's last notifications went out, per channel.
+	Gateway []GatewayState `json:"gateway,omitempty"`
+	// Verdict is the majority judgement of the node: ok, unreachable
+	// (this node cannot reach it, others can or cannot tell), down (more
+	// than half of the cluster cannot reach it) or unknown (this node is
+	// in the minority and cannot judge).
+	Verdict   string `json:"verdict,omitempty"`
+	Witnesses int    `json:"witnesses,omitempty"` // nodes that cannot reach it
 }
+
+// GatewayState is the outcome of a node's last notification on a channel:
+// whether its uplink to the notification gateway (SMS, webhook, mail) works.
+type GatewayState struct {
+	Channel string    `json:"channel"`
+	Kind    string    `json:"kind"`
+	OK      bool      `json:"ok"`
+	At      time.Time `json:"at"`
+	Error   string    `json:"error,omitempty"`
+}
+
+// Node verdicts.
+const (
+	NodeOK          = "ok"
+	NodeUnreachable = "unreachable"
+	NodeDown        = "down"
+	NodeUnknown     = "unknown"
+)
 
 // VoteView is one node's latest vote on a monitor, for the UI.
 type VoteView struct {
@@ -248,6 +279,8 @@ func (e *Engine) onNodeState(s NodeStatus) {
 	}
 	now := e.now()
 	was := nr.status.Online
+	// The verdict is the engine's judgement, not the report's.
+	s.Verdict, s.Witnesses = nr.status.Verdict, nr.status.Witnesses
 	nr.status = s
 	switch {
 	case s.Online && !was:
@@ -284,12 +317,33 @@ func (e *Engine) applyNodes(specs []NodeSpec, now time.Time) {
 	}
 }
 
-// checkNodes opens offline incidents for agents away longer than their
-// timeout.
+// SystemMinority is the system incident of a node that cannot reach more
+// than half of the cluster: it cannot tell who is down, so it says so
+// instead of reporting the others.
+const SystemMinority = "minority"
+
+// checkNodes judges the nodes by majority. A node is down only when more
+// than half of the cluster cannot reach it, and only a node that itself
+// reaches more than half of the cluster says so. A node in the minority
+// reports that it cannot reach the others (in a two-node cluster: that its
+// peer is unreachable) and never declares anyone down on its own.
 func (e *Engine) checkNodes(now time.Time) {
+	total := 1 + len(e.cfg.Nodes)
+	reach := 1
+	for _, n := range e.cfg.Nodes {
+		if nr := e.nodes[n.Name]; nr != nil && nr.status.Online {
+			reach++
+		}
+	}
+	minority := len(e.cfg.Nodes) > 0 && reach*2 <= total
+	var away []string
 	for _, n := range e.cfg.Nodes {
 		nr := e.nodes[n.Name]
-		if nr == nil || nr.status.Online || nr.offlineSince.IsZero() {
+		if nr == nil {
+			continue
+		}
+		if nr.status.Online || nr.offlineSince.IsZero() {
+			nr.status.Verdict, nr.status.Witnesses = NodeOK, 0
 			continue
 		}
 		timeout := n.Timeout
@@ -297,22 +351,75 @@ func (e *Engine) checkNodes(now time.Time) {
 			timeout = e.cfg.Tunables.Duration("cluster.node-timeout")
 		}
 		if now.Sub(nr.offlineSince) < timeout {
-			continue
-		}
-		key := nodeOfflineKey(n.Name)
-		if inc := e.system[key]; inc != nil && inc.State.Open() {
+			nr.status.Verdict = NodeUnreachable
 			continue
 		}
 		title := n.Name
 		if n.Title != "" {
 			title = n.Title + " (" + n.Name + ")"
 		}
+		away = append(away, title)
+		against, witnessable := e.witnesses(n.Name)
+		nr.status.Witnesses = against
+		switch {
+		case minority:
+			nr.status.Verdict = NodeUnknown
+			continue
+		case witnessable && against*2 <= total:
+			// Others still reach it: a broken path from here, not a dead node.
+			nr.status.Verdict = NodeUnreachable
+			continue
+		}
+		nr.status.Verdict = NodeDown
+		key := nodeOfflineKey(n.Name)
+		if inc := e.system[key]; inc != nil && inc.State.Open() {
+			continue
+		}
 		pol := n.Policy
 		if pol == "" {
 			pol = "system"
 		}
-		e.openSystemAs(key, pol, e.text("node_offline_title", title), e.text("node_offline_detail", nr.offlineSince), now)
+		detail := e.text("node_offline_detail", nr.offlineSince)
+		if witnessable {
+			detail += "\n" + e.text("node_witnesses", against, total)
+		}
+		e.openSystemAs(key, pol, e.text("node_offline_title", title), detail, now)
 	}
+	if minority && len(away) > 0 {
+		if total == 2 {
+			e.openSystemAs(SystemMinority, "system", e.text("peer_unreachable_title", away[0]), e.text("peer_unreachable", away[0]), now)
+		} else {
+			e.openSystemAs(SystemMinority, "system", e.text("minority_title"), e.text("minority", reach, total, strings.Join(away, ", ")), now)
+		}
+	} else {
+		e.resolveSystem(SystemMinority, now, "")
+	}
+}
+
+// witnesses counts the nodes that cannot reach node x: this one, and every
+// connected node whose own view says it cannot. witnessable is false when
+// no other node can check x (a probe-only agent nobody can connect to):
+// then this node's view is all there is.
+func (e *Engine) witnesses(x string) (against int, witnessable bool) {
+	against = 1
+	for _, n := range e.cfg.Nodes {
+		if n.Name == x {
+			continue
+		}
+		nr := e.nodes[n.Name]
+		if nr == nil || !nr.status.Online || nr.status.Reach == nil {
+			continue
+		}
+		ok, known := nr.status.Reach[x]
+		if !known {
+			continue
+		}
+		witnessable = true
+		if !ok {
+			against++
+		}
+	}
+	return against, witnessable
 }
 
 // Nodes returns the configured agents with their latest state.

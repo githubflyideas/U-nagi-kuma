@@ -180,6 +180,7 @@ pre.report { margin: 0; white-space: pre-wrap; word-break: break-word; font: 13p
 .tag { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 11.5px; background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
 .tag.warn { color: var(--degraded); border-color: var(--degraded); }
 .tag.weak { color: var(--unknown); border-color: var(--unknown); }
+.tag.err { color: var(--critical); border-color: var(--critical); }
 
 /* ---- heartbeat bar ---- */
 .beats { display: flex; gap: 2px; align-items: stretch; height: 22px; min-width: 120px; }

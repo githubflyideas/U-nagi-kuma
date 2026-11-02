@@ -43,9 +43,11 @@ type Options struct {
 	BaseURL      string
 	AllowEnv     []string
 	HeartbeatURL string // from the command line; the settings page can set one too
-	Location     *time.Location
-	Log          *slog.Logger
-	Version      string
+	// Listen is the address the server listens on; peers check it.
+	Listen   string
+	Location *time.Location
+	Log      *slog.Logger
+	Version  string
 	// Now and Probe are for tests.
 	Now   func() time.Time
 	Probe func(context.Context, probe.Spec) probe.Result
@@ -70,6 +72,8 @@ type App struct {
 	// replica is the copy of the master this server checks with while
 	// the master is out of reach.
 	replica replicaState
+	// gateways is the last notification outcome per channel.
+	gateways map[string]engine.GatewayState
 	// applied is the configuration the engine runs, readable without the
 	// configuration lock (agent sessions consult it while a new one is
 	// being applied).
@@ -154,6 +158,12 @@ func New(o Options) (*App, error) {
 		Superseded: func(term uint64, node string) { a.supersede(term, node) },
 		Standby:    a.isStandby,
 		WriteState: a.writeState,
+		Self: func() string {
+			if c := a.applied.Load(); c != nil {
+				return c.MName
+			}
+			return ""
+		},
 	})
 	a.engine = engine.New(engine.Deps{
 		Clock: o.Now, Probe: o.Probe, Send: a.send, Sink: &sink{a: a, Store: st},

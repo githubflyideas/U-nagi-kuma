@@ -71,6 +71,7 @@ const (
 	msgPong    = "pong"    // agent → master
 	msgState   = "state"   // master → standby: fetch the state now (1.1)
 	msgPromote = "promote" // master → standby: take over as master (1.1)
+	msgPeers   = "peers"   // master → agent: the other nodes to check (ignored before 1.2)
 )
 
 // frame is one message: a type and its JSON body.
@@ -130,6 +131,31 @@ type Hello struct {
 	// Caps are what this node can do ("check:HTTP"...). Nodes from before
 	// it was sent can do legacyCaps.
 	Caps []string `json:"caps,omitempty"`
+	// Listen is where the other nodes can reach this one (host:port; an
+	// unspecified host means the address it connects from).
+	Listen string `json:"listen,omitempty"`
+}
+
+// ReachPath answers peers checking this node: its name and which nodes
+// it reaches itself. It carries no secrets.
+const ReachPath = "/api/v1/agent/reach"
+
+// Peers lists the nodes an agent checks besides its master.
+type Peers struct {
+	Master string     `json:"master"` // the master's node name
+	Nodes  []PeerAddr `json:"nodes"`
+}
+
+// PeerAddr is one node and where it listens.
+type PeerAddr struct {
+	Name string `json:"name"`
+	Addr string `json:"addr"`
+}
+
+// ReachView is a node's answer on ReachPath.
+type ReachView struct {
+	Node  string          `json:"node"`
+	Reach map[string]bool `json:"reach"`
 }
 
 // CapReplica: the node is a full server keeping a copy of the master's
@@ -208,6 +234,10 @@ type Status struct {
 	Health *engine.Health `json:"health,omitempty"`
 	// Scripts are this node's check scripts.
 	Scripts []probe.Script `json:"scripts,omitempty"`
+	// Reach is which other nodes this one can reach; Gateway how its last
+	// notifications went out.
+	Reach   map[string]bool       `json:"reach,omitempty"`
+	Gateway []engine.GatewayState `json:"gateway,omitempty"`
 }
 
 // Ping measures round-trip time and clock skew.

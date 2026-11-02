@@ -185,7 +185,11 @@ func (a *App) watchReplica() {
 			r.since = a.now()
 		}
 	}
+	local := r.local
 	r.mu.Unlock()
+	if local {
+		a.feedPeers()
+	}
 	if !change {
 		return
 	}
@@ -216,7 +220,20 @@ func (a *App) localEngineConfig() (engine.Config, bool) {
 	}
 	self := a.nodeName()
 	ec := a.engineConfig(cfg)
+	// The other nodes, the master among them, are judged by majority from
+	// this node's peer checks (feedPeers); monitors are checked here only.
 	ec.Nodes, ec.Self = nil, ""
+	seenMaster := false
+	for _, n := range cfg.Nodes {
+		seenMaster = seenMaster || n.Name == cfg.MName
+		if n.Name == self {
+			continue
+		}
+		ec.Nodes = append(ec.Nodes, engine.NodeSpec{Name: n.Name, Title: n.Description, Region: n.Region, Policy: n.Policy, Timeout: n.NodeTimeout})
+	}
+	if !seenMaster && cfg.MName != self {
+		ec.Nodes = append(ec.Nodes, engine.NodeSpec{Name: cfg.MName})
+	}
 	keep := ec.Monitors[:0]
 	for _, m := range ec.Monitors {
 		if len(m.Nodes) > 0 && !containsStr(m.Nodes, self) {

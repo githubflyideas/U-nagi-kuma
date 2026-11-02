@@ -214,7 +214,7 @@ func runServer(args []string) error {
 	}
 	a, err := app.New(app.Options{
 		DataDir: *data, ConfigPath: *cfgPath, Instance: *instance, BaseURL: *baseURL, HeartbeatURL: *heartbeat,
-		AllowEnv: env, Log: log, Version: version,
+		AllowEnv: env, Log: log, Version: version, Listen: *listen,
 	})
 	if err != nil {
 		var ie *app.InvalidError

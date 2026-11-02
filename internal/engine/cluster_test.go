@@ -288,27 +288,90 @@ func TestClusterNodeOffline(t *testing.T) {
 	c := newClusterEnv(t, cfg)
 	deadline := time.Now().Add(5 * time.Second)
 	for {
-		if _, ok := c.sink.open(IncidentSystem, nodeOfflineKey("a")); ok {
+		// Two nodes: nobody can tell which side is cut off, so the peer is
+		// only reported unreachable, never down.
+		if _, ok := c.sink.open(IncidentSystem, SystemMinority); ok {
 			break
 		}
 		if time.Now().After(deadline) {
-			t.Fatal("no offline incident for a node that never connected")
+			t.Fatal("no peer-unreachable incident for a node that never connected")
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
 	c.online("a")
 	deadline = time.Now().Add(5 * time.Second)
 	for {
-		if _, ok := c.sink.open(IncidentSystem, nodeOfflineKey("a")); !ok {
+		if _, ok := c.sink.open(IncidentSystem, SystemMinority); !ok {
 			break
 		}
 		if time.Now().After(deadline) {
-			t.Fatal("offline incident not resolved after reconnect")
+			t.Fatal("peer-unreachable incident not resolved after reconnect")
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
 	if ns := c.e.Nodes(); len(ns) != 1 || !ns[0].Online {
 		t.Fatalf("nodes %+v", ns)
+	}
+}
+
+// waitOpen waits until a system incident is open (or not).
+func (c *clusterEnv) waitOpen(key string, want bool) {
+	c.t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		if _, ok := c.sink.open(IncidentSystem, key); ok == want {
+			return
+		}
+		if time.Now().After(deadline) {
+			c.t.Fatalf("incident %s open=%v never happened; nodes %+v", key, want, c.e.Nodes())
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+}
+
+func nodeVerdict(e *Engine, n string) string {
+	for _, s := range e.Nodes() {
+		if s.Node == n {
+			return s.Verdict
+		}
+	}
+	return ""
+}
+
+// Three nodes: one that both others cannot reach is down; one that only
+// this node cannot reach is not; a node alone in the minority judges
+// nobody.
+func TestClusterMajorityNodeStatus(t *testing.T) {
+	cfg := clusterCfg(clusterMonitor("m", "a", "b"), "a", "b")
+	cfg.Nodes[0].Timeout, cfg.Nodes[1].Timeout = 200*time.Millisecond, 200*time.Millisecond
+	c := newClusterEnv(t, cfg)
+	// b is gone; a (connected) cannot reach it either: 2 of 3 → down.
+	c.e.NodeState(NodeStatus{Node: "a", Online: true, Since: time.Now(), Reach: map[string]bool{"b": false, "m": true}})
+	c.waitOpen(nodeOfflineKey("b"), true)
+	if v := nodeVerdict(c.e, "b"); v != NodeDown {
+		t.Fatalf("b verdict %q", v)
+	}
+	// a still reaches b: only the path from m is broken → not down.
+	c.e.NodeState(NodeStatus{Node: "b", Online: true, Since: time.Now()})
+	c.waitOpen(nodeOfflineKey("b"), false)
+	c.e.NodeState(NodeStatus{Node: "a", Online: true, Since: time.Now(), Reach: map[string]bool{"b": true, "m": true}})
+	c.e.NodeState(NodeStatus{Node: "b", Online: false, Since: time.Now()})
+	time.Sleep(600 * time.Millisecond)
+	if _, ok := c.sink.open(IncidentSystem, nodeOfflineKey("b")); ok {
+		t.Fatal("b reported down although a still reaches it")
+	}
+	if v := nodeVerdict(c.e, "b"); v != NodeUnreachable {
+		t.Fatalf("b verdict %q, want unreachable", v)
+	}
+	// m loses both: it is in the minority and says so instead.
+	c.e.NodeState(NodeStatus{Node: "a", Online: false, Since: time.Now()})
+	c.waitOpen(SystemMinority, true)
+	time.Sleep(400 * time.Millisecond) // past a's timeout too
+	if _, ok := c.sink.open(IncidentSystem, nodeOfflineKey("a")); ok {
+		t.Fatal("a node in the minority reported another one down")
+	}
+	if v := nodeVerdict(c.e, "a"); v != NodeUnknown {
+		t.Fatalf("a verdict %q, want unknown", v)
 	}
 }
 
