@@ -240,7 +240,35 @@ func (e *Engine) notices(inc *Incident, ns []PlannedNotice, now time.Time) {
 		if e.enqueue(in) {
 			e.decideIntent(in, LedQueued, "")
 		}
+		// Whoever an escalation told about the problem hears that it is
+		// over too (team managers among them).
+		if n.Kind == NoticeRecovery && inc.State.Escalated > 0 {
+			if chans := e.escalatedChannels(inc); len(chans) > 0 {
+				extra := *in
+				extra.Chain, extra.Delivery = chans, Delivery{}
+				if e.enqueue(&extra) {
+					e.decideIntent(&extra, LedQueued, "")
+				}
+			}
+		}
 	}
+}
+
+// escalatedChannels are the channels of the escalation steps an incident
+// already went through.
+func (e *Engine) escalatedChannels(inc *Incident) []string {
+	pol := e.policy(inc.Policy)
+	seen := map[string]bool{}
+	var out []string
+	for i := 0; i < inc.State.Escalated && i < len(pol.Escalate); i++ {
+		for _, c := range pol.Escalate[i].Channels {
+			if !seen[c] {
+				seen[c] = true
+				out = append(out, c)
+			}
+		}
+	}
+	return out
 }
 
 // enqueue persists a new intent and queues it for delivery.

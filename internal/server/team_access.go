@@ -232,6 +232,7 @@ var teamRoutes = map[string]bool{
 	// Their overview, and the teams they are in.
 	"GET /api/v1/overview": true,
 	"GET /api/v1/teams":    true,
+	"POST /api/v1/teams":   true, // a manager edits the people of their own team
 }
 
 // teamOverview is the overview a team member gets: their monitors and

@@ -8,6 +8,8 @@
 - Teams are isolated from each other. A team member sees only their teams' monitors, incidents, events, reports and maintenance windows (and only the state of shared monitors theirs depend on); managers and operators change only their teams' monitors, viewers read. Everything else, from channels to the raw configuration, stays with administrators: an API route is closed to team members unless it was reviewed for them, so new routes are closed too. The live updates and incident reports are filtered the same way.
 
 - Team notifications: a team's monitors use the team's `policy=` unless they name their own; when the shared infrastructure fails, the managers of the teams it affects (those with monitors depending on it, or every team when none does) are told right away through their own contact channels. **Settings › Teams** names managers who cannot be reached.
+- A team's managers change their own team's people, title and description under **Settings › Teams**.
+- Whoever an escalation step told about a problem also gets its recovery notice.
 
 **Changed**
 - A contact always has a way to be reached: at least one valid e-mail address or phone number (both are checked), and **Notify via**, the e-mail, SMS or voice channels the system uses to reach them directly. Contacts added while saving a channel, or imported from the channels, are reached through those channels; older contacts without one are marked in the list.

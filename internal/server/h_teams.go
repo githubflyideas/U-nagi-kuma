@@ -101,6 +101,15 @@ func (s *Server) teamSave(w http.ResponseWriter, r *http.Request) (any, error) {
 	if !config.ValidName(req.Name) {
 		return nil, Errorf(http.StatusBadRequest, CodeInvalid, "a team needs a valid name")
 	}
+	// Administrators create and change teams; a team's manager changes its
+	// people, title and description, not its policy, and no other team.
+	if ai := authOf(r); !ai.scopes["admin"] {
+		cur := s.app.Config().Config.FindTeam(req.Name)
+		if ai.team == nil || cur == nil || ai.team.roles[req.Name] != "manager" {
+			return nil, Errorf(http.StatusForbidden, CodeForbidden, "only administrators and the team's managers may change a team")
+		}
+		req.Policy = cur.Policy
+	}
 	var opts []config.Opt
 	add := func(k, v string) {
 		if v = strings.TrimSpace(v); v != "" {
