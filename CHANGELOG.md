@@ -1,8 +1,15 @@
 # Changelog
 
-## Unreleased
+## v2.0.0 — 2026-11-04
+
+Version 2.0: servers in a cluster keep monitoring and alerting on their own while the master is out of reach, checks are more careful with the targets they share, and monitors.bind starts with a plain `$FILE` line. Files and data from 1.x are read and upgraded as they are.
 
 **New**
+- Every server that joined a cluster is a replica, like a secondary DNS server: it keeps a copy of the master's configuration, secrets and data, and when it cannot reach the master for `cluster.replica-after` (1 minute) it checks, stores and alerts on its own until the master is back. Every message names the site that sent it (`[site]` in the title, `site` in webhooks).
+- Node status is judged by majority: every node checks the others and reports what it reaches, its own health and how its notifications went out. A node is reported down only when more than half of the cluster cannot reach it; a node in the minority reports itself cut off instead.
+- After a split, what a replica recorded on its own is merged into the master: history, incidents, decisions and audit entries are tagged with site and term, each site keeps its own audit chain, and incidents show which site recorded them.
+- Promoting a replica keeps this site's records and merges them in, and shows how old its copy is. A replaced master that comes back rejoins as a replica, offers its data, sends its agents to the new master, and a configuration that diverged meanwhile is kept aside under **Nodes**. Configuration versions carry their term.
+- Site-local configuration (**Nodes › Site-local configuration**, `site-local.bind`): monitors, channels and policies of one server only, checked there in every role and never overwritten by the master.
 - Monitors that check exactly the same thing (one service watched by two teams, say) are pointed out by `unagikuma check` and, while you type, by the monitor form. `share=yes` lets one use the other's check instead of sending its own (`probe.share-window`, 10s); each keeps its own thresholds, incidents and notifications. The form also says how many other monitors watch the same host.
 
 **Changed**
