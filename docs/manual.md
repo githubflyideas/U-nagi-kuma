@@ -291,6 +291,12 @@ In an Administrator PowerShell, in the folder of `unagikuma.exe`:
 
 The service starts automatically and is restarted if it stops. Agents install the same way (the node's install command shows it).
 
+Windows is supported, with some checks possibly unsupported:
+
+- ICMP ping needs the service to run as Administrator (or LocalSystem); otherwise ping checks knock on TCP ports instead.
+- A weak UDP check (L1) may report that this platform cannot see a closed port, and stays UNKNOWN instead of OK or down.
+- A fixed source port (`src-port=`) held by another program may not be detected.
+
 ## Users
 
 **Settings › Users** manages accounts: administrators do everything; operators acknowledge problems and edit monitors and maintenance windows; viewers only read. An operator can be limited to some `$SCOPE` sections (`region:north`, `bj`): they then change only what is written in those sections and not the shared configuration (channels, policies, the raw file).
