@@ -1474,5 +1474,15 @@
 "ui.team.policy_hint": "Chính sách mặc định cho giám sát của nhóm.",
 "ui.team.field": "Nhóm",
 "ui.team.field_hint": "Nhóm sở hữu giám sát này. Hạ tầng dùng chung không thuộc nhóm nào.",
-"ui.team.shared": "Hạ tầng dùng chung (không thuộc nhóm)"
+"ui.team.shared": "Hạ tầng dùng chung (không thuộc nhóm)",
+"ui.dir.notify": "Thông báo qua",
+"ui.dir.notify_hint": "Cách hệ thống liên hệ trực tiếp với người này, ví dụ khi là quản lý nhóm.",
+"ui.dir.notify_none": "Hãy thêm kênh e-mail, SMS hoặc thoại trong Kênh trước, rồi chọn ở đây.",
+"ui.dir.via.email": "qua e-mail",
+"ui.dir.via.phone": "qua điện thoại",
+"ui.dir.need_address": "Hãy nhập ít nhất một địa chỉ e-mail hoặc số điện thoại.",
+"ui.dir.need_notify": "Hãy chọn ít nhất một kênh để liên hệ người này.",
+"ui.dir.reach.no_channel": "Chưa chọn cách liên hệ",
+"ui.dir.reach.no_address": "Thiếu địa chỉ mà kênh cần",
+"ui.dir.reach.channel_gone": "Kênh đã chọn không còn nữa"
 }

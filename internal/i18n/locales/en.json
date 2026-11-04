@@ -1484,5 +1484,15 @@
 "ui.team.policy_hint": "Default policy of the team's monitors.",
 "ui.team.field": "Team",
 "ui.team.field_hint": "The team that owns this monitor. Shared infrastructure belongs to no team.",
-"ui.team.shared": "Shared infrastructure (no team)"
+"ui.team.shared": "Shared infrastructure (no team)",
+"ui.dir.notify": "Notify via",
+"ui.dir.notify_hint": "How the system reaches this person directly, for example as a team manager.",
+"ui.dir.notify_none": "Add an e-mail, SMS or voice channel under Channels first; then choose it here.",
+"ui.dir.via.email": "by e-mail",
+"ui.dir.via.phone": "by phone",
+"ui.dir.need_address": "Enter at least one e-mail address or phone number.",
+"ui.dir.need_notify": "Choose at least one channel to reach this person through.",
+"ui.dir.reach.no_channel": "No way to reach them chosen",
+"ui.dir.reach.no_address": "Missing the address the channel needs",
+"ui.dir.reach.channel_gone": "The chosen channel no longer exists"
 }

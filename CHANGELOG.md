@@ -8,6 +8,7 @@
 - Teams are isolated from each other. A team member sees only their teams' monitors, incidents, events, reports and maintenance windows (and only the state of shared monitors theirs depend on); managers and operators change only their teams' monitors, viewers read. Everything else, from channels to the raw configuration, stays with administrators: an API route is closed to team members unless it was reviewed for them, so new routes are closed too. The live updates and incident reports are filtered the same way.
 
 **Changed**
+- A contact always has a way to be reached: at least one valid e-mail address or phone number (both are checked), and **Notify via**, the e-mail, SMS or voice channels the system uses to reach them directly. Contacts added while saving a channel, or imported from the channels, are reached through those channels; older contacts without one are marked in the list.
 - The user manual is in English only; the separate Chinese manual is gone. The web UI and the README stay in 15 languages, and each README links to the English manual.
 
 **Fixed**

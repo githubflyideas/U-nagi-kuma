@@ -3,6 +3,8 @@ package server
 import (
 	"fmt"
 	"testing"
+
+	"github.com/githubflyideas/unagikuma/internal/store"
 )
 
 const peopleBind = `@ IN SOA unagikuma. admin.localhost. ( 2026102801 1m 15s 5s 2 )
@@ -73,7 +75,7 @@ func TestContactDirectory(t *testing.T) {
 	if c := e.do("POST", "/api/v1/users", map[string]any{"username": "li", "password": "secret123", "role": "operator"}, nil); c != 200 {
 		t.Fatalf("user: %d", c)
 	}
-	if c := e.do("PUT", fmt.Sprintf("/api/v1/people/%d", li), map[string]any{"handle": "li", "name": "Li Lei", "username": "li", "emails": []string{"li@example.com"}}, nil); c != 200 {
+	if c := e.do("PUT", fmt.Sprintf("/api/v1/people/%d", li), map[string]any{"handle": "li", "name": "Li Lei", "username": "li", "emails": []string{"li@example.com"}, "notify": []string{"mail"}}, nil); c != 200 {
 		t.Fatalf("link: %d", c)
 	}
 	liWeb := e.loginAs("li", "secret123")
@@ -97,5 +99,64 @@ func TestContactDirectory(t *testing.T) {
 	e.do("POST", "/api/v1/people/lookup", map[string]any{"kind": "email", "list": "li@example.com, new@example.com"}, &lk)
 	if len(lk.Unknown) != 1 || lk.Unknown[0] != "new@example.com" || len(lk.Issues) != 2 {
 		t.Fatalf("lookup: %+v", lk)
+	}
+}
+
+// A contact can always be reached: at least one valid address, and the
+// channels to reach them through, which must suit their addresses.
+func TestContactReachable(t *testing.T) {
+	e := newEnv(t, peopleBind, nil)
+	e.setup()
+	save := func(body map[string]any) int { return e.do("POST", "/api/v1/people", body, nil) }
+	for name, c := range map[string]struct {
+		body map[string]any
+		code int
+	}{
+		"no address":          {map[string]any{"name": "Zhao", "handle": "zhao", "notify": []string{"mail"}}, 400},
+		"bad e-mail":          {map[string]any{"name": "Zhao", "handle": "zhao", "emails": []string{"zhao@"}, "notify": []string{"mail"}}, 400},
+		"bad phone":           {map[string]any{"name": "Zhao", "handle": "zhao", "phones": []string{"12"}, "notify": []string{"sms"}}, 400},
+		"no channel":          {map[string]any{"name": "Zhao", "handle": "zhao", "emails": []string{"zhao@example.com"}}, 400},
+		"unknown channel":     {map[string]any{"name": "Zhao", "handle": "zhao", "emails": []string{"zhao@example.com"}, "notify": []string{"pager"}}, 400},
+		"sms without a phone": {map[string]any{"name": "Zhao", "handle": "zhao", "emails": []string{"zhao@example.com"}, "notify": []string{"sms"}}, 400},
+	} {
+		if got := save(c.body); got != c.code {
+			t.Errorf("%s: %d, want %d", name, got, c.code)
+		}
+	}
+	if c := save(map[string]any{"name": "Zhao", "handle": "zhao", "emails": []string{"Zhao <zhao@example.com>"}, "phones": []string{"+86 138 0000 0009"}, "notify": []string{"mail", "sms"}}); c != 200 {
+		t.Fatalf("valid contact: %d", c)
+	}
+	// Someone saved before this rule, with no way chosen: flagged.
+	if _, err := e.app.Store().SavePerson(store.Person{Handle: "old", Name: "Old", Emails: []string{"old@example.com"}}); err != nil {
+		t.Fatal(err)
+	}
+	e.app.DirectoryChanged()
+	var dir struct {
+		People []struct {
+			Handle string
+			Notify []string
+			Reach  string
+		}
+		Personal []struct{ Name, Contact string } `json:"personal_channels"`
+	}
+	e.do("GET", "/api/v1/people", nil, &dir)
+	reach := map[string]string{}
+	for _, p := range dir.People {
+		reach[p.Handle] = p.Reach
+	}
+	if reach["zhao"] != "" || reach["old"] != "no_channel" {
+		t.Errorf("reach: %v", reach)
+	}
+	if len(dir.Personal) != 2 {
+		t.Errorf("personal channels: %+v", dir.Personal)
+	}
+	// Importing the addresses the channels use reaches each through them.
+	var imp struct{ Created int }
+	e.do("POST", "/api/v1/people/import", map[string]any{}, &imp)
+	e.do("GET", "/api/v1/people", nil, &dir)
+	for _, p := range dir.People {
+		if p.Handle == "li" && (len(p.Notify) != 1 || p.Notify[0] != "mail" || p.Reach != "") {
+			t.Errorf("imported li: %+v", p)
+		}
 	}
 }

@@ -31,11 +31,13 @@ function ChannelForm({ kinds, initial, onClose, onSaved }) {
     }
     return o;
   };
-  const store = async () => {
+  // store saves the channel; then (optional) runs once it exists.
+  const store = async (then) => {
     setBusy(true);
     setErr(null);
     try {
       await post('/channels', { name, kind, opts: values() }, ifMatch(initial && initial.etag));
+      if (then) await then();
       toast(t('ui.saved'));
       onSaved();
     } catch (e2) { setErr(e2); }
@@ -102,7 +104,8 @@ function ChannelForm({ kinds, initial, onClose, onSaved }) {
     </form>
   <//>
   ${unknown && html`<${NewAddresses} kind=${unknown.kind} addresses=${unknown.addresses} onClose=${() => setUnknown(null)}
-    onSkip=${() => { setUnknown(null); store(); }} onAdd=${() => { setUnknown(null); store(); }} />`}`;
+    onSkip=${() => { setUnknown(null); store(); }}
+    onAdd=${(people) => { setUnknown(null); return store(async () => { for (const p of people) await post('/people', { ...p, notify: [name] }); }); }} />`}`;
 }
 
 function IssueLine({ i }) {
