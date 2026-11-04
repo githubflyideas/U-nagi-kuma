@@ -5,6 +5,9 @@
 **New**
 - Teams (**Settings › Teams**): people who own monitors, each with one role per team (manager, operator, viewer); a person can be in several teams and manage several. A monitor joins a team with **Team** in its form (`team=NAME`); monitors without one are the shared infrastructure. Teams are `TEAM` records in monitors.bind, so they reach every node with the configuration. The monitor list shows the team and filters with `team:`. What each role may see and do follows in the next steps.
 
+**Changed**
+- The user manual is in English only; the separate Chinese manual is gone. The web UI and the README stay in 15 languages, and each README links to the English manual.
+
 **Fixed**
 - Saving a channel, policy or other record under a name a monitor already used replaced that monitor. Names of another kind are now refused.
 
