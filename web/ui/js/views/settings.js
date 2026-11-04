@@ -165,6 +165,72 @@ function Users() {
   </div>`;
 }
 
+// Teams: who owns which monitors (team= on a monitor), each person with
+// one role per team. They are TEAM records in monitors.bind.
+function Teams() {
+  const list = useFetch(() => get('/teams'), []);
+  const users = useFetch(() => get('/users'), []);
+  const pols = useFetch(() => get('/policies'), []);
+  const [form, setForm] = useState(null);
+  if (!list.data) return list.error ? html`<${ErrorBox} error=${list.error} />` : html`<${Loading} />`;
+  const names = (s) => s.split(/[\s,]+/).filter(Boolean);
+  const save = async (e) => {
+    e.preventDefault();
+    try {
+      await post('/teams', { name: form.name.trim(), title: form.title, description: form.description, policy: form.policy,
+        managers: names(form.managers), operators: names(form.operators), viewers: names(form.viewers) });
+      toast(t('ui.saved'));
+      setForm(null);
+      list.reload();
+    } catch (e2) { toastError(e2); }
+  };
+  const remove = async (tm) => {
+    if (!await confirmDialog(t('ui.team.delete_confirm', { name: tm.title }), { danger: true, ok: t('ui.delete') })) return;
+    try { await del('/teams/' + encodeURIComponent(tm.name)); list.reload(); } catch (e) { toastError(e); }
+  };
+  const edit = (tm) => setForm({ edit: true, name: tm.name, title: tm.title === tm.name ? '' : tm.title, description: tm.description || '', policy: tm.policy || '',
+    managers: tm.managers.join(', '), operators: tm.operators.join(', '), viewers: tm.viewers.join(', ') });
+  const people = (l) => l.length ? l.join(', ') : html`<span class="faint">–</span>`;
+  const userNames = ((users.data && users.data.items) || []).map(u => u.username);
+  const field = (k, label, hint) => html`<${Field} label=${label} hint=${hint}>
+    <input type="text" class="ltr" list="team-users" value=${form[k]} onInput=${(e) => setForm({ ...form, [k]: e.target.value })} placeholder="li, wang" /><//>`;
+  return html`<div class="col" style=${{ gap: '12px' }}>
+    <div class="row"><p class="muted small spacer" style=${{ margin: 0 }}>${t('ui.team.intro')}</p>
+      <button class="btn primary" onClick=${() => setForm({ name: '', title: '', description: '', policy: '', managers: '', operators: '', viewers: '' })}>${t('ui.team.add')}</button></div>
+    <div class="card"><div class="bd flush tbl-wrap">
+      ${!list.data.items.length ? html`<${Empty}>${t('ui.team.none')}<//>` : html`<table class="tbl">
+        <thead><tr><th>${t('ui.name')}</th><th>${t('ui.team.managers')}</th><th>${t('ui.team.operators')}</th><th>${t('ui.team.viewers')}</th><th>${t('ui.team.monitors')}</th><th></th></tr></thead>
+        <tbody>${list.data.items.map(tm => html`<tr>
+          <td><div class="name">${tm.title}</div><div class="sub mono ltr">${tm.name}${tm.policy ? ' · ' + tm.policy : ''}</div>
+            ${tm.unknown && tm.unknown.length > 0 && html`<div class="small warn-text" title=${t('ui.team.unknown_hint')}>${t('ui.team.unknown', { names: tm.unknown.join(', ') })}</div>`}</td>
+          <td class="small">${people(tm.managers)}</td>
+          <td class="small">${people(tm.operators)}</td>
+          <td class="small">${people(tm.viewers)}</td>
+          <td><a href=${'#/monitors?q=' + encodeURIComponent('team:' + tm.name)}>${tm.monitors}</a></td>
+          <td class="right nowrap"><button class="btn sm" onClick=${() => edit(tm)}>${t('ui.edit')}</button>
+            ${' '}<button class="btn sm danger" onClick=${() => remove(tm)}>${t('ui.delete')}</button></td>
+        </tr>`)}</tbody></table>`}
+    </div></div>
+    ${form && html`<${Modal} title=${form.edit ? form.name : t('ui.team.add')} onClose=${() => setForm(null)}>
+      <form class="form" onSubmit=${save}>
+        <datalist id="team-users">${userNames.map(n => html`<option value=${n} />`)}</datalist>
+        ${!form.edit && html`<${Field} label=${t('ui.name')} hint=${t('ui.team.name_hint')}><input type="text" class="ltr" required pattern="[A-Za-z0-9][A-Za-z0-9_.\-]{0,62}" value=${form.name} onInput=${(e) => setForm({ ...form, name: e.target.value })} /><//>`}
+        <${Field} label=${t('ui.title')}><input type="text" value=${form.title} onInput=${(e) => setForm({ ...form, title: e.target.value })} placeholder=${form.name} /><//>
+        ${field('managers', t('ui.team.managers'), t('ui.team.managers_hint'))}
+        ${field('operators', t('ui.team.operators'), t('ui.team.operators_hint'))}
+        ${field('viewers', t('ui.team.viewers'), t('ui.team.viewers_hint'))}
+        <${Field} label=${t('ui.policy')} hint=${t('ui.team.policy_hint')}>
+          <select value=${form.policy} onChange=${(e) => setForm({ ...form, policy: e.target.value })}>
+            <option value="">–</option>
+            ${((pols.data) || []).map(p => html`<option value=${p.name}>${p.name}</option>`)}
+          </select><//>
+        <${Field} label=${t('ui.description')}><textarea rows="2" value=${form.description} onInput=${(e) => setForm({ ...form, description: e.target.value })}></textarea><//>
+        <div class="row"><div class="spacer"></div><button class="btn primary">${t('ui.save')}</button></div>
+      </form>
+    <//>`}
+  </div>`;
+}
+
 function Tokens() {
   const list = useFetch(() => get('/tokens'), []);
   const [form, setForm] = useState(null);
@@ -526,7 +592,7 @@ function Audit() {
   </div>`;
 }
 
-const TABS = ['general', 'nodes', 'users', 'audit', 'scripts', 'tunables', 'tokens', 'secrets', 'keywords', 'system', 'registration', 'account'];
+const TABS = ['general', 'nodes', 'users', 'teams', 'audit', 'scripts', 'tunables', 'tokens', 'secrets', 'keywords', 'system', 'registration', 'account'];
 
 export function Settings({ tab, user }) {
   useDocTitle(t('ui.nav.settings'));
@@ -534,6 +600,7 @@ export function Settings({ tab, user }) {
   switch (tab) {
     case 'nodes': body = html`<${Nodes} embedded />`; break;
     case 'users': body = html`<${Users} />`; break;
+    case 'teams': body = html`<${Teams} />`; break;
     case 'audit': body = html`<${Audit} />`; break;
     case 'registration': body = html`<${Registration} />`; break;
     case 'scripts': body = html`<${CheckScripts} />`; break;

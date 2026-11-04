@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+**New**
+- Teams (**Settings › Teams**): people who own monitors, each with one role per team (manager, operator, viewer); a person can be in several teams and manage several. A monitor joins a team with **Team** in its form (`team=NAME`); monitors without one are the shared infrastructure. Teams are `TEAM` records in monitors.bind, so they reach every node with the configuration. The monitor list shows the team and filters with `team:`. What each role may see and do follows in the next steps.
+
+**Fixed**
+- Saving a channel, policy or other record under a name a monitor already used replaced that monitor. Names of another kind are now refused.
+
 ## v2.0.0 — 2026-11-04
 
 Version 2.0: servers in a cluster keep monitoring and alerting on their own while the master is out of reach, checks are more careful with the targets they share, and monitors.bind starts with a plain `$FILE` line. Files and data from 1.x are read and upgraded as they are.

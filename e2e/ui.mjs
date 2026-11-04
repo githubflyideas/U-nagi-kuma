@@ -108,6 +108,24 @@ await step('a second monitor of the same check offers to share it', async () => 
   if (errors.length) throw new Error(errors.join(' | '));
 });
 
+await step('a team is added and owns a monitor', async () => {
+  await page.goto(base + '/#/settings/teams');
+  await page.click('button:has-text("Add team")');
+  await page.fill('.modal input[pattern]', 'webteam');
+  await page.locator('.modal input[list="team-users"]').first().fill('admin');
+  await page.click('.modal .btn.primary:has-text("Save")');
+  await page.waitForSelector('td:has-text("webteam")');
+  await page.goto(base + '/#/monitors/same-check-b/edit');
+  await page.waitForSelector('form select >> nth=1');
+  const sel = page.locator('.field:has(label:text-is("Team")) select');
+  await sel.selectOption('webteam');
+  await page.click('form button.primary');
+  await until('the monitor to join the team', async () => (await api('/monitors')).items.some((m) => m.name === 'same-check-b' && m.team === 'webteam'));
+  await page.goto(base + '/#/monitors?q=' + encodeURIComponent('team:webteam'));
+  await page.waitForSelector('.tag:has-text("webteam")');
+  if (errors.length) throw new Error(errors.join(' | '));
+});
+
 await step('configuration editor shows monitors.bind', async () => {
   await page.goto(base + '/#/config/edit');
   // Polled with evaluate: waitForFunction needs eval, which the UI's CSP forbids.

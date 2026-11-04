@@ -78,6 +78,7 @@ type Config struct {
 	Nodes       []*Node
 	Channels    []*Channel
 	Policies    []*Policy
+	Teams       []*Team
 	StatusPages []*StatusPage
 	Maints      []*Maint
 	Periods     []*Period
@@ -144,7 +145,8 @@ type Monitor struct {
 	CertCritical    int
 	Authorized      bool
 	Disabled        bool
-	Share           bool // share=yes: use the result of an identical check of another monitor
+	Share           bool   // share=yes: use the result of an identical check of another monitor
+	Team            string // team=: the team that owns it ("" = shared infrastructure)
 
 	// Push monitors.
 	Period time.Duration
@@ -299,6 +301,47 @@ func (c *Config) FindNode(name string) *Node {
 }
 
 // FindPolicy returns a policy by name.
+// Team is a group of people who own monitors (team= on a monitor): its
+// members see and handle those monitors, by the role they have in it.
+// Members are user names; a person can be in several teams and manage
+// several.
+type Team struct {
+	Name        string
+	Title       string
+	Description string
+	Managers    []string
+	Operators   []string
+	Viewers     []string
+	Policy      string // default policy of the team's monitors ("" = none)
+	Pos         Pos
+	Lines       [2]int
+}
+
+// Role is the role user has in the team ("" when not a member).
+func (t *Team) Role(user string) string {
+	for _, r := range []struct {
+		role  string
+		names []string
+	}{{"manager", t.Managers}, {"operator", t.Operators}, {"viewer", t.Viewers}} {
+		for _, n := range r.names {
+			if n == user {
+				return r.role
+			}
+		}
+	}
+	return ""
+}
+
+// FindTeam returns the named team, or nil.
+func (c *Config) FindTeam(name string) *Team {
+	for _, t := range c.Teams {
+		if t.Name == name {
+			return t
+		}
+	}
+	return nil
+}
+
 func (c *Config) FindPolicy(name string) *Policy {
 	for _, p := range c.Policies {
 		if p.Name == name {

@@ -303,6 +303,15 @@ Windows is supported, with some checks possibly unsupported:
 
 **Settings › Users** manages accounts: administrators do everything; operators acknowledge problems and edit monitors and maintenance windows; viewers only read. An operator can be limited to some `$SCOPE` sections (`region:north`, `bj`): they then change only what is written in those sections and not the shared configuration (channels, policies, the raw file).
 
+**Settings › Teams** (administrators) groups people who own monitors. Each member has one role per team — manager, operator or viewer — and a person can be in several teams and manage several. A monitor belongs to a team with **Team** in its form (`team=NAME` in the file, or `$DEFAULT team=NAME` for a block of them); monitors without a team are the shared infrastructure. Teams are `TEAM` records in monitors.bind, so they reach every node with the rest of the configuration:
+
+```text
+web   IN TEAM title="Web team" managers=li,wang operators=zhang viewers=zhao policy=web-oncall
+shop  IN HTTP https://shop.example.com/ team=web
+```
+
+The monitor list shows each monitor's team and filters with `team:web`. Without teams, everyone works with every monitor as before.
+
 **Settings › Audit** lists every change to accounts, roles and sections (before and after), tokens, secrets (names only), nodes and the configuration, with the person or token, the section, and the source address; configuration edits made in the file on disk are listed too (each record as it was and as it is now), and so are sign-ins and failed logins, backups, restores, imports, password resets, and what the system did by itself (holds during a local outage and their release, restarts, crashes, clock jumps, upgrades). High-risk entries are highlighted and can be filtered by risk, person, source address and time. `GET /api/v1/audit?actor=&action=&area=` serves the same to administrators; entries are kept for `retention.audit` (two years).
 
 The log cannot be changed quietly: each entry carries the hash of the one before it. The page's **Check integrity** button and `unagikuma audit verify` say whether an entry was changed, inserted or removed, and which. `verify` prints the newest entry's hash; keep it elsewhere and pass it later with `--head HASH` to prove nothing was cut off the end. `unagikuma audit export --format csv|json [--since 30d] [--high]` (or the page's export buttons) writes the log out.

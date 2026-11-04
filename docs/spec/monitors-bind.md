@@ -179,15 +179,36 @@ upper case by convention and read in any case.
 | `PERIOD` | weekly time ranges | the ranges, quoted |
 | `MAINT` | maintenance window | title |
 | `STATUSPAGE` | public status page | title |
+| `TEAM` | people who own monitors (`team=` on a monitor) | none |
 
 Options common to all monitors and never sent to the check itself:
 `title`, `description`, `tags`, `group`, `device`, `handler`, `was`. The
 options of each type are listed in the manual and by `unagikuma check`,
 which names an unknown option and the line it is on.
 
-`TEAM`, `SCHEDULE`, `ROTA`, `ROUTE`, `TEMPLATE`, `CHANGE` and `PERSON` are
+`SCHEDULE`, `ROTA`, `ROUTE`, `TEMPLATE`, `CHANGE` and `PERSON` are
 reserved record types: a file using them is rejected with `needs_newer`, so
 it fails clearly on a release that does not know them yet.
+
+### Teams
+
+A `TEAM` record lists the people of a team by user name, each with one
+role: `managers=`, `operators=` and `viewers=` (comma-separated). A user
+can be in several teams, with a different role in each. `policy=` names
+the team's default policy and `title=`/`description=` describe it. A
+monitor belongs to a team with `team=NAME` (also through `$DEFAULT`);
+monitors without one are shared infrastructure. `team=` naming a team that
+is not defined is an error (`unknown_team`).
+
+```bind
+$FILE revision=2026110401
+pager IN CHANNEL log
+ops   IN POLICY chain=pager
+web   IN TEAM title="Web team" managers=li,wang operators=zhang viewers=zhao policy=ops
+
+shop  IN HTTP https://shop.example.com/ team=web
+gw    IN PING 10.0.0.1
+```
 
 ### Renaming
 
@@ -241,6 +262,7 @@ message}`. The codes are part of version 1 and keep their meaning:
 | `soa_first`, `missing_soa`, `duplicate_soa` | placement of the file header (`$FILE` or SOA) |
 | `invalid_serial`, `invalid_duration`, `invalid_value` | a value that cannot be read |
 | `invalid_name`, `duplicate_name`, `duplicate_option` | names and options |
+| `unknown_policy`, `unknown_team`, `unknown_parent`, `unknown_node` | a reference to something not defined |
 | `unknown_type`, `unknown_directive`, `unknown_option` | names this release does not know |
 | `needs_newer`, `unsupported_version` | reserved for, or written for, a later release |
 | `duplicate_directive`, `directive_order`, `duplicate_tunable`, `invalid_tunable` | directives |

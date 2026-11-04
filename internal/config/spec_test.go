@@ -42,7 +42,7 @@ func TestVersionAndReservedNames(t *testing.T) {
 		{"$VERSION 1\n$VERSION 1\n" + soa, "duplicate_directive"},
 		{"$QUORUM all\n" + soa, "soa_first"},
 		{soa + "$TIMEZONE Asia/Shanghai\n", "needs_newer"},
-		{soa + "ops IN TEAM members=a,b\n", "needs_newer"},
+		{soa + "ops IN SCHEDULE members=a,b\n", "needs_newer"},
 		{soa + "ops IN PERSON phone=1\n", "needs_newer"},
 		{soa + "$INCLUDE other.bind\n", "unsupported"},
 		{soa + "x IN WHATEVER\n", "unknown_type"},

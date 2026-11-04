@@ -68,6 +68,7 @@ export function Monitors({ query }) {
           case 'group': hit = (r.group || '').toLowerCase().includes(v); break;
           case 'depth': hit = r.depth.toLowerCase() === v; break;
           case 'policy': hit = (r.policy || '').toLowerCase() === v; break;
+          case 'team': hit = (r.team || '').toLowerCase() === v; break;
           case 'flag': hit = r.flags.includes(v); break;
           default: hit = [r.name, r.title, r.target, r.group, r.keyword].join(' ').toLowerCase().includes(term);
         }
@@ -167,7 +168,7 @@ export function Monitors({ query }) {
                 ${r.flags.includes('held') && html`<span class="tag" title=${t('ui.flag.held_hint')}>${t('ui.flag.held')}</span>`}
                 ${r.incident && r.incident.acked && html`<span class="tag">${t('ui.inc.acked_short')}</span>`}
               </div>
-              <div class="sub ellipsis"><span class="tag">${r.written_type}</span> <span class="ltr">${r.target}</span>
+              <div class="sub ellipsis"><span class="tag">${r.written_type}</span>${r.team ? html` <span class="tag" title=${t('ui.team.field')}>${r.team}</span>` : ''} <span class="ltr">${r.target}</span>
                 ${r.status !== 'ok' && r.reason ? html` · <span class=${r.status === 'critical' ? 'err-text' : ''}>${reasonText(r.reason, r.detail)}</span>` : ''}</div>
             </td>
             <td class="hide-sm" style=${{ minWidth: '180px' }}><${Beats} cells=${beats.data && beats.data.items[r.name]} /></td>

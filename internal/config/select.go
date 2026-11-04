@@ -38,7 +38,7 @@ type selVal struct {
 
 var selectorKeys = map[string]bool{
 	"name": true, "title": true, "type": true, "svc": true, "port": true, "host": true, "cidr": true,
-	"tag": true, "group": true, "policy": true, "node": true, "area": true, "device": true,
+	"tag": true, "group": true, "policy": true, "node": true, "area": true, "device": true, "team": true,
 }
 
 // ParseSelector parses a selector; "" selects nothing.
@@ -183,6 +183,8 @@ func (t selTerm) matchOne(m *Monitor, v selVal) bool {
 		return v.is(m.Group)
 	case "policy":
 		return v.is(m.Policy)
+	case "team":
+		return v.is(m.Team)
 	case "area":
 		return v.is(m.Area)
 	case "node":

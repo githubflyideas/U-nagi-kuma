@@ -57,7 +57,8 @@ type rowJSON struct {
 	Area    string   `json:"area,omitempty"`
 	Nodes   []string `json:"nodes,omitempty"`
 	Parents []string `json:"parents,omitempty"`
-	Host    string   `json:"host"` // the host it is listed under
+	Host    string   `json:"host"`           // the host it is listed under
+	Team    string   `json:"team,omitempty"` // the team that owns it ("" = shared infrastructure)
 	// Votes and Quorum appear only for monitors judged by several nodes.
 	Votes  []engine.VoteView `json:"votes,omitempty"`
 	Quorum *quorumJSON       `json:"quorum,omitempty"`
@@ -155,7 +156,7 @@ func (s *Server) rowBase(r engine.MonitorRow, cfg *config.Config, incs map[int64
 	}
 	if m := cfg.FindMonitor(r.Name); m != nil {
 		out.Policy, out.IntervalS, out.Written = m.Policy, int(m.Interval.Seconds()), m.Written
-		out.Area, out.Nodes, out.Parents, out.Host = m.Area, m.Nodes, m.Parents, m.HostKey()
+		out.Area, out.Nodes, out.Parents, out.Host, out.Team = m.Area, m.Nodes, m.Parents, m.HostKey(), m.Team
 		out.Target = m.Target
 		if m.UDP != nil && m.UDP.Keyword != "" {
 			out.Keyword = m.UDP.Keyword
@@ -294,7 +295,7 @@ func parseQuery(s string) query {
 		}
 		if k, v, ok := strings.Cut(f, ":"); ok && v != "" {
 			switch k {
-			case "status", "type", "tag", "group", "depth", "scope", "policy", "name", "flag", "area", "node", "host":
+			case "status", "type", "tag", "group", "depth", "scope", "policy", "name", "flag", "area", "node", "host", "team":
 				t.key, t.val = k, v
 				q = append(q, t)
 				continue
@@ -343,6 +344,8 @@ func (t queryTerm) match(r rowJSON) bool {
 		return strings.Contains(low(r.Area), t.val)
 	case "host":
 		return low(r.Host) == t.val
+	case "team":
+		return low(r.Team) == t.val
 	case "node":
 		if len(r.Nodes) == 0 {
 			return true // checked by every node
@@ -579,6 +582,8 @@ func (s *Server) configError(err error) error {
 	case errors.Is(err, app.ErrConflict):
 		return &APIError{Status: http.StatusPreconditionFailed, Code: CodeConflict, Message: err.Error(), Extra: map[string]any{"etag": s.app.Config().ETag()}}
 	case errors.Is(err, app.ErrSuperseded):
+		return &APIError{Status: http.StatusConflict, Code: CodeConflict, Message: err.Error()}
+	case errors.Is(err, config.ErrNameTaken):
 		return &APIError{Status: http.StatusConflict, Code: CodeConflict, Message: err.Error()}
 	case errors.Is(err, app.ErrReadonly):
 		return &APIError{Status: http.StatusConflict, Code: CodeConfigReadonly, Message: err.Error()}
