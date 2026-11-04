@@ -1484,5 +1484,6 @@
 "ui.dir.need_notify": "Hãy chọn ít nhất một kênh để liên hệ người này.",
 "ui.dir.reach.no_channel": "Chưa chọn cách liên hệ",
 "ui.dir.reach.no_address": "Thiếu địa chỉ mà kênh cần",
-"ui.dir.reach.channel_gone": "Kênh đã chọn không còn nữa"
+"ui.dir.reach.channel_gone": "Kênh đã chọn không còn nữa",
+"ui.team.unreachable": "Không thể báo khi hạ tầng dùng chung gặp sự cố: {names} (hãy liên kết liên hệ với tài khoản và chọn Thông báo qua trong Cảnh báo › Liên hệ)"
 }

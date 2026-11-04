@@ -24,6 +24,10 @@ type teamJSON struct {
 	ETag        string   `json:"etag,omitempty"`
 	// Unknown are member names with no user account (yet).
 	Unknown []string `json:"unknown,omitempty"`
+	// Unreachable are managers the system cannot tell when the shared
+	// infrastructure fails: no contact linked to their login, or no way
+	// to reach them chosen there.
+	Unreachable []string `json:"unreachable,omitempty"`
 }
 
 func (s *Server) teams(w http.ResponseWriter, r *http.Request) (any, error) {
@@ -35,6 +39,13 @@ func (s *Server) teams(w http.ResponseWriter, r *http.Request) (any, error) {
 		}
 	}
 	etags := s.recordETags()
+	pc := personalChannels(cfg)
+	reach := map[string]bool{}
+	for _, p := range s.app.Directory().People() {
+		if p.Username != "" && reachOf(p, pc) == "" {
+			reach[p.Username] = true
+		}
+	}
 	out := []teamJSON{}
 	ts := teamOf(r)
 	for _, t := range cfg.Teams {
@@ -46,6 +57,11 @@ func (s *Server) teams(w http.ResponseWriter, r *http.Request) (any, error) {
 		for _, m := range cfg.Monitors {
 			if m.Team == t.Name {
 				tj.Monitors++
+			}
+		}
+		for _, u := range t.Managers {
+			if !reach[u] {
+				tj.Unreachable = append(tj.Unreachable, u)
 			}
 		}
 		for _, list := range [][]string{t.Managers, t.Operators, t.Viewers} {

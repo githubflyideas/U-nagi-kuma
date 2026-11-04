@@ -202,7 +202,8 @@ function Teams() {
         <thead><tr><th>${t('ui.name')}</th><th>${t('ui.team.managers')}</th><th>${t('ui.team.operators')}</th><th>${t('ui.team.viewers')}</th><th>${t('ui.team.monitors')}</th><th></th></tr></thead>
         <tbody>${list.data.items.map(tm => html`<tr>
           <td><div class="name">${tm.title}</div><div class="sub mono ltr">${tm.name}${tm.policy ? ' · ' + tm.policy : ''}</div>
-            ${tm.unknown && tm.unknown.length > 0 && html`<div class="small warn-text" title=${t('ui.team.unknown_hint')}>${t('ui.team.unknown', { names: tm.unknown.join(', ') })}</div>`}</td>
+            ${tm.unknown && tm.unknown.length > 0 && html`<div class="small warn-text" title=${t('ui.team.unknown_hint')}>${t('ui.team.unknown', { names: tm.unknown.join(', ') })}</div>`}
+            ${tm.unreachable && tm.unreachable.length > 0 && html`<div class="small err-text"><span class="rdot"></span> ${t('ui.team.unreachable', { names: tm.unreachable.join(', ') })}</div>`}</td>
           <td class="small">${people(tm.managers)}</td>
           <td class="small">${people(tm.operators)}</td>
           <td class="small">${people(tm.viewers)}</td>

@@ -94,3 +94,28 @@ func TestUpsertKeepsOtherKinds(t *testing.T) {
 		t.Fatalf("same kind, other case: %v", err)
 	}
 }
+
+// A team's monitors use the team's policy unless they name their own.
+func TestTeamPolicy(t *testing.T) {
+	_, cfg, ds := load(t, `$FILE revision=1
+c IN CHANNEL log
+web-oncall IN POLICY chain=c
+db-oncall IN POLICY chain=c
+web IN TEAM managers=li policy=web-oncall
+db  IN TEAM managers=li
+shop IN HTTP https://shop.example.com/ team=web
+cart IN HTTP https://cart.example.com/ team=web policy=db-oncall
+pg   IN TCP 10.0.0.5:5432 team=db
+gw   IN PING 10.0.0.1
+$DEFAULT policy=db-oncall
+api  IN HTTP https://api.example.com/ team=web
+`)
+	if e := errorsOf(ds); len(e) > 0 {
+		t.Fatal(e)
+	}
+	for name, want := range map[string]string{"shop": "web-oncall", "cart": "db-oncall", "pg": "default", "gw": "default", "api": "db-oncall"} {
+		if got := cfg.FindMonitor(name).Policy; got != want {
+			t.Errorf("%s: policy %s, want %s", name, got, want)
+		}
+	}
+}

@@ -1484,5 +1484,6 @@
 "ui.dir.need_notify": "この人に連絡するチャネルを少なくとも 1 つ選んでください。",
 "ui.dir.reach.no_channel": "連絡方法が選ばれていません",
 "ui.dir.reach.no_address": "チャネルに必要なアドレスがありません",
-"ui.dir.reach.channel_gone": "選んだチャネルはもうありません"
+"ui.dir.reach.channel_gone": "選んだチャネルはもうありません",
+"ui.team.unreachable": "共有インフラの障害を伝えられません：{names}（「アラート › 連絡先」でログインに連絡先を紐づけ、通知方法を選んでください）"
 }

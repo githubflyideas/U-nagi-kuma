@@ -1484,5 +1484,6 @@
 "ui.dir.need_notify": "请至少选择一个用来联系此人的通道。",
 "ui.dir.reach.no_channel": "未选择联系方式",
 "ui.dir.reach.no_address": "缺少该通道所需的地址",
-"ui.dir.reach.channel_gone": "所选通道已不存在"
+"ui.dir.reach.channel_gone": "所选通道已不存在",
+"ui.team.unreachable": "公共设施故障时无法通知：{names}（请在“告警 › 联系人”中为其登录账号关联联系人并选择通知方式）"
 }

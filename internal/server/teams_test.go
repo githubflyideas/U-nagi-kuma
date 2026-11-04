@@ -79,3 +79,38 @@ func TestTeamsAPI(t *testing.T) {
 		t.Fatal("team still there")
 	}
 }
+
+// Managers who cannot be told of shared failures are named: no contact
+// linked to their login, or none of their channels chosen.
+func TestTeamManagersReachable(t *testing.T) {
+	e := newEnv(t, peopleBind, nil)
+	e.setup()
+	if c := e.do("POST", "/api/v1/teams", map[string]any{"name": "web", "managers": []string{"li", "wang"}}, nil); c != 200 {
+		t.Fatalf("team: %d", c)
+	}
+	if c := e.do("POST", "/api/v1/people", map[string]any{"name": "Li", "handle": "li", "emails": []string{"li@example.com"}, "notify": []string{"mail"}}, nil); c != 200 {
+		t.Fatalf("person: %d", c)
+	}
+	unreachable := func() []string {
+		var list struct {
+			Items []struct{ Unreachable []string }
+		}
+		e.do("GET", "/api/v1/teams", nil, &list)
+		return list.Items[0].Unreachable
+	}
+	// Li has a contact, but it is not linked to the login "li" yet.
+	if got := unreachable(); len(got) != 2 {
+		t.Fatalf("before linking: %v", got)
+	}
+	if c := e.do("POST", "/api/v1/users", map[string]any{"username": "li", "password": "secret123", "role": "operator"}, nil); c != 200 {
+		t.Fatalf("user: %d", c)
+	}
+	var dir struct{ People []struct{ ID int64 } }
+	e.do("GET", "/api/v1/people", nil, &dir)
+	if c := e.do("PUT", "/api/v1/people/"+itoa(dir.People[0].ID), map[string]any{"name": "Li", "handle": "li", "username": "li", "emails": []string{"li@example.com"}, "notify": []string{"mail"}}, nil); c != 200 {
+		t.Fatalf("link: %d", c)
+	}
+	if got := unreachable(); len(got) != 1 || got[0] != "wang" {
+		t.Fatalf("after linking li: %v", got)
+	}
+}
