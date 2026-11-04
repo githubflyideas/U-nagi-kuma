@@ -1474,5 +1474,15 @@
 "ui.team.policy_hint": "本团队监控项的默认通知策略。",
 "ui.team.field": "团队",
 "ui.team.field_hint": "拥有这个监控项的团队。公共设施不属于任何团队。",
-"ui.team.shared": "公共设施（不属于团队）"
+"ui.team.shared": "公共设施（不属于团队）",
+"ui.dir.notify": "通知方式",
+"ui.dir.notify_hint": "系统直接联系此人时使用的通道，例如作为团队经理时。",
+"ui.dir.notify_none": "请先在“通道”中添加邮件、短信或语音通道，再在这里选择。",
+"ui.dir.via.email": "通过邮件",
+"ui.dir.via.phone": "通过电话",
+"ui.dir.need_address": "请至少填写一个邮箱或手机号。",
+"ui.dir.need_notify": "请至少选择一个用来联系此人的通道。",
+"ui.dir.reach.no_channel": "未选择联系方式",
+"ui.dir.reach.no_address": "缺少该通道所需的地址",
+"ui.dir.reach.channel_gone": "所选通道已不存在"
 }

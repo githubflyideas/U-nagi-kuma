@@ -19,6 +19,86 @@ import (
 type personJSON struct {
 	store.Person
 	Channels []string `json:"channels"` // channels that send to this person
+	// Reach says whether the system can reach them directly through
+	// Notify: "" when it can, else why not (no_channel, channel_gone,
+	// no_address, left).
+	Reach string `json:"reach,omitempty"`
+}
+
+// personalChannel is a channel that delivers to individuals, and the kind
+// of address it needs.
+type personalChannel struct {
+	Name    string `json:"name"`
+	Kind    string `json:"kind"`
+	Contact string `json:"contact"` // email | phone
+}
+
+func personalChannels(cfg *config.Config) []personalChannel {
+	out := []personalChannel{}
+	for _, ch := range cfg.Channels {
+		if _, kind, ok := directory.AddressKey(ch.Kind); ok {
+			out = append(out, personalChannel{ch.Name, ch.Kind, kind})
+		}
+	}
+	return out
+}
+
+// reachOf says whether a person can be reached through their notify
+// channels; see personJSON.Reach.
+func reachOf(p store.Person, chans []personalChannel) string {
+	if p.Left() {
+		return "left"
+	}
+	if len(p.Notify) == 0 {
+		return "no_channel"
+	}
+	for _, n := range p.Notify {
+		for _, c := range chans {
+			if c.Name != n {
+				continue
+			}
+			if c.Contact == store.ContactPhone && len(p.Phones) > 0 || c.Contact == store.ContactEmail && len(p.Emails) > 0 {
+				return ""
+			}
+			return "no_address"
+		}
+	}
+	return "channel_gone"
+}
+
+// checkNotify validates the notify channels of a person being saved: each
+// must deliver to individuals and the person must have that kind of
+// address; once such channels exist, at least one is required.
+func checkNotify(req personReq, chans []personalChannel) error {
+	if len(req.Notify) == 0 {
+		if len(chans) > 0 {
+			return Errorf(http.StatusBadRequest, CodeInvalid, "choose how to reach this person: one of the e-mail, SMS or voice channels")
+		}
+		return nil
+	}
+	has := map[string]bool{store.ContactEmail: false, store.ContactPhone: false}
+	for _, e := range req.Emails {
+		has[store.ContactEmail] = has[store.ContactEmail] || strings.TrimSpace(e) != ""
+	}
+	for _, p := range req.Phones {
+		has[store.ContactPhone] = has[store.ContactPhone] || strings.TrimSpace(p) != ""
+	}
+	for _, n := range req.Notify {
+		var found *personalChannel
+		for i := range chans {
+			if chans[i].Name == n {
+				found = &chans[i]
+			}
+		}
+		if found == nil {
+			return Errorf(http.StatusBadRequest, CodeInvalid, "%s is not an e-mail, SMS or voice channel", n)
+		}
+		if !has[found.Contact] {
+			what := map[string]string{store.ContactEmail: "an e-mail address", store.ContactPhone: "a phone number"}[found.Contact]
+			return Errorf(http.StatusBadRequest, CodeInvalid, "channel %s needs %s for this person", n, what)
+		}
+	}
+	return nil
 }
 
 func (s *Server) people(w http.ResponseWriter, r *http.Request) (any, error) {
@@ -42,6 +122,7 @@ func (s *Server) people(w http.ResponseWriter, r *http.Request) (any, error) {
 			}
 		}
 	}
+	pc := personalChannels(cfg)
 	out := []personJSON{}
 	for _, p := range d.People() {
 		chans := used[p.ID]
@@ -49,13 +130,17 @@ func (s *Server) people(w http.ResponseWriter, r *http.Request) (any, error) {
 			chans = []string{}
 		}
 		sort.Strings(chans)
-		out = append(out, personJSON{p, chans})
+		reach := reachOf(p, pc)
+		if reach == "no_channel" && len(pc) == 0 {
+			reach = "" // nothing to choose from yet: not their problem
+		}
+		out = append(out, personJSON{p, chans, reach})
 	}
 	bounces, err := s.app.Store().Bounces()
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{"people": out, "bounces": bounces, "unknown": s.app.UnknownAddresses(),
+	return map[string]any{"people": out, "bounces": bounces, "unknown": s.app.UnknownAddresses(), "personal_channels": pc,
 		"threshold": cfg.Tunables.Int("contacts.bounce-threshold")}, nil
 }
 
@@ -66,6 +151,7 @@ type personReq struct {
 	Username string   `json:"username"`
 	Emails   []string `json:"emails"`
 	Phones   []string `json:"phones"`
+	Notify   []string `json:"notify"`
 }
 
 func (s *Server) personSave(w http.ResponseWriter, r *http.Request) (any, error) {
@@ -85,8 +171,11 @@ func (s *Server) personSave(w http.ResponseWriter, r *http.Request) (any, error)
 			return nil, Errorf(http.StatusBadRequest, CodeInvalid, "no login named %s", req.Username)
 		}
 	}
+	if err := checkNotify(req, personalChannels(s.app.Config().Config)); err != nil {
+		return nil, err
+	}
 	id, err := s.app.Store().SavePerson(store.Person{ID: id, Handle: req.Handle, Name: req.Name, Note: req.Note, Username: req.Username,
-		Emails: req.Emails, Phones: req.Phones})
+		Emails: req.Emails, Phones: req.Phones, Notify: req.Notify})
 	switch {
 	case errors.Is(err, store.ErrNotFound):
 		return nil, notFound("person")
@@ -174,6 +263,24 @@ func (s *Server) peopleImport(w http.ResponseWriter, r *http.Request) (any, erro
 	created := 0
 	var errs []string
 	unknown := s.app.UnknownAddresses()
+	// Each one is reached through the channels that already name them.
+	cfg := s.app.Config().Config
+	via := func(kind, addr string) []string {
+		var out []string
+		for _, ch := range cfg.Channels {
+			key, k, ok := directory.AddressKey(ch.Kind)
+			if !ok || k != kind {
+				continue
+			}
+			for _, item := range directory.SplitList(ch.Opts[key]) {
+				if kind == store.ContactPhone && store.SamePhone(item, addr) || kind == store.ContactEmail && store.NormalizeEmail(item) == addr {
+					out = append(out, ch.Name)
+					break
+				}
+			}
+		}
+		return out
+	}
 	for _, raw := range unknown[store.ContactEmail] {
 		addr := store.NormalizeEmail(raw)
 		name := strings.TrimSpace(strings.Trim(strings.SplitN(raw, "<", 2)[0], `" `))
@@ -181,7 +288,7 @@ func (s *Server) peopleImport(w http.ResponseWriter, r *http.Request) (any, erro
 		if name == "" || strings.Contains(name, "@") {
 			name = local
 		}
-		if _, err := st.SavePerson(store.Person{Handle: unique(local), Name: name, Emails: []string{addr}}); err != nil {
+		if _, err := st.SavePerson(store.Person{Handle: unique(local), Name: name, Emails: []string{addr}, Notify: via(store.ContactEmail, addr)}); err != nil {
 			errs = append(errs, err.Error())
 			continue
 		}
@@ -193,7 +300,7 @@ func (s *Server) peopleImport(w http.ResponseWriter, r *http.Request) (any, erro
 		if len(tail) > 4 {
 			tail = tail[len(tail)-4:]
 		}
-		if _, err := st.SavePerson(store.Person{Handle: unique("phone-" + tail), Name: ph, Phones: []string{ph}}); err != nil {
+		if _, err := st.SavePerson(store.Person{Handle: unique("phone-" + tail), Name: ph, Phones: []string{ph}, Notify: via(store.ContactPhone, ph)}); err != nil {
 			errs = append(errs, err.Error())
 			continue
 		}

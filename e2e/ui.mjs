@@ -202,6 +202,8 @@ await step('a new e-mail address is offered for the contact directory', async ()
   await page.click('button:has-text("Add and save")');
   await page.waitForSelector('td:has-text("ops-mail")');
   if (await page.$('tr:has-text("ops-mail") .rdot')) throw new Error('a registered address has a red dot');
+  const li = (await api('/people')).people.find((p) => p.emails.includes('li@example.com'));
+  if (!li || li.notify.join(',') !== 'ops-mail' || li.reach) throw new Error('the new contact is not reached through ops-mail: ' + JSON.stringify(li));
   // Li leaves: the channel gets a red dot with the reason.
   await page.goto(base + '/#/alerts/contacts');
   await page.waitForSelector('td:has-text("Li Lei")');

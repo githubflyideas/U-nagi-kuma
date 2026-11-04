@@ -1483,5 +1483,15 @@
 "ui.team.policy_hint": "Política padrão dos monitores da equipe.",
 "ui.team.field": "Equipe",
 "ui.team.field_hint": "A equipe dona deste monitor. A infraestrutura compartilhada não pertence a nenhuma equipe.",
-"ui.team.shared": "Infraestrutura compartilhada (sem equipe)"
+"ui.team.shared": "Infraestrutura compartilhada (sem equipe)",
+"ui.dir.notify": "Notificar por",
+"ui.dir.notify_hint": "Como o sistema contata esta pessoa diretamente, por exemplo como gestora de equipe.",
+"ui.dir.notify_none": "Primeiro adicione um canal de e-mail, SMS ou voz em Canais e depois escolha-o aqui.",
+"ui.dir.via.email": "por e-mail",
+"ui.dir.via.phone": "por telefone",
+"ui.dir.need_address": "Informe pelo menos um e-mail ou número de telefone.",
+"ui.dir.need_notify": "Escolha pelo menos um canal para contatar esta pessoa.",
+"ui.dir.reach.no_channel": "Nenhuma forma de contato escolhida",
+"ui.dir.reach.no_address": "Falta o endereço de que o canal precisa",
+"ui.dir.reach.channel_gone": "O canal escolhido não existe mais"
 }

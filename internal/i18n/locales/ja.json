@@ -1474,5 +1474,15 @@
 "ui.team.policy_hint": "チームの監視項目の既定ポリシー。",
 "ui.team.field": "チーム",
 "ui.team.field_hint": "この監視項目を持つチーム。共有インフラはどのチームにも属しません。",
-"ui.team.shared": "共有インフラ（チームなし）"
+"ui.team.shared": "共有インフラ（チームなし）",
+"ui.dir.notify": "通知方法",
+"ui.dir.notify_hint": "システムがこの人に直接連絡する方法（チームのマネージャーとしてなど）。",
+"ui.dir.notify_none": "まず「チャネル」でメール、SMS、音声のチャネルを追加し、ここで選んでください。",
+"ui.dir.via.email": "メールで",
+"ui.dir.via.phone": "電話で",
+"ui.dir.need_address": "メールアドレスか電話番号を少なくとも 1 つ入力してください。",
+"ui.dir.need_notify": "この人に連絡するチャネルを少なくとも 1 つ選んでください。",
+"ui.dir.reach.no_channel": "連絡方法が選ばれていません",
+"ui.dir.reach.no_address": "チャネルに必要なアドレスがありません",
+"ui.dir.reach.channel_gone": "選んだチャネルはもうありません"
 }

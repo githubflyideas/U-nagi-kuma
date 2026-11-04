@@ -131,6 +131,9 @@ var coreMigrations = []string{
 	CREATE TABLE diverged_configs (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, site TEXT NOT NULL,
 		term INTEGER NOT NULL, serial INTEGER NOT NULL, sha256 TEXT NOT NULL, text TEXT NOT NULL, base_serial INTEGER NOT NULL DEFAULT 0,
 		UNIQUE(site, sha256));`,
+	// How the system reaches a person directly (a team manager, say): the
+	// channels that deliver to them, by name.
+	`ALTER TABLE people ADD COLUMN notify TEXT NOT NULL DEFAULT '';`,
 }
 
 var historyMigrations = []string{

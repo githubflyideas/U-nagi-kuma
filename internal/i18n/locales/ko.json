@@ -1474,5 +1474,15 @@
 "ui.team.policy_hint": "팀 모니터의 기본 정책.",
 "ui.team.field": "팀",
 "ui.team.field_hint": "이 모니터를 소유한 팀. 공용 인프라는 어느 팀에도 속하지 않습니다.",
-"ui.team.shared": "공용 인프라(팀 없음)"
+"ui.team.shared": "공용 인프라(팀 없음)",
+"ui.dir.notify": "알림 방법",
+"ui.dir.notify_hint": "시스템이 이 사람에게 직접 연락하는 방법(예: 팀 관리자로서).",
+"ui.dir.notify_none": "먼저 '채널'에서 이메일, SMS 또는 음성 채널을 추가한 뒤 여기서 선택하세요.",
+"ui.dir.via.email": "이메일로",
+"ui.dir.via.phone": "전화로",
+"ui.dir.need_address": "이메일 주소나 전화번호를 하나 이상 입력하세요.",
+"ui.dir.need_notify": "이 사람에게 연락할 채널을 하나 이상 선택하세요.",
+"ui.dir.reach.no_channel": "연락 방법이 선택되지 않음",
+"ui.dir.reach.no_address": "채널에 필요한 주소가 없음",
+"ui.dir.reach.channel_gone": "선택한 채널이 더 이상 없음"
 }

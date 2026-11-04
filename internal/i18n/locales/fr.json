@@ -1483,5 +1483,15 @@
 "ui.team.policy_hint": "Politique par défaut des moniteurs de l’équipe.",
 "ui.team.field": "Équipe",
 "ui.team.field_hint": "L’équipe propriétaire de ce moniteur. L’infrastructure partagée n’appartient à aucune équipe.",
-"ui.team.shared": "Infrastructure partagée (sans équipe)"
+"ui.team.shared": "Infrastructure partagée (sans équipe)",
+"ui.dir.notify": "Prévenir via",
+"ui.dir.notify_hint": "Comment le système joint directement cette personne, par exemple comme responsable d’équipe.",
+"ui.dir.notify_none": "Ajoutez d’abord un canal e-mail, SMS ou vocal dans Canaux, puis choisissez-le ici.",
+"ui.dir.via.email": "par e-mail",
+"ui.dir.via.phone": "par téléphone",
+"ui.dir.need_address": "Indiquez au moins une adresse e-mail ou un numéro de téléphone.",
+"ui.dir.need_notify": "Choisissez au moins un canal pour joindre cette personne.",
+"ui.dir.reach.no_channel": "Aucun moyen de la joindre choisi",
+"ui.dir.reach.no_address": "Il manque l’adresse dont le canal a besoin",
+"ui.dir.reach.channel_gone": "Le canal choisi n’existe plus"
 }

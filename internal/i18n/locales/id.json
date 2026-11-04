@@ -1474,5 +1474,15 @@
 "ui.team.policy_hint": "Kebijakan bawaan monitor tim.",
 "ui.team.field": "Tim",
 "ui.team.field_hint": "Tim pemilik monitor ini. Infrastruktur bersama tidak dimiliki tim mana pun.",
-"ui.team.shared": "Infrastruktur bersama (tanpa tim)"
+"ui.team.shared": "Infrastruktur bersama (tanpa tim)",
+"ui.dir.notify": "Beri tahu lewat",
+"ui.dir.notify_hint": "Cara sistem menghubungi orang ini langsung, misalnya sebagai pengelola tim.",
+"ui.dir.notify_none": "Tambahkan dulu kanal e-mail, SMS, atau suara di Kanal, lalu pilih di sini.",
+"ui.dir.via.email": "lewat e-mail",
+"ui.dir.via.phone": "lewat telepon",
+"ui.dir.need_address": "Isi setidaknya satu alamat e-mail atau nomor telepon.",
+"ui.dir.need_notify": "Pilih setidaknya satu kanal untuk menghubungi orang ini.",
+"ui.dir.reach.no_channel": "Belum ada cara menghubungi yang dipilih",
+"ui.dir.reach.no_address": "Alamat yang dibutuhkan kanal belum ada",
+"ui.dir.reach.channel_gone": "Kanal yang dipilih sudah tidak ada"
 }

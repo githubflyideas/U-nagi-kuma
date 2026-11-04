@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/mail"
 	"regexp"
 	"strings"
 	"time"
@@ -22,16 +23,19 @@ const (
 
 // Person is one entry of the directory.
 type Person struct {
-	ID       int64     `json:"id"`
-	Handle   string    `json:"handle"` // used as @handle in channels
-	Name     string    `json:"name"`
-	Note     string    `json:"note,omitempty"`
-	Username string    `json:"username,omitempty"` // linked login, disabled when the person leaves
-	Emails   []string  `json:"emails"`
-	Phones   []string  `json:"phones"`
-	LeftAt   time.Time `json:"left_at,omitzero"`
-	Created  time.Time `json:"created_at"`
-	Updated  time.Time `json:"updated_at"`
+	ID       int64    `json:"id"`
+	Handle   string   `json:"handle"` // used as @handle in channels
+	Name     string   `json:"name"`
+	Note     string   `json:"note,omitempty"`
+	Username string   `json:"username,omitempty"` // linked login, disabled when the person leaves
+	Emails   []string `json:"emails"`
+	Phones   []string `json:"phones"`
+	// Notify are the channels (e-mail, SMS, voice) through which the
+	// system reaches this person directly.
+	Notify  []string  `json:"notify"`
+	LeftAt  time.Time `json:"left_at,omitzero"`
+	Created time.Time `json:"created_at"`
+	Updated time.Time `json:"updated_at"`
 }
 
 // Left reports whether the person left: nothing is sent to them.
@@ -107,7 +111,7 @@ func normalizeContact(kind, v string) string {
 
 // People lists the directory with each person's addresses.
 func (s *Store) People() ([]Person, error) {
-	rows, err := s.core.Query(`SELECT id,handle,name,note,username,left_at,created_at,updated_at FROM people ORDER BY name, handle`)
+	rows, err := s.core.Query(`SELECT id,handle,name,note,username,left_at,created_at,updated_at,notify FROM people ORDER BY name, handle`)
 	if err != nil {
 		return nil, err
 	}
@@ -116,12 +120,13 @@ func (s *Store) People() ([]Person, error) {
 	for rows.Next() {
 		var p Person
 		var left, created, updated int64
-		if err := rows.Scan(&p.ID, &p.Handle, &p.Name, &p.Note, &p.Username, &left, &created, &updated); err != nil {
+		var notify string
+		if err := rows.Scan(&p.ID, &p.Handle, &p.Name, &p.Note, &p.Username, &left, &created, &updated, &notify); err != nil {
 			rows.Close()
 			return nil, err
 		}
 		p.LeftAt, p.Created, p.Updated = fromMS(left), fromMS(created), fromMS(updated)
-		p.Emails, p.Phones = []string{}, []string{}
+		p.Emails, p.Phones, p.Notify = []string{}, []string{}, splitNotify(notify)
 		byID[p.ID] = len(out)
 		out = append(out, p)
 	}
@@ -153,6 +158,35 @@ func (s *Store) People() ([]Person, error) {
 // ErrContactTaken: the address already belongs to someone else.
 var ErrContactTaken = errors.New("address already belongs to another person")
 
+// ErrNoAddress: a person needs at least one address to be reached at.
+var ErrNoAddress = errors.New("a contact needs at least one valid e-mail address or phone number")
+
+// ValidContact reports whether v is a usable address of the kind: an
+// e-mail address with a domain, or a phone number of 6 to 15 digits
+// (an optional leading '+').
+func ValidContact(kind, v string) bool {
+	if kind == ContactPhone {
+		p := strings.TrimPrefix(NormalizePhone(v), "+")
+		return len(p) >= 6 && len(p) <= 15
+	}
+	a, err := mail.ParseAddress(strings.TrimSpace(v))
+	if err != nil {
+		return false
+	}
+	at := strings.LastIndex(a.Address, "@")
+	return at > 0 && strings.Contains(a.Address[at+1:], ".") && !strings.HasSuffix(a.Address, ".")
+}
+
+func splitNotify(s string) []string {
+	out := []string{}
+	for _, n := range strings.Split(s, ",") {
+		if n = strings.TrimSpace(n); n != "" {
+			out = append(out, n)
+		}
+	}
+	return out
+}
+
 // SavePerson creates (ID 0) or replaces a person and their addresses.
 func (s *Store) SavePerson(p Person) (int64, error) {
 	p.Handle = strings.ToLower(strings.TrimSpace(p.Handle))
@@ -162,6 +196,24 @@ func (s *Store) SavePerson(p Person) (int64, error) {
 	if strings.TrimSpace(p.Name) == "" {
 		p.Name = p.Handle
 	}
+	// A contact is someone the system can reach: at least one valid
+	// address, and every address valid.
+	n := 0
+	for kind, list := range map[string][]string{ContactEmail: p.Emails, ContactPhone: p.Phones} {
+		for _, v := range list {
+			if strings.TrimSpace(v) == "" {
+				continue
+			}
+			if !ValidContact(kind, v) {
+				return 0, fmt.Errorf("%q is not a valid %s", strings.TrimSpace(v), map[string]string{ContactEmail: "e-mail address", ContactPhone: "phone number"}[kind])
+			}
+			n++
+		}
+	}
+	if n == 0 {
+		return 0, ErrNoAddress
+	}
+	notify := strings.Join(p.Notify, ",")
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
 	tx, err := s.core.Begin()
@@ -171,13 +223,13 @@ func (s *Store) SavePerson(p Person) (int64, error) {
 	defer tx.Rollback()
 	now := ms(s.now())
 	if p.ID == 0 {
-		res, err := tx.Exec(`INSERT INTO people(handle,name,note,username,created_at,updated_at) VALUES(?,?,?,?,?,?)`, p.Handle, p.Name, p.Note, p.Username, now, now)
+		res, err := tx.Exec(`INSERT INTO people(handle,name,note,username,created_at,updated_at,notify) VALUES(?,?,?,?,?,?,?)`, p.Handle, p.Name, p.Note, p.Username, now, now, notify)
 		if err != nil {
 			return 0, uniqueErr(err, "handle @"+p.Handle+" is already used")
 		}
 		p.ID, _ = res.LastInsertId()
 	} else {
-		res, err := tx.Exec(`UPDATE people SET handle=?,name=?,note=?,username=?,updated_at=? WHERE id=?`, p.Handle, p.Name, p.Note, p.Username, now, p.ID)
+		res, err := tx.Exec(`UPDATE people SET handle=?,name=?,note=?,username=?,updated_at=?,notify=? WHERE id=?`, p.Handle, p.Name, p.Note, p.Username, now, notify, p.ID)
 		if err != nil {
 			return 0, uniqueErr(err, "handle @"+p.Handle+" is already used")
 		}

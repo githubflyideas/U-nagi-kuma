@@ -32,17 +32,23 @@ function handleFrom(s) {
 
 function list(v) { return String(v || '').split(',').map(x => x.trim()).filter(Boolean); }
 
-function PersonForm({ initial, onClose, onSaved }) {
+// PersonForm edits a contact: who they are, at least one address, and the
+// channels through which the system reaches them directly.
+function PersonForm({ initial, channels, onClose, onSaved }) {
   const p = initial || {};
   const [f, setF] = useState({ handle: p.handle || '', name: p.name || '', emails: (p.emails || []).join(', '), phones: (p.phones || []).join(', '),
-    username: p.username || '', note: p.note || '' });
+    username: p.username || '', note: p.note || '', notify: p.notify || [] });
+  const has = { email: list(f.emails).length > 0, phone: list(f.phones).length > 0 };
+  const toggle = (name) => setF({ ...f, notify: f.notify.includes(name) ? f.notify.filter(n => n !== name) : [...f.notify, name] });
   const [err, setErr] = useState(null);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   const save = async (e) => {
     e.preventDefault();
     setErr(null);
+    if (!has.email && !has.phone) { setErr({ message: t('ui.dir.need_address') }); return; }
+    if (channels.length && !f.notify.length) { setErr({ message: t('ui.dir.need_notify') }); return; }
     const body = { handle: f.handle.trim() || handleFrom(f.name || f.emails), name: f.name.trim(), emails: list(f.emails), phones: list(f.phones),
-      username: f.username.trim(), note: f.note.trim() };
+      username: f.username.trim(), note: f.note.trim(), notify: f.notify };
     try {
       if (p.id) await put('/people/' + p.id, body);
       else await post('/people', body);
@@ -58,6 +64,10 @@ function PersonForm({ initial, onClose, onSaved }) {
       </div>
       <${Field} label=${t('ui.dir.emails')} hint=${t('ui.dir.list_hint')}><input type="text" class="ltr" value=${f.emails} onInput=${set('emails')} placeholder="li@example.com" /><//>
       <${Field} label=${t('ui.dir.phones')} hint=${t('ui.dir.list_hint')}><input type="text" class="ltr" value=${f.phones} onInput=${set('phones')} placeholder="+8613800000000" /><//>
+      <${Field} label=${t('ui.dir.notify') + ' *'} hint=${channels.length ? t('ui.dir.notify_hint') : t('ui.dir.notify_none')}>
+        <div class="col">${channels.map(c => html`<label class="switch">
+          <input type="checkbox" checked=${f.notify.includes(c.name)} disabled=${!has[c.contact] && !f.notify.includes(c.name)} onChange=${() => toggle(c.name)} />
+          <b class="ltr">${c.name}</b> <span class="small muted">${t('ui.dir.via.' + c.contact)}</span></label>`)}</div><//>
       <div class="two">
         <${Field} label=${t('ui.dir.username')} hint=${t('ui.dir.username_hint')}><input type="text" class="ltr" value=${f.username} onInput=${set('username')} /><//>
         <${Field} label=${t('ui.dir.note')}><input type="text" value=${f.note} onInput=${set('note')} /><//>
@@ -76,6 +86,7 @@ export function ContactsTab() {
   useLive(['directory'], d.reload, 500);
   if (!d.data) return d.error ? html`<${ErrorBox} error=${d.error} retry=${d.reload} />` : html`<${Loading} />`;
   const { people, bounces, unknown, threshold } = d.data;
+  const personal = d.data.personal_channels || [];
   const nUnknown = (unknown.email || []).length + (unknown.phone || []).length;
   const importAll = async () => {
     try {
@@ -105,13 +116,14 @@ export function ContactsTab() {
       <button class="btn sm primary" onClick=${importAll}>${t('ui.dir.import')}</button></div>`}
     <div class="card"><div class="bd flush tbl-wrap">
       ${!people.length ? html`<${Empty} title=${t('ui.dir.none')}>${t('ui.dir.none_hint')}<//>` : html`<table class="tbl">
-        <thead><tr><th>${t('ui.dir.name')}</th><th>${t('ui.dir.emails')}</th><th>${t('ui.dir.phones')}</th><th>${t('ui.dir.channels')}</th><th></th></tr></thead>
+        <thead><tr><th>${t('ui.dir.name')}</th><th>${t('ui.dir.emails')}</th><th>${t('ui.dir.phones')}</th><th>${t('ui.dir.notify')}</th><th>${t('ui.dir.channels')}</th><th></th></tr></thead>
         <tbody>${people.map(p => html`<tr class=${p.left_at ? 'muted' : ''}>
           <td><span class="name">${p.name}</span> <span class="small muted ltr">@${p.handle}</span>
             ${p.left_at && html` <span class="tag">${t('ui.dir.left')}</span>`}
             ${p.username && html`<div class="sub small ltr">${t('ui.dir.login')}: ${p.username}</div>`}</td>
           <td class="small ltr">${p.emails.join(', ')}</td>
           <td class="small ltr">${p.phones.join(', ')}</td>
+          <td class="small">${p.reach && p.reach !== 'left' ? html`<span class="rdot" title=${t('ui.dir.reach.' + p.reach)}></span> <span class="err-text">${t('ui.dir.reach.' + p.reach)}</span>` : html`<span class="ltr">${(p.notify || []).join(', ')}</span>`}</td>
           <td class="small">${p.channels.join(', ')}</td>
           <td class="right nowrap">
             <button class="btn sm" onClick=${() => setEdit(p)}>${t('ui.edit')}</button>
@@ -134,12 +146,14 @@ export function ContactsTab() {
           <td class="right"><button class="btn sm" onClick=${() => clearBounce(b)} title=${t('ui.dir.clear_hint')}>${t('ui.dir.clear')}</button></td>
         </tr>`)}</tbody>
       </table></div></div>`}
-    ${edit && html`<${PersonForm} initial=${edit.id ? edit : null} onClose=${() => setEdit(null)} onSaved=${() => { setEdit(null); d.reload(); }} />`}
+    ${edit && html`<${PersonForm} channels=${personal} initial=${edit.id ? edit : null} onClose=${() => setEdit(null)} onSaved=${() => { setEdit(null); d.reload(); }} />`}
   </div>`;
 }
 
 // NewAddresses asks, before a channel is saved, whether the addresses the
 // directory does not know should be added to it (each with a name).
+// onAdd gets the people to add; the caller saves the channel first, so that
+// they can be reached through it.
 export function NewAddresses({ kind, addresses, onAdd, onSkip, onClose }) {
   const [names, setNames] = useState(addresses.map(a => a.includes('@') ? a.split('@')[0] : ''));
   const [err, setErr] = useState(null);
@@ -148,12 +162,11 @@ export function NewAddresses({ kind, addresses, onAdd, onSkip, onClose }) {
     setBusy(true);
     setErr(null);
     try {
-      for (let i = 0; i < addresses.length; i++) {
-        const a = addresses[i].replace(/^.*<([^>]+)>\s*$/, '$1').trim();
-        const body = { name: names[i].trim() || a, handle: handleFrom(names[i].trim() || a), emails: kind === 'email' ? [a] : [], phones: kind === 'phone' ? [a] : [] };
-        await post('/people', body);
-      }
-      onAdd();
+      const people = addresses.map((raw, i) => {
+        const a = raw.replace(/^.*<([^>]+)>\s*$/, '$1').trim();
+        return { name: names[i].trim() || a, handle: handleFrom(names[i].trim() || a), emails: kind === 'email' ? [a] : [], phones: kind === 'phone' ? [a] : [] };
+      });
+      await onAdd(people);
     } catch (e) { setErr(e); setBusy(false); }
   };
   return html`<${Modal} title=${t('ui.dir.new_title')} onClose=${onClose}>
