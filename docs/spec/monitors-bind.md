@@ -25,7 +25,7 @@ kept when the file is rewritten.
   site"` is the option `title` with the value `Main site`.
 - **Parentheses.** `(` and `)` are tokens of their own. Everything between
   a `(` and its matching `)` belongs to one statement, across lines; this
-  is how long records and the SOA are spread over several lines.
+  is how long records (and the older SOA header) are spread over several lines.
 - **Statements.** Outside parentheses each non-empty line is one
   statement. A statement whose first token starts with `$` is a
   directive; every other statement is a record.
@@ -69,31 +69,52 @@ once per record. Values are taken literally except for references:
 `${secret:NAME}` is replaced by a stored secret and `${env:NAME}` by an
 environment variable the server was allowed to read.
 
-## The SOA record
+## The file header
 
-The SOA record is the first statement of the file; only comments and
+The file header is the first statement of the file; only comments and
 `$VERSION` may come before it. `$QUORUM` and `$DIALECT` follow it, before
-the first other record.
+the first record.
 
 ```
-@ IN SOA <master-name> <admin-mailbox> ( <serial> <interval> <retry> <timeout> <attempts> )
+$FILE revision=<n> [master=<name>] [admin=<email>] [interval=<d>] [retry=<d>] [timeout=<d>] [attempts=<n>]
 ```
 
-- **serial** — 1 to 4294967295. A changed file is applied only when its
-  serial is higher than the running one; `YYYYMMDDnn` is the usual form.
+- **revision** — required, 1 to 4294967295. A changed file is applied only
+  when its revision is higher than the running one; `YYYYMMDDnn` is the
+  usual form. Saving from the web UI raises it for you.
+- **master** — the name of the master node (default `unagikuma`).
+- **admin** — the administrator's e-mail address (optional).
 - **interval**, **retry**, **timeout** — durations (`500ms`, `15s`, `1m`,
-  `1h30m`, `1d`): the default check interval, the interval while a problem
-  is being confirmed, and the default timeout of one check.
+  `1h30m`, `1d`): the default check interval (`1m`), the interval while a
+  problem is being confirmed (`15s`), and the default timeout of one
+  check (`5s`).
 - **attempts** — 1 to 100: how many failed checks in a row make a problem
-  HARD and notified.
-- **admin-mailbox** — written the BIND way (`admin.example.com.` is
-  `admin@example.com`) or as a plain address.
+  HARD and notified (`3`).
 
 ```bind
 $VERSION 1
-; serial  interval  retry  timeout  attempts
+$FILE revision=2026102901 master=unagikuma admin=admin@example.com interval=1m retry=15s timeout=5s attempts=3
+
+www IN HTTP https://www.example.com/
+```
+
+### The SOA record (older form)
+
+Files written before the `$FILE` header start with an SOA record that holds
+the same values by position. It is read exactly as before, and a file has
+one header or the other, not both.
+
+```
+@ IN SOA <master-name> <admin-mailbox> ( <revision> <interval> <retry> <timeout> <attempts> )
+```
+
+The admin mailbox may be written the BIND way (`admin.example.com.` is
+`admin@example.com`) or as a plain address.
+
+```bind
+; revision  interval  retry  timeout  attempts
 @ IN SOA unagikuma. admin.example.com. (
-        2026102901 ; serial
+        2026102901 ; revision
         1m         ; interval
         15s        ; retry
         5s         ; timeout
@@ -107,8 +128,9 @@ www IN HTTP https://www.example.com/
 | Directive | Arguments | Where |
 |-----------|-----------|-------|
 | `$VERSION 1` | the syntax version; a file without it is version 1 | once, usually the first line |
-| `$QUORUM v` | `majority`, `all`, `N` or `N%`: how many nodes must see a failure | after the SOA, before other records, once |
-| `$DIALECT v` | `auto`, `huawei`, `cisco`, `asa`, `xr`: vendor meaning of ambiguous UDP keywords | after the SOA, before other records, once |
+| `$FILE …` | the file header, see above | once, first |
+| `$QUORUM v` | `majority`, `all`, `N` or `N%`: how many nodes must see a failure | after the file header, before other records, once |
+| `$DIALECT v` | `auto`, `huawei`, `cisco`, `asa`, `xr`: vendor meaning of ambiguous UDP keywords | after the file header, before other records, once |
 | `$SET key=value …` | tunables; each key once per file | anywhere |
 | `$DEFAULT key=value …` | options added to the monitors after it, until the next `$DEFAULT`; an option on the record wins | anywhere |
 | `$SCOPE spec [policy=NAME]` | nodes (`bj,sh`) or `region:NAME` that check the monitors after it, and their default policy; `$SCOPE *` returns to every node | anywhere |
@@ -120,7 +142,7 @@ www IN HTTP https://www.example.com/
 
 ```bind
 $VERSION 1
-@ IN SOA unagikuma. admin.example.com. ( 2026102901 1m 15s 5s 3 )
+$FILE revision=2026102901
 $QUORUM majority
 
 $SET notify.repeat=30m
@@ -175,7 +197,7 @@ hand, write the old name once with `was=`; it can be removed after the
 file has been applied.
 
 ```bind
-@ IN SOA unagikuma. admin.example.com. ( 2026102902 1m 15s 5s 3 )
+$FILE revision=2026102902
 
 pg-primary IN TCP 10.0.0.5:5432 was=pg title="Postgres"
 ```
@@ -194,7 +216,7 @@ Saving from the web UI or API changes the text, not just the meaning:
   after the last record of its kind in its `$SCOPE` section; a first
   monitor goes before the maintenance windows and status pages. It is
   lined up with the record above it.
-- The serial is raised: to today's `YYYYMMDD01` (UTC) or, if that is not
+- The revision is raised: to today's `YYYYMMDD01` (UTC) or, if that is not
   higher, by one.
 - Values are quoted only when they must be: when they are empty or hold a
   space, a tab, `;`, `(`, `)`, `"`, `\` or `=`.
@@ -216,7 +238,7 @@ message}`. The codes are part of version 1 and keep their meaning:
 |------|---------|
 | `syntax` | the statement does not have the shape above |
 | `unterminated_string`, `unbalanced_paren`, `invalid_utf8` | lexical errors |
-| `soa_first`, `missing_soa`, `duplicate_soa` | SOA placement |
+| `soa_first`, `missing_soa`, `duplicate_soa` | placement of the file header (`$FILE` or SOA) |
 | `invalid_serial`, `invalid_duration`, `invalid_value` | a value that cannot be read |
 | `invalid_name`, `duplicate_name`, `duplicate_option` | names and options |
 | `unknown_type`, `unknown_directive`, `unknown_option` | names this release does not know |

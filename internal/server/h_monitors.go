@@ -956,6 +956,62 @@ func (s *Server) probeOnce(w http.ResponseWriter, r *http.Request) (any, error) 
 	return resultJSON(res), nil
 }
 
+// sameCheck tells the monitor form, while a monitor is being written,
+// which monitors already check exactly the same thing (they could share
+// one check) and how many others watch the same host. exclude is the
+// monitor being edited.
+func (s *Server) sameCheck(w http.ResponseWriter, r *http.Request) (any, error) {
+	var req struct {
+		recordReq
+		Exclude string `json:"exclude"`
+	}
+	if err := decodeJSON(r, s.maxBody(), &req); err != nil {
+		return nil, err
+	}
+	type mon struct {
+		Name  string `json:"name"`
+		Title string `json:"title"`
+	}
+	out := struct {
+		Same []mon `json:"same"`
+		Host int   `json:"host"`
+	}{Same: []mon{}}
+	cur := s.app.Config()
+	spec := req.spec()
+	spec.Name = "same-check-draft"
+	for cur.Config.FindMonitor(spec.Name) != nil {
+		spec.Name += "-"
+	}
+	text := strings.TrimRight(cur.Text, "\n") + "\n" + spec.Render() + "\n"
+	cfg, diags := s.app.ValidateConfig([]byte(text))
+	draft := cfg.FindMonitor(spec.Name)
+	if draft == nil || config.HasErrors(diags) && draftHasErrors(diags, text) {
+		return out, nil // still being written
+	}
+	key, host := draft.CheckKey(), draft.HostKey()
+	for _, m := range cur.Config.Monitors {
+		switch {
+		case m.Name == req.Exclude || m.Disabled:
+		case key != "" && m.CheckKey() == key:
+			out.Same = append(out.Same, mon{m.Name, m.Title})
+		case host != "" && m.Type != "PUSH" && m.HostKey() == host:
+			out.Host++
+		}
+	}
+	return out, nil
+}
+
+// draftHasErrors reports errors on the record appended last.
+func draftHasErrors(diags []config.Diagnostic, text string) bool {
+	last := strings.Count(text, "\n")
+	for _, d := range diags {
+		if d.Severity == config.SevError && d.Pos.Line >= last {
+			return true
+		}
+	}
+	return false
+}
+
 // quickadd turns one-line shorthands ("udp 10.1.1.1:snmp", "https://x")
 // into records.
 func (s *Server) quickadd(w http.ResponseWriter, r *http.Request) (any, error) {

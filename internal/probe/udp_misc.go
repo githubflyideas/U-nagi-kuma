@@ -12,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -70,6 +71,7 @@ func unconnectedExchange(ctx context.Context, c *net.UDPConn, dst *net.UDPAddr, 
 	deadline, _ := ctx.Deadline()
 	slot := time.Until(deadline) / time.Duration(retransmit+1)
 	buf := make([]byte, 65535)
+	start := time.Now()
 	for attempt := 0; attempt <= retransmit; attempt++ {
 		sentAt := time.Now()
 		if _, err := c.WriteToUDP(req, dst); err != nil {
@@ -92,7 +94,7 @@ func unconnectedExchange(ctx context.Context, c *net.UDPConn, dst *net.UDPAddr, 
 				continue
 			}
 			if accept(buf[:n], from) {
-				return append([]byte(nil), buf[:n]...), from, time.Since(sentAt), nil
+				return append([]byte(nil), buf[:n]...), from, replyLatency(attempt, start, sentAt), nil
 			}
 		}
 		if ctx.Err() != nil {
@@ -273,6 +275,14 @@ func runRaw(ctx context.Context, p udpPlan, o opts) Result {
 	if src > 0 {
 		laddr = &net.UDPAddr{Port: src}
 	}
+	if src > 0 {
+		// Two checks cannot use one source port at once: they take turns.
+		release, err := lockSourcePort(ctx, src)
+		if err != nil {
+			return abstain(ReasonPortBusy, "source port %d stayed in use by another check on this node", src)
+		}
+		defer release()
+	}
 	mode := o.str("accept-from", "connected")
 	var resp []byte
 	var lat time.Duration
@@ -281,6 +291,9 @@ func runRaw(ctx context.Context, p udpPlan, o opts) Result {
 		if err != nil {
 			if isPermission(err) {
 				return abstain(ReasonPrivilege, "cannot bind source port %d: %v", src, rootErr(err))
+			}
+			if src > 0 && isAddrInUse(err) {
+				return abstain(ReasonPortBusy, "source port %d is used by another program on this node", src)
 			}
 			return classify(err, true, o)
 		}
@@ -295,6 +308,9 @@ func runRaw(ctx context.Context, p udpPlan, o opts) Result {
 		if err != nil {
 			if isPermission(err) {
 				return abstain(ReasonPrivilege, "cannot bind source port %d: %v", src, rootErr(err))
+			}
+			if src > 0 && isAddrInUse(err) {
+				return abstain(ReasonPortBusy, "source port %d is used by another program on this node", src)
 			}
 			return abstain(ReasonInternal, "cannot open a UDP socket: %v", err)
 		}
@@ -315,6 +331,29 @@ func runRaw(ctx context.Context, p udpPlan, o opts) Result {
 	}
 	res.Vote, res.Reason, res.Detail = VoteOK, ReasonOK, fmt.Sprintf("reply of %d bytes", len(resp))
 	return res
+}
+
+// sourcePorts holds one token per fixed source port in use by a check.
+var sourcePorts sync.Map // int -> chan struct{}
+
+// lockSourcePort waits for a fixed source port to be free of other checks
+// in this process. A check that waited away more than half of its time
+// gives up rather than time out on the target for a wait of its own.
+func lockSourcePort(ctx context.Context, port int) (func(), error) {
+	v, _ := sourcePorts.LoadOrStore(port, make(chan struct{}, 1))
+	ch := v.(chan struct{})
+	start := time.Now()
+	select {
+	case ch <- struct{}{}:
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+	release := func() { <-ch }
+	if deadline, ok := ctx.Deadline(); ok && time.Since(start) > 0 && time.Until(deadline) < deadline.Sub(start)/2 {
+		release()
+		return nil, context.DeadlineExceeded
+	}
+	return release, nil
 }
 
 func isPermission(err error) bool {

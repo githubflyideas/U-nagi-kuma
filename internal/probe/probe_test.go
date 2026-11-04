@@ -20,6 +20,7 @@ import (
 	"net/netip"
 	"net/url"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -313,6 +314,24 @@ func TestPingLoopback(t *testing.T) {
 	}
 }
 
+// The smallest ping (size=8) leaves 4 random bytes after the ID and
+// sequence; matching an ICMP error must not read past them.
+func TestPingSmallSize(t *testing.T) {
+	if got := nonceTag(make([]byte, 8)); len(got) != 4 {
+		t.Fatalf("tag of an 8-byte request: %d bytes", len(got))
+	}
+	if got := nonceTag(make([]byte, 32)); len(got) != 8 {
+		t.Fatalf("tag of a 32-byte request: %d bytes", len(got))
+	}
+	r := run(t, Spec{Type: "PING", Target: "127.0.0.1", Opts: map[string]string{"count": "1", "size": "8", "fallback": "off"}})
+	switch {
+	case r.Vote == VoteAbstain && (r.Reason == ReasonPrivilege || r.Reason == ReasonPlatform):
+		t.Skipf("ICMP not available in this sandbox: %s", r.Detail)
+	case r.Vote != VoteOK:
+		t.Fatalf("%+v", r)
+	}
+}
+
 // Without ping permission a host that accepts or refuses a TCP connection
 // is up; the result says it was checked over TCP.
 func TestPingTCPFallback(t *testing.T) {
@@ -406,6 +425,98 @@ func TestUDPL1(t *testing.T) {
 	want(t, r, VoteOK, ReasonOK)
 	if r.Depth != keywords.L1 {
 		t.Fatalf("depth %s", r.Depth)
+	}
+}
+
+// A silent port is "probably open" only while its host answers: silence
+// from a host that is gone must not look healthy.
+func TestUDPL1HostCheck(t *testing.T) {
+	silent := udpServer(t, func(req []byte) []byte { return nil })
+	saved := hostCheck
+	t.Cleanup(func() { hostCheck = saved })
+	spec := func(o map[string]string) Spec {
+		o["template"] = "syslog"
+		return Spec{Type: "UDP", Target: silent, Opts: o, Timeout: 300 * time.Millisecond}
+	}
+	var asked atomic.Int32
+	for _, c := range []struct {
+		host   Result
+		opts   map[string]string
+		vote   Vote
+		reason string
+		asked  int32
+	}{
+		{Result{Vote: VoteOK, Reason: ReasonOK}, map[string]string{}, VoteOK, ReasonOK, 1},
+		{Result{Vote: VoteFail, Reason: ReasonTimeout}, map[string]string{}, VoteAbstain, ReasonInconclusive, 1},
+		{Result{Vote: VoteAbstain, Reason: ReasonPrivilege}, map[string]string{}, VoteAbstain, ReasonInconclusive, 1},
+		{Result{Vote: VoteFail, Reason: ReasonHostUnreachable, Detail: "ICMP destination unreachable"}, map[string]string{}, VoteFail, ReasonHostUnreachable, 1},
+		{Result{Vote: VoteFail, Reason: ReasonTimeout}, map[string]string{"host-check": "off"}, VoteOK, ReasonOK, 0},
+	} {
+		asked.Store(0)
+		hostCheck = func(context.Context, netip.Addr) Result { asked.Add(1); return c.host }
+		want(t, run(t, spec(c.opts)), c.vote, c.reason)
+		if asked.Load() != c.asked {
+			t.Errorf("host %v %v: host checked %d times", c.host.Reason, c.opts, asked.Load())
+		}
+	}
+	// A closed port is closed whatever the host check says.
+	hostCheck = func(context.Context, netip.Addr) Result { return Result{Vote: VoteOK} }
+	want(t, run(t, udpSpec(closedUDPPort(t), "syslog", nil)), VoteFail, ReasonPortUnreachable)
+	if err := validateUDP(spec(map[string]string{"host-check": "maybe"}), opts{"template": "syslog", "host-check": "maybe"}); err == nil {
+		t.Error("host-check=maybe accepted")
+	}
+}
+
+// The real host check on loopback: the host answers.
+func TestUDPL1HostCheckLoopback(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	if r := hostCheck(ctx, netip.MustParseAddr("127.0.0.1")); r.Vote != VoteOK && r.Reason != ReasonPrivilege {
+		t.Fatalf("%+v", r)
+	}
+}
+
+// Only the echo of this request counts; a stray datagram before it is
+// set aside.
+func TestUDPEchoIgnoresStray(t *testing.T) {
+	c, err := net.ListenPacket("udp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { c.Close() })
+	go func() {
+		buf := make([]byte, 2048)
+		for {
+			n, from, err := c.ReadFrom(buf)
+			if err != nil {
+				return
+			}
+			c.WriteTo([]byte("left over from before"), from)
+			c.WriteTo(buf[:n], from)
+		}
+	}()
+	want(t, run(t, udpSpec(c.LocalAddr().String(), "echo", nil)), VoteOK, ReasonOK)
+}
+
+// A reply that only came after a retransmission may answer the first copy:
+// its latency counts from the first send, not from the retransmission.
+func TestUDPLatencyAfterRetransmit(t *testing.T) {
+	var n atomic.Int32
+	addr := udpServer(t, func(req []byte) []byte {
+		if n.Add(1) == 1 {
+			return nil // the first request is lost
+		}
+		return req
+	})
+	r := run(t, udpSpec(addr, "echo", map[string]string{"retransmit": "1"}))
+	want(t, r, VoteOK, ReasonOK)
+	if r.Latency < 400*time.Millisecond {
+		t.Fatalf("latency %v counts from the retransmission", r.Latency)
+	}
+	// Answered at once: the latency of one request.
+	fast := udpServer(t, func(req []byte) []byte { return req })
+	if r := run(t, udpSpec(fast, "echo", nil)); r.Latency > 300*time.Millisecond {
+		t.Fatalf("latency %v", r.Latency)
 	}
 }
 
@@ -671,5 +782,57 @@ func TestSecretsScrubbed(t *testing.T) {
 	all := string(r.Evidence.Request) + string(r.Evidence.Response) + r.Detail
 	if strings.Contains(all, secret) || strings.Contains(all, url.QueryEscape(secret)) || !strings.Contains(all, "***") {
 		t.Fatalf("secret recorded:\n%s", all)
+	}
+}
+
+// Checks with the same fixed source port take turns instead of failing to
+// bind; one that would have no time left, or a port another program holds,
+// leaves the check undecided rather than failing the target.
+func TestUDPSourcePortTurns(t *testing.T) {
+	free := func() string {
+		c, err := net.ListenPacket("udp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer c.Close()
+		return strconv.Itoa(c.LocalAddr().(*net.UDPAddr).Port)
+	}
+	slow := udpServer(t, func(req []byte) []byte { time.Sleep(200 * time.Millisecond); return req })
+	raw := func(addr, port string, timeout time.Duration) Spec {
+		return Spec{Type: "UDP", Target: addr, Timeout: timeout, Opts: map[string]string{"template": "raw", "src-port": port, "retransmit": "0"}}
+	}
+	port := free()
+	var wg sync.WaitGroup
+	results := make([]Result, 3)
+	for i := range results {
+		wg.Add(1)
+		go func() { defer wg.Done(); results[i] = Run(context.Background(), raw(slow, port, 2*time.Second)) }()
+	}
+	wg.Wait()
+	for i, r := range results {
+		if r.Vote != VoteOK {
+			t.Errorf("check %d with a shared source port: %+v", i, r)
+		}
+	}
+	// The holder takes all of its time: the other one gives up undecided.
+	silent := udpServer(t, func([]byte) []byte { return nil })
+	port = free()
+	done := make(chan Result, 1)
+	go func() { done <- Run(context.Background(), raw(silent, port, 600*time.Millisecond)) }()
+	time.Sleep(50 * time.Millisecond)
+	want(t, Run(context.Background(), raw(slow, port, 600*time.Millisecond)), VoteAbstain, ReasonPortBusy)
+	want(t, <-done, VoteFail, ReasonTimeout)
+	// Another program has the port.
+	hold, err := net.ListenPacket("udp", ":"+port)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer hold.Close()
+	if runtime.GOOS == "windows" {
+		t.Skip("a port held by another program may not be detected on Windows (documented as possibly unsupported)")
+	}
+	want(t, Run(context.Background(), raw(slow, port, time.Second)), VoteAbstain, ReasonPortBusy)
+	if !LocalAbstain(ReasonPortBusy) {
+		t.Error("a busy source port says nothing about the target")
 	}
 }

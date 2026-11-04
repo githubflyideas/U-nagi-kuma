@@ -311,7 +311,7 @@ func runImport(args []string) error {
 	case *dry:
 		fmt.Println("This was a preview. Run the same command without --dry-run to import.")
 	default:
-		fmt.Printf("Done. %s now has serial %d; a running Unagikuma picks it up by itself.\n", filepath.Base(*cfgPath), next)
+		fmt.Printf("Done. %s now has revision %d; a running Unagikuma picks it up by itself.\n", filepath.Base(*cfgPath), next)
 	}
 	return nil
 }

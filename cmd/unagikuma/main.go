@@ -48,7 +48,7 @@ Usage:
                                   manage probe nodes and their tokens
   unagikuma check [file]           validate a monitors.bind file (--json for tools)
   unagikuma fmt [--check] [file]   align and normalise monitors.bind (meaning unchanged)
-  unagikuma serial [bump] [file]   print or increase the serial
+  unagikuma serial [bump] [file]   print or increase the revision
   unagikuma probe <target> [k=v]   run one check now (e.g. "udp 10.0.0.1:ntp")
   unagikuma keywords [dialect]     list the UDP keywords
   unagikuma import kuma FILE       move from Uptime Kuma (kuma.db or a JSON backup); try --dry-run first
@@ -454,7 +454,7 @@ func runCheck(args []string) error {
 	if bad {
 		return errors.New("check failed")
 	}
-	fmt.Printf("%s: serial %d, %d monitors, %d channels, %d policies — ok\n", path, cfg.Serial, len(cfg.Monitors), len(cfg.Channels), len(cfg.Policies))
+	fmt.Printf("%s: revision %d, %d monitors, %d channels, %d policies — ok\n", path, cfg.Serial, len(cfg.Monitors), len(cfg.Channels), len(cfg.Policies))
 	return nil
 }
 
@@ -482,7 +482,7 @@ func runFmt(args []string) error {
 	if err := os.WriteFile(path, out, 0o600); err != nil {
 		return err
 	}
-	fmt.Fprintf(os.Stderr, "%s formatted; a running server applies it once the serial is increased (unagikuma serial bump)\n", path)
+	fmt.Fprintf(os.Stderr, "%s formatted; a running server applies it once the revision is increased (unagikuma serial bump)\n", path)
 	return nil
 }
 
@@ -530,7 +530,7 @@ func runProbe(args []string) error {
 		return errors.New(`usage: unagikuma probe <target> [k=v...] (e.g. "https://example.com", "udp 10.0.0.1:ntp", "tcp db:5432")`)
 	}
 	line := strings.Join(args, " ")
-	src := "@ IN SOA probe. a.b. ( 1 1m 15s 5s 1 )\n" + quickLine(line) + "\n"
+	src := "$FILE revision=1 master=probe attempts=1\n" + quickLine(line) + "\n"
 	_, cfg, diags := config.Load("probe", []byte(src), config.Options{})
 	for _, d := range diags {
 		if d.Severity == config.SevError {

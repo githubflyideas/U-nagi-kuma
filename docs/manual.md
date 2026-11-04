@@ -64,8 +64,8 @@ WantedBy=multi-user.target
 ## monitors.bind
 
 ```text
-; serial  interval  retry  timeout  attempts
-@ IN SOA unagikuma. admin.example.com. ( 2026102301 1m 15s 5s 3 )
+; revision, then the defaults for every monitor
+$FILE revision=2026102301 interval=1m retry=15s timeout=5s attempts=3
 
 $SET notify.repeat=30m
 
@@ -88,7 +88,7 @@ company  IN DOMAIN example.com days=45 critical-days=10
 main     IN STATUSPAGE "Service status" select="group:public"
 ```
 
-- After editing the file by hand, **increase the serial**; Unagikuma then validates and applies it. Saving a monitor, channel or policy in the web UI raises the serial for you. **Configuration › monitors.bind** shows the file read-only, with a copy button; edit it on the server. A file with errors is never applied: the last good version keeps running and the UI shows what is wrong.
+- After editing the file by hand, **increase the revision** on the `$FILE` line; Unagikuma then validates and applies it. Saving a monitor, channel or policy in the web UI raises it for you. Files from earlier releases start with an `@ IN SOA … ( serial interval retry timeout attempts )` line instead; it still works the same way, and its first number is the revision. **Configuration › monitors.bind** shows the file read-only, with a copy button; edit it on the server. A file with errors is never applied: the last good version keeps running and the UI shows what is wrong.
 - Credentials never need to be in the file: store them under **Settings › Secrets** and refer to them as `${secret:name}`. Values from the environment can be used as `${env:NAME}` when the server is started with `--allow-env NAME`.
 - Monitors are grouped into hosts by the address they check; `device=core-sw1` groups monitors of several addresses under one name. A host with a PING monitor is UP or DOWN by that ping.
 - `parent=gw` (or `parent=sw1,gw`) declares a dependency: while a parent is down, a failing child is shown as UNREACHABLE and not notified. If the child is still down once its parents are back, it is notified as usual.
@@ -102,6 +102,10 @@ main     IN STATUSPAGE "Service status" select="group:public"
 
   `select=` takes fields that only depend on the configuration: `name`, `title`, `type`, `svc`, `port`, `host`, `cidr`, `tag`, `group`, `policy`, `node`, `area`, plus free text; terms are AND-ed, commas mean "any of", `-` negates, `/…/` is a regular expression.
 - HTTPS checks and TCP checks with `tls=yes` watch their certificate: inside `probe.cert-warn-days` (62) they are degraded, inside `probe.cert-critical-days` (7) they fail, and an expired certificate always fails — also with `insecure=yes`. `cert-days=` and `cert-critical-days=` on a monitor set its own thresholds (0 turns one off).
+- A PING check sends 3 echo requests and fails when more than `probe.ping-loss` (50%) of them go unanswered; less loss marks it degraded. `loss=` on a monitor sets its own threshold (`loss=0` fails only when every request is lost).
+- A UDP check that only shows the port is not closed (L1, marked *weak*: `SYSLOG`, `snmptrap`, unknown ports) counts silence as "probably open" only while the host itself answers a ping (or a TCP knock). If the host does not answer either, the check is UNKNOWN instead of OK; if it is reported unreachable, the check fails. `host-check=off` accepts silence alone, for hosts that answer nothing at all.
+- Pings and weak UDP checks of the same address start at least `probe.same-target-gap` (1s) apart on each node, because devices limit how many ICMP replies they send and a burst can look like packet loss or an open port. Checks that share a fixed source port (`src-port=`) take turns; if the port stays busy, or another program holds it, the check is UNKNOWN for that round instead of down.
+- Two monitors that check exactly the same thing (same type, target, options, timeout and nodes — typically one service watched by two teams) send every request twice. `unagikuma check` and the monitor form point this out; `share=yes` on one of them makes it use the result of the other's check from the last `probe.share-window` (10s) instead of checking again. Each monitor keeps its own thresholds, incidents and notifications.
 - `DOMAIN` watches when a domain's registration expires, asking the registry over RDAP (or WHOIS where there is no RDAP), every 6 hours by default and at most hourly. Inside `days=` (30) it is degraded, inside `critical-days=` (7) it fails; if no registry answers it is UNKNOWN, never down. **Monitors › Expiry dates** lists every domain and TLS certificate, soonest first.
 - `unagikuma keywords` lists the UDP keywords and what each check proves.
 - Every day at 10:00 (`notify.daily-report-at`) a status report lists the hosts that are DOWN and UP and every service that is not OK; **Notices & status › Daily report** previews it and sends it on demand.
@@ -287,6 +291,12 @@ In an Administrator PowerShell, in the folder of `unagikuma.exe`:
 
 The service starts automatically and is restarted if it stops. Agents install the same way (the node's install command shows it).
 
+Windows is supported, with some checks possibly unsupported:
+
+- ICMP ping needs the service to run as Administrator (or LocalSystem); otherwise ping checks knock on TCP ports instead.
+- A weak UDP check (L1) may report that this platform cannot see a closed port, and stays UNKNOWN instead of OK or down.
+- A fixed source port (`src-port=`) held by another program may not be detected.
+
 ## Users
 
 **Settings › Users** manages accounts: administrators do everything; operators acknowledge problems and edit monitors and maintenance windows; viewers only read. An operator can be limited to some `$SCOPE` sections (`region:north`, `bj`): they then change only what is written in those sections and not the shared configuration (channels, policies, the raw file).
@@ -345,7 +355,7 @@ unagikuma agent [flags]          run a probe node for a master
 unagikuma node add|list|token|revoke
                                 manage probe nodes and their tokens
 unagikuma check [file]           validate a monitors.bind file
-unagikuma serial [bump] [file]   print or increase the serial
+unagikuma serial [bump] [file]   print or increase the revision
 unagikuma probe <target> [k=v]   run one check now, e.g. "udp 10.0.0.1:ntp"
 unagikuma keywords [dialect]     list the UDP keywords
 unagikuma backup [--passphrase-file F] [--history]
@@ -390,5 +400,5 @@ Everything the UI does goes through a REST API under `/api/v1`. Create a token u
 - **Ping checks say "checked over TCP" or "privilege".** This host does not allow ping for Unagikuma. Allow unprivileged ping (`sudo sysctl -w net.ipv4.ping_group_range="0 2147483647"`) or give the binary `CAP_NET_RAW`; see Quick start.
 - **A script check stays paused.** Enabling it lists the nodes that lack the script; **Settings › Check scripts** shows each node's copy.
 - **"Monitoring data cannot be written".** The data directory refuses writes (full disk, read-only file system) for longer than `storage.write-alert` (1 minute). Results and events are kept in memory and written once space is back; a red banner in the UI and `/healthz` (`"status": "degraded"`) say so meanwhile. Free disk space; the incident resolves itself.
-- **An edit to monitors.bind is ignored.** Increase the serial; a file with errors is never applied, and the UI shows the error with its line.
+- **An edit to monitors.bind is ignored.** Increase the revision; a file with errors is never applied, and the UI shows the error with its line.
 - **The standby has no copy.** **Settings › Nodes** shows when it last fetched the master's state and the last error; it retries after `cluster.standby-retry` and on every configuration change.

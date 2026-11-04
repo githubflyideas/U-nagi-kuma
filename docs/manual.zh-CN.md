@@ -64,8 +64,8 @@ WantedBy=multi-user.target
 ## monitors.bind
 
 ```text
-; 序列号  间隔  重试  超时  尝试次数
-@ IN SOA unagikuma. admin.example.com. ( 2026102301 1m 15s 5s 3 )
+; 版本号，以及所有监控项的默认值
+$FILE revision=2026102301 interval=1m retry=15s timeout=5s attempts=3
 
 $SET notify.repeat=30m
 
@@ -88,7 +88,7 @@ company  IN DOMAIN example.com days=45 critical-days=10
 main     IN STATUSPAGE "服务状态" select="group:public"
 ```
 
-- 手工编辑后请**增大序列号**，Unagikuma 会校验并自动生效。在网页里保存监控、通道或策略时序列号会自动增加。**配置 › monitors.bind** 只读显示该文件，可一键复制；需要直接修改请在服务器上编辑。有错误的文件不会生效：上一个正确的版本继续运行，界面会指出错在哪里。
+- 手工编辑后请**增大 `$FILE` 行的版本号（revision）**，Unagikuma 会校验并自动生效。在网页里保存监控、通道或策略时版本号会自动增加。早期版本写出的文件以 `@ IN SOA … ( 序列号 间隔 重试 超时 尝试次数 )` 开头，照样可用，其中第一个数字就是版本号。**配置 › monitors.bind** 只读显示该文件，可一键复制；需要直接修改请在服务器上编辑。有错误的文件不会生效：上一个正确的版本继续运行，界面会指出错在哪里。
 - 凭据不必写进文件：在 **设置 › 密钥** 中保存，然后用 `${secret:名称}` 引用。用 `--allow-env NAME` 启动时，也可以用 `${env:NAME}` 引用环境变量。
 - 监控项按检查的地址归入主机；`device=core-sw1` 可以把不同地址的监控项归到同一个名字下。有 PING 监控的主机，其 UP / DOWN 由这个 ping 决定。
 - `parent=gw`（或 `parent=sw1,gw`）声明依赖关系：父项故障期间，失败的子项显示为“不可达”，不发通知；父项恢复后子项仍然故障，再照常通知。
@@ -102,6 +102,10 @@ main     IN STATUSPAGE "服务状态" select="group:public"
 
   `select=` 只能使用由配置决定的字段：`name`、`title`、`type`、`svc`、`port`、`host`、`cidr`、`tag`、`group`、`policy`、`node`、`area`，以及自由文本；多个条件同时满足，逗号表示“任一”，`-` 表示取反，`/…/` 表示正则表达式。
 - HTTPS 检查以及带 `tls=yes` 的 TCP 检查会同时监控证书：剩余不到 `probe.cert-warn-days`（62）天为降级，不到 `probe.cert-critical-days`（7）天为故障；已过期的证书一律判为故障，设置了 `insecure=yes` 也一样。监控项上的 `cert-days=`、`cert-critical-days=` 可单独设置阈值（写 0 表示关闭）。
+- PING 检查每次发送 3 个请求，未回复的超过 `probe.ping-loss`（50%）即判为故障；丢包较少时显示为性能下降。监控项上的 `loss=` 可单独设置阈值（`loss=0` 表示只有全部丢失才算故障）。
+- 只能证明端口没有关闭的 UDP 检查（L1，标记为“弱”：`SYSLOG`、`snmptrap`、未知端口），只有在主机本身能 ping 通（或 TCP 探测有响应）时，才把“没有回复”算作“大概率开放”。主机也不响应时显示为“未知”而不是正常；主机被报告不可达时判为故障。对完全不响应任何探测的主机，可写 `host-check=off`，只凭沉默判断。
+- 每个节点上，对同一地址的 ping 和 UDP 弱检查至少间隔 `probe.same-target-gap`（1 秒）开始，因为设备会限制 ICMP 回复的数量，同时发出的一批请求可能被当成丢包或端口开放。使用相同固定源端口（`src-port=`）的检查会排队执行；端口一直被占用或被其他程序占用时，该轮检查为“未知”，不会判为故障。
+- 两个监控项若检查完全相同的内容（类型、目标、选项、超时和检查节点都一样，常见于两个团队监控同一个服务），每个请求都会被发送两次。`unagikuma check` 和监控项表单会提示这种情况；在其中一个上写 `share=yes`，它就会使用另一个在 `probe.share-window`（10 秒）内的检查结果，不再重复检查。各监控项仍保留各自的阈值、故障和通知。
 - `DOMAIN` 监控域名注册的到期时间，通过 RDAP（没有 RDAP 时用 WHOIS）向注册局查询，默认每 6 小时检查一次，最频繁每小时一次。剩余不到 `days=`（30）天为降级，不到 `critical-days=`（7）天为故障；注册局都无法查询时为 UNKNOWN，不会判为故障。**监控 › 到期时间** 按到期先后列出所有域名和 TLS 证书。
 - `unagikuma keywords` 列出所有 UDP 关键字及其检查深度。
 - 每天 10:00（`notify.daily-report-at`）发送状态日报：列出宕机与正常的主机，以及所有异常服务；在 **通告和状态 › 状态日报** 中可预览和立即发送。
@@ -270,6 +274,12 @@ unagikuma agent --server https://master.example.com:8077 --node bj \
 
 服务会开机自启，异常退出后自动重启。Agent 的安装方式相同（节点的安装命令里有现成的命令）。
 
+Windows 可以使用，但部分检查可能不支持：
+
+- ICMP ping 需要服务以管理员（或 LocalSystem）身份运行，否则 ping 检查会改用 TCP 探测。
+- UDP 弱检查（L1）可能提示当前平台无法观测端口关闭，此时显示为“未知”，既不算正常也不算故障。
+- 固定源端口（`src-port=`）被其他程序占用时可能无法识别。
+
 ## 用户
 
 **设置 › 用户** 管理账号：管理员拥有全部权限；操作员可以确认告警、编辑监控项和维护窗口；只读用户只能查看。操作员可以限定在部分 `$SCOPE` 段落（如 `region:north`、`bj`），只能修改这些段落里的内容，不能修改共享配置（通道、策略、配置文件原文）。
@@ -328,7 +338,7 @@ unagikuma agent [参数]             作为探测节点连接 master
 unagikuma node add|list|token|revoke
                                   管理探测节点及其令牌
 unagikuma check [文件]             校验 monitors.bind
-unagikuma serial [bump] [文件]     显示或增大序列号
+unagikuma serial [bump] [文件]     显示或增大版本号
 unagikuma probe <目标> [k=v]       立即执行一次检查，如 "udp 10.0.0.1:ntp"
 unagikuma keywords [方言]          列出 UDP 关键字
 unagikuma backup [--passphrase-file 文件] [--history]
@@ -373,5 +383,5 @@ unagikuma restore --passphrase-file pass.txt unagikuma-20261101-0300.ukbackup
 - **Ping 检查提示“通过 TCP 检查”或权限不足。** 本机不允许 Unagikuma 发送 ping。允许非特权 ping（`sudo sysctl -w net.ipv4.ping_group_range="0 2147483647"`）或给程序 `CAP_NET_RAW` 权限，见快速开始。
 - **脚本检查一直是暂停状态。** 启用时会列出缺少脚本的节点；**设置 › 检查脚本** 显示每个节点上的脚本情况。
 - **"监控数据无法写入"。** 数据目录持续 `storage.write-alert`（1 分钟）以上无法写入（磁盘已满、文件系统只读）。期间检查结果和事件暂存在内存中，空间恢复后会补写；界面顶部会显示红色横幅，`/healthz` 也会返回 `"status": "degraded"`。清理磁盘空间后，故障会自动恢复。
-- **改了 monitors.bind 但没生效。** 请增大序列号；有错误的文件不会生效，界面会显示错误所在的行。
+- **改了 monitors.bind 但没生效。** 请增大版本号；有错误的文件不会生效，界面会显示错误所在的行。
 - **备用节点没有状态副本。** **设置 › 节点** 显示它上次拉取主节点状态的时间和最近一次错误；失败后会在 `cluster.standby-retry` 后重试，每次配置变更后也会重新拉取。

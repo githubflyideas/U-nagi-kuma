@@ -16,6 +16,11 @@ func isConnRefused(err error) bool {
 	return errors.Is(err, syscall.ECONNREFUSED) || errors.Is(err, windows.WSAECONNRESET) || errors.Is(err, windows.WSAECONNREFUSED)
 }
 
+// isAddrInUse reports a local address (a fixed source port) already taken.
+func isAddrInUse(err error) bool {
+	return errors.Is(err, syscall.EADDRINUSE) || errors.Is(err, windows.WSAEADDRINUSE)
+}
+
 // enableUDPErrors turns SIO_UDP_CONNRESET back on (the Go runtime turns it
 // off for every UDP socket), so a closed port shows up as an error instead
 // of silence. It reports whether that worked.

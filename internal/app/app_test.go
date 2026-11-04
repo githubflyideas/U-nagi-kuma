@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"log/slog"
 	"os"
@@ -274,6 +275,28 @@ func TestSecretsResolution(t *testing.T) {
 	a.Store().Close()
 }
 
+// A new installation writes the $FILE header; saving from the UI raises
+// its revision in place and the file stays in the new form.
+func TestStarterRevisionBump(t *testing.T) {
+	dir := t.TempDir()
+	a, err := New(Options{DataDir: dir, Probe: (&fakeProbes{fail: map[string]bool{}}).run})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer a.Store().Close()
+	cur := a.Config()
+	text := cur.Text + "c IN CHANNEL log\n"
+	st, err := a.SaveConfig([]byte(text), cur.ETag(), "alice", "add a channel")
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(filepath.Join(dir, "monitors.bind"))
+	want := fmt.Sprintf("$FILE revision=%d master=unagikuma", st.Serial)
+	if st.Serial <= cur.Serial || !strings.Contains(string(b), want) || strings.Contains(string(b), "SOA") {
+		t.Fatalf("revision %d → %d:\n%s", cur.Serial, st.Serial, b)
+	}
+}
+
 func TestStarterConfig(t *testing.T) {
 	dir := t.TempDir()
 	a, err := New(Options{DataDir: dir, Probe: (&fakeProbes{fail: map[string]bool{}}).run})
@@ -282,7 +305,7 @@ func TestStarterConfig(t *testing.T) {
 	}
 	defer a.Store().Close()
 	b, err := os.ReadFile(filepath.Join(dir, "monitors.bind"))
-	if err != nil || !strings.Contains(string(b), "IN  SOA") {
+	if err != nil || !strings.Contains(string(b), "$FILE revision=") {
 		t.Fatalf("starter: %v %s", err, b)
 	}
 	if len(a.Config().Config.Monitors) != 0 {

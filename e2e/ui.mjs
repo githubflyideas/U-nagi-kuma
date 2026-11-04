@@ -93,11 +93,26 @@ await step('ticked monitors are deleted together', async () => {
   if (!(await api('/monitors')).items.some((m) => m.target === '127.0.0.1:1')) throw new Error('an unticked monitor was deleted');
 });
 
+await step('a second monitor of the same check offers to share it', async () => {
+  await page.goto(base + '/#/monitors/new');
+  await page.selectOption('form select', 'TCP');
+  await page.fill('form input[pattern]', 'same-check-b');
+  await page.fill('form input[placeholder="db.example.lan"]', '127.0.0.1');
+  await page.fill('form input[type=number]', '1');
+  await page.waitForSelector('.banner.warning:has-text("already check exactly this")', { timeout: 8000 });
+  await page.check('.banner.warning input[type=checkbox]');
+  await page.click('form button.primary');
+  await until('the sharing monitor to be saved', async () => (await api('/monitors')).items.some((m) => m.name === 'same-check-b'));
+  const text = (await api('/config')).text || '';
+  if (!/same-check-b\s.*share=yes/.test(text)) throw new Error('share=yes not written: ' + text.split('\n').filter((l) => l.includes('same-check-b')).join(' '));
+  if (errors.length) throw new Error(errors.join(' | '));
+});
+
 await step('configuration editor shows monitors.bind', async () => {
   await page.goto(base + '/#/config/edit');
   // Polled with evaluate: waitForFunction needs eval, which the UI's CSP forbids.
   await until('monitors.bind in the editor', () => page.evaluate(() =>
-    document.body.innerText.includes('IN SOA') || [...document.querySelectorAll('textarea')].some((t) => t.value.includes('IN SOA'))));
+    /IN SOA|\$FILE/.test(document.body.innerText) || [...document.querySelectorAll('textarea')].some((t) => /IN SOA|\$FILE/.test(t.value))));
 });
 
 await step('Nagios import previews', async () => {

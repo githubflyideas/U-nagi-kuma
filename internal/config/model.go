@@ -144,6 +144,7 @@ type Monitor struct {
 	CertCritical    int
 	Authorized      bool
 	Disabled        bool
+	Share           bool // share=yes: use the result of an identical check of another monitor
 
 	// Push monitors.
 	Period time.Duration

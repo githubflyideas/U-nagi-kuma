@@ -47,7 +47,7 @@ var paramOpts = map[string]bool{
 	"interval": true, "retry": true, "timeout": true, "attempts": true, "recover-attempts": true,
 	"degraded": true, "quorum": true, "on-insufficient": true, "on-filtered": true, "on-node-loss": true,
 	"scope": true, "policy": true, "partial-escalate": true, "disabled": true, "grace": true,
-	"parent": true, "nodes": true,
+	"parent": true, "nodes": true, "share": true,
 }
 
 var refRe = regexp.MustCompile(`\$\{(secret|env):([A-Za-z0-9_.-]+)\}`)
@@ -118,10 +118,20 @@ func (b *builder) build() {
 			d := s.directive()
 			pos := s.Tokens[0].Pos
 			// $VERSION may come first: it says how to read the rest.
-			if !soaSeen && d.Name != "VERSION" {
-				b.errf(pos, "soa_first", "the SOA record must come first")
+			if !soaSeen && d.Name != "VERSION" && d.Name != "FILE" {
+				b.errf(pos, "soa_first", "the file header ($FILE) must come first")
 			}
 			switch d.Name {
+			case "FILE":
+				if soaSeen {
+					b.errf(pos, "duplicate_soa", "only one file header ($FILE or SOA) is allowed")
+					continue
+				}
+				if recordSeen {
+					b.errf(pos, "soa_first", "the file header ($FILE) must come first")
+				}
+				soaSeen = true
+				b.fileHeader(d)
 			case "QUORUM", "DIALECT":
 				if p, dup := globalOnce[d.Name]; dup {
 					b.errf(pos, "duplicate_directive", "$%s already set at line %d", d.Name, p.Line)
@@ -208,18 +218,18 @@ func (b *builder) build() {
 		}
 		if r.Type == "SOA" {
 			if soaSeen {
-				b.errf(r.TypePos, "duplicate_soa", "only one SOA record is allowed")
+				b.errf(r.TypePos, "duplicate_soa", "only one file header ($FILE or SOA) is allowed")
 				continue
 			}
 			if recordSeen {
-				b.errf(r.TypePos, "soa_first", "the SOA record must come first")
+				b.errf(r.TypePos, "soa_first", "the file header must come first")
 			}
 			soaSeen = true
 			b.soa(r)
 			continue
 		}
 		if !soaSeen && !recordSeen {
-			b.errf(r.NamePos, "soa_first", "the SOA record must come first")
+			b.errf(r.NamePos, "soa_first", "the file header ($FILE) must come first")
 		}
 		recordSeen = true
 		if !ValidName(r.Name) {
@@ -259,7 +269,7 @@ func (b *builder) build() {
 		}
 	}
 	if !soaSeen {
-		b.errf(Pos{File: b.f.Path, Line: 1, Col: 1}, "missing_soa", "missing SOA record (@ IN SOA master. admin.example.com. ( serial interval retry timeout attempts ))")
+		b.errf(Pos{File: b.f.Path, Line: 1, Col: 1}, "missing_soa", "missing file header: start the file with $FILE revision=1")
 	}
 	ts, err := tunables.New(setOverrides)
 	if err != nil {
@@ -373,6 +383,81 @@ func dupKeys(opts []Opt) *Opt {
 }
 
 func lines(s *Stmt) [2]int { return [2]int{s.StartLine, s.EndLine} }
+
+// Header defaults: what a $FILE line leaves out.
+var headerDefaults = Defaults{Interval: time.Minute, Retry: 15 * time.Second, Timeout: 5 * time.Second, Attempts: 3}
+
+// fileHeader reads the file header:
+//
+//	$FILE revision=N [master=NAME] [admin=EMAIL] [interval=D] [retry=D] [timeout=D] [attempts=N]
+//
+// It holds what the older SOA record holds, by name; only the revision is
+// required.
+func (b *builder) fileHeader(d Directive) {
+	b.cfg.MName, b.cfg.Defaults = "unagikuma", headerDefaults
+	seen := map[string]bool{}
+	var timeoutPos Pos
+	for _, t := range d.Args {
+		k, v, ok := t.option()
+		if !ok {
+			b.errf(t.Pos, "syntax", "$FILE takes options: revision=N, and optionally master=, admin=, interval=, retry=, timeout=, attempts=")
+			continue
+		}
+		if seen[k] {
+			b.errf(t.Pos, "duplicate_option", "option %s given twice", k)
+			continue
+		}
+		seen[k] = true
+		switch k {
+		case "revision":
+			n, err := strconv.ParseUint(v, 10, 32)
+			if err != nil || n == 0 {
+				b.errf(t.Pos, "invalid_serial", "revision must be an integer between 1 and 4294967295")
+			}
+			b.cfg.Serial = uint32(n)
+		case "master":
+			if !ValidName(v) {
+				b.errf(t.Pos, "invalid_name", "master: invalid node name %q", v)
+				continue
+			}
+			b.cfg.MName = v
+		case "admin":
+			b.cfg.RName = v
+		case "interval", "retry", "timeout":
+			dur, err := tunables.ParseDuration(v)
+			if err != nil || dur <= 0 {
+				b.errf(t.Pos, "invalid_duration", "invalid duration %q", v)
+				continue
+			}
+			switch k {
+			case "interval":
+				b.cfg.Defaults.Interval = dur
+			case "retry":
+				b.cfg.Defaults.Retry = dur
+			default:
+				b.cfg.Defaults.Timeout, timeoutPos = dur, t.Pos
+			}
+		case "attempts":
+			n, err := strconv.Atoi(v)
+			if err != nil || n < 1 || n > 100 {
+				b.errf(t.Pos, "invalid_value", "attempts must be an integer between 1 and 100")
+				continue
+			}
+			b.cfg.Defaults.Attempts = n
+		default:
+			b.errf(t.Pos, "unknown_option", "$FILE has no option %s (revision, master, admin, interval, retry, timeout, attempts)", k)
+		}
+	}
+	if !seen["revision"] {
+		b.errf(d.Stmt.Tokens[0].Pos, "invalid_serial", "$FILE needs revision=N (increase it after editing by hand)")
+	}
+	if df := b.cfg.Defaults; df.Timeout >= df.Interval {
+		if timeoutPos.Line == 0 {
+			timeoutPos = d.Stmt.Tokens[0].Pos
+		}
+		b.warnf(timeoutPos, "timeout_ge_interval", "timeout %s is not shorter than the interval %s", df.Timeout, df.Interval)
+	}
+}
 
 func (b *builder) soa(r Record) {
 	b.cfg.MName = strings.TrimSuffix(r.Target, ".")
@@ -675,16 +760,19 @@ func (b *builder) monitor(r Record, defaults []Opt, scope *scopeDir) {
 	} else if scope != nil {
 		m.Nodes = b.expandNodes(scope.nodes, scope.pos)
 	}
-	for _, k := range []string{"authorized", "disabled"} {
+	for _, k := range []string{"authorized", "disabled", "share"} {
 		if v, ok := m.Opts[k]; ok {
 			x, err := parseBoolOpt(v)
 			if err != nil {
 				b.errf(pos(k), "invalid_value", "%s: %v", k, err)
 			}
-			if k == "authorized" {
+			switch k {
+			case "authorized":
 				m.Authorized = x
-			} else {
+			case "disabled":
 				m.Disabled = x
+			default:
+				m.Share = x
 			}
 		}
 	}
@@ -1279,6 +1367,7 @@ func (b *builder) crossRefs() {
 		}
 	}
 	b.checkParents()
+	b.checkSameChecks()
 	for _, n := range b.cfg.Nodes {
 		if b.cfg.FindPolicy(n.Policy) == nil {
 			b.errf(n.Pos, "unknown_policy", "node %s: policy %q is not defined", n.Name, n.Policy)
@@ -1338,6 +1427,72 @@ func ClassifyChange(old, new *Monitor) ChangeClass {
 		return ChangeMeta
 	}
 	return ChangeNone
+}
+
+// CheckKey identifies what a monitor checks and from where: the type, the
+// target (host names in lower case), the timeout, the options that change
+// the check itself and the nodes. Two monitors with the same key send the
+// same requests and judge the answers the same way; "" for push monitors.
+func (m *Monitor) CheckKey() string {
+	if m.Type == "PUSH" {
+		return ""
+	}
+	target := m.Target
+	switch {
+	case m.UDP != nil:
+		target = strings.ToLower(m.UDP.Host) + "|" + strconv.Itoa(m.UDP.Port) + "|" + m.UDP.Template
+	case m.Type == "HTTP":
+		if u, err := url.Parse(m.Target); err == nil {
+			u.Scheme, u.Host = strings.ToLower(u.Scheme), strings.ToLower(u.Host)
+			target = u.String()
+		}
+	case m.Type == "TCP":
+		if h, p, err := net.SplitHostPort(m.Target); err == nil {
+			target = strings.ToLower(h) + "|" + p
+		}
+	case m.Type == "PING":
+		target = strings.ToLower(m.Target)
+	}
+	var opts []string
+	for k, v := range m.Opts {
+		if metaOpts[k] || paramOpts[k] || k == "authorized" {
+			continue
+		}
+		opts = append(opts, k+"="+v)
+	}
+	sort.Strings(opts)
+	nodes := append([]string(nil), m.Nodes...)
+	sort.Strings(nodes)
+	return strings.Join([]string{m.Type, target, m.Timeout.String(), strings.Join(opts, "\x00"), strings.Join(nodes, ",")}, "\x01")
+}
+
+// checkSameChecks points out monitors that check exactly what an earlier
+// one checks: the target gets every request twice. share=yes on the later
+// one uses one result for both; keeping both is fine when they are meant
+// to differ only in thresholds or notifications.
+func (b *builder) checkSameChecks() {
+	first := map[string]*Monitor{}
+	shared := map[string]bool{}
+	for _, m := range b.cfg.Monitors {
+		key := m.CheckKey()
+		if key == "" || m.Disabled {
+			continue
+		}
+		prev := first[key]
+		if prev == nil {
+			first[key] = m
+			continue
+		}
+		shared[key] = true
+		if !m.Share {
+			b.warnf(m.Pos, "same_check", "%s checks exactly what %s (line %d) checks: add share=yes to use one check for both", m.Name, prev.Name, prev.Pos.Line)
+		}
+	}
+	for _, m := range b.cfg.Monitors {
+		if m.Share && !m.Disabled && !shared[m.CheckKey()] {
+			b.warnf(m.Pos, "share_unused", "%s: share=yes has no effect, no other monitor checks exactly the same thing", m.Name)
+		}
+	}
 }
 
 // checkParents verifies parent= references: they must name other monitors
