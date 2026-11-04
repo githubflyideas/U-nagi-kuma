@@ -185,7 +185,10 @@ function Shell({ user, onLogout, onLang }) {
   // A single machine keeps nodes under Settings; with remote nodes they
   // get their own place in the sidebar.
   // A team member works with their teams' monitors only.
-  const nav = NAV.filter(([path]) => (path !== '/nodes' || (ov.data && ov.data.layout === 'cluster')) && (!me.teams || TEAM_NAV.has(path)));
+  // A team's manager also gets Settings, with just their teams in it.
+  const manages = me.teams && Object.values(me.teams).includes('manager');
+  const nav = NAV.filter(([path]) => (path !== '/nodes' || (ov.data && ov.data.layout === 'cluster'))
+    && (!me.teams || TEAM_NAV.has(path) || (path === '/settings' && manages)));
   return html`<div class=${'shell' + (mini ? ' mini' : '')}>
     <aside class=${'side' + (open ? ' open' : '')}>
       <a class="brand" href="#/"><${Logo} /><div>Unagikuma</div></a>

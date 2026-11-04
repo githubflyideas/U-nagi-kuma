@@ -163,6 +163,43 @@ await step('a team member sees only their team', async () => {
   if (terr.length) throw new Error(terr.join(' | '));
 });
 
+await step('a team manager edits only their own team', async () => {
+  const ok = await page.evaluate(async () => {
+    const csrf = (await (await fetch('/api/v1/session')).json()).csrf;
+    const h = { 'Content-Type': 'application/json', 'X-Unagikuma-CSRF': csrf };
+    const u = await fetch('/api/v1/users', { method: 'POST', headers: h, body: JSON.stringify({ username: 'teammgr', password: 'team-pass-2', role: 'viewer' }) });
+    const a = await fetch('/api/v1/teams', { method: 'POST', headers: h, body: JSON.stringify({ name: 'webteam', managers: ['admin', 'teammgr'], operators: ['teamop'] }) });
+    const b = await fetch('/api/v1/teams', { method: 'POST', headers: h, body: JSON.stringify({ name: 'dbteam', managers: ['admin'] }) });
+    return u.ok && a.ok && b.ok;
+  });
+  if (!ok) throw new Error('could not set up the team manager');
+  const mctx = await browser.newContext({ viewport: { width: 1366, height: 900 }, locale: 'en-US' });
+  const mp = await mctx.newPage();
+  const merr = [];
+  mp.on('pageerror', (e) => merr.push(e.message));
+  await mp.goto(base);
+  await mp.fill('input[autocomplete=username]', 'teammgr');
+  await mp.fill('input[autocomplete=current-password]', 'team-pass-2');
+  await mp.click('.auth .btn.primary');
+  await mp.waitForSelector('nav.nav');
+  const r = await mp.evaluate(async () => {
+    const csrf = (await (await fetch('/api/v1/session')).json()).csrf;
+    const h = { 'Content-Type': 'application/json', 'X-Unagikuma-CSRF': csrf };
+    const list = (await (await fetch('/api/v1/teams')).json()).items.map((t) => t.name).join(',');
+    const own = (await fetch('/api/v1/teams', { method: 'POST', headers: h, body: JSON.stringify({ name: 'webteam', title: 'Web', managers: ['admin', 'teammgr'], operators: ['teamop'] }) })).status;
+    const other = (await fetch('/api/v1/teams', { method: 'POST', headers: h, body: JSON.stringify({ name: 'dbteam', title: 'x', managers: ['teammgr'] }) })).status;
+    return { list, own, other };
+  });
+  if (r.list !== 'webteam') throw new Error('teams listed: ' + r.list);
+  if (r.own !== 200) throw new Error('saving own team: ' + r.own);
+  if (r.other < 400) throw new Error('saving another team: ' + r.other);
+  await mp.goto(base + '/#/settings');
+  await mp.waitForSelector('td:has-text("webteam")', { timeout: 8000 });
+  if ((await mp.content()).includes('dbteam')) throw new Error('another team is shown');
+  await mctx.close();
+  if (merr.length) throw new Error(merr.join(' | '));
+});
+
 await step('configuration editor shows monitors.bind', async () => {
   await page.goto(base + '/#/config/edit');
   // Polled with evaluate: waitForFunction needs eval, which the UI's CSP forbids.

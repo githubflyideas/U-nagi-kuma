@@ -297,6 +297,7 @@ func (a *App) engineConfig(cfg *config.Config) engine.Config {
 		}
 		ec.Policies[p.Name] = ps
 	}
+	a.addManagerNotices(cfg, &ec)
 	for _, n := range cfg.Nodes {
 		if n.Name != cfg.MName {
 			continue

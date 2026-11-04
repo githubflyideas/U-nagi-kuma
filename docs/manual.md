@@ -322,6 +322,13 @@ Teams are isolated from each other. A member of one or more teams (who is not an
 - What their role in a team is decides what they may do there; their account role applies only to accounts in no team. API tokens are made by administrators and are not limited to a team.
 - Names are unique across the whole file, so a name another team uses cannot be taken again.
 
+Notifications follow the teams too:
+
+- A team's monitors use the team's `policy=` unless they name their own (`policy=` on the record or through `$DEFAULT`).
+- When a monitor of the shared infrastructure fails, its usual policy is notified, and so are the managers of the teams it affects: the teams with monitors that depend on it (`parent=`, directly or further up), or every team when none does. Each manager is reached at their own address through the channels chosen under **Notify via** in their contact entry, which must be linked to their login. This goes out as an escalation, right away: it is capped and logged like one, and not sent once the problem is acknowledged; when the problem is over, they hear that too. **Settings › Teams** names managers who cannot be reached.
+- Whoever an escalation step told about a problem also gets its recovery notice (when the policy sends recoveries).
+- A team's managers see **Settings › Teams** and change their own team's people, title and description; creating and deleting teams and changing a team's policy stay with administrators.
+
 **Settings › Audit** lists every change to accounts, roles and sections (before and after), tokens, secrets (names only), nodes and the configuration, with the person or token, the section, and the source address; configuration edits made in the file on disk are listed too (each record as it was and as it is now), and so are sign-ins and failed logins, backups, restores, imports, password resets, and what the system did by itself (holds during a local outage and their release, restarts, crashes, clock jumps, upgrades). High-risk entries are highlighted and can be filtered by risk, person, source address and time. `GET /api/v1/audit?actor=&action=&area=` serves the same to administrators; entries are kept for `retention.audit` (two years).
 
 The log cannot be changed quietly: each entry carries the hash of the one before it. The page's **Check integrity** button and `unagikuma audit verify` say whether an entry was changed, inserted or removed, and which. `verify` prints the newest entry's hash; keep it elsewhere and pass it later with `--head HASH` to prove nothing was cut off the end. `unagikuma audit export --format csv|json [--since 30d] [--high]` (or the page's export buttons) writes the log out.

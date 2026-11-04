@@ -1500,8 +1500,15 @@ func (b *builder) checkTeams() {
 		}
 	}
 	for _, m := range b.cfg.Monitors {
-		if m.Team != "" && b.cfg.FindTeam(m.Team) == nil {
+		t := b.cfg.FindTeam(m.Team)
+		if m.Team != "" && t == nil {
 			b.errf(m.Pos, "unknown_team", "%s: team %q is not defined (add: %s IN TEAM managers=…)", m.Name, m.Team, m.Team)
+		}
+		// A team's monitors use its policy unless they name their own
+		// (policy= on the record or through $DEFAULT); the team is more
+		// specific than the $SCOPE section they are written in.
+		if _, own := m.Opts["policy"]; t != nil && t.Policy != "" && !own {
+			m.Policy = t.Policy
 		}
 	}
 }

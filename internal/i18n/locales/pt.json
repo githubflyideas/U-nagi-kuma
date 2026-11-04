@@ -1493,5 +1493,6 @@
 "ui.dir.need_notify": "Escolha pelo menos um canal para contatar esta pessoa.",
 "ui.dir.reach.no_channel": "Nenhuma forma de contato escolhida",
 "ui.dir.reach.no_address": "Falta o endereço de que o canal precisa",
-"ui.dir.reach.channel_gone": "O canal escolhido não existe mais"
+"ui.dir.reach.channel_gone": "O canal escolhido não existe mais",
+"ui.team.unreachable": "Não pode ser avisado de falhas da infraestrutura compartilhada: {names} (vincule um contato ao login e escolha “Notificar por” em Alertas › Contatos)"
 }

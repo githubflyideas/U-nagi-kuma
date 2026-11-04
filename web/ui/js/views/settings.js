@@ -1,7 +1,7 @@
 // Settings: general, tunables, API tokens, secrets, keywords, system.
 import { html, useState, useEffect, useMemo } from '../lib.js';
 import { t, dur, fmtTime, currentLang, langList } from '../i18n.js';
-import { get, post, put, del, setCSRF, getCSRF } from '../api.js';
+import { get, post, put, del, setCSRF, getCSRF, me } from '../api.js';
 import { Nodes } from './nodes.js';
 import { useFetch, Loading, ErrorBox, Empty, Field, Card, Modal, Copy, Ago, bytes, toast, toastError, errText, confirmDialog, useDocTitle } from '../ui.js';
 
@@ -196,19 +196,20 @@ function Teams() {
     <input type="text" class="ltr" list="team-users" value=${form[k]} onInput=${(e) => setForm({ ...form, [k]: e.target.value })} placeholder="li, wang" /><//>`;
   return html`<div class="col" style=${{ gap: '12px' }}>
     <div class="row"><p class="muted small spacer" style=${{ margin: 0 }}>${t('ui.team.intro')}</p>
-      <button class="btn primary" onClick=${() => setForm({ name: '', title: '', description: '', policy: '', managers: '', operators: '', viewers: '' })}>${t('ui.team.add')}</button></div>
+      ${!me.teams && html`<button class="btn primary" onClick=${() => setForm({ name: '', title: '', description: '', policy: '', managers: '', operators: '', viewers: '' })}>${t('ui.team.add')}</button>`}</div>
     <div class="card"><div class="bd flush tbl-wrap">
       ${!list.data.items.length ? html`<${Empty}>${t('ui.team.none')}<//>` : html`<table class="tbl">
         <thead><tr><th>${t('ui.name')}</th><th>${t('ui.team.managers')}</th><th>${t('ui.team.operators')}</th><th>${t('ui.team.viewers')}</th><th>${t('ui.team.monitors')}</th><th></th></tr></thead>
         <tbody>${list.data.items.map(tm => html`<tr>
           <td><div class="name">${tm.title}</div><div class="sub mono ltr">${tm.name}${tm.policy ? ' · ' + tm.policy : ''}</div>
-            ${tm.unknown && tm.unknown.length > 0 && html`<div class="small warn-text" title=${t('ui.team.unknown_hint')}>${t('ui.team.unknown', { names: tm.unknown.join(', ') })}</div>`}</td>
+            ${tm.unknown && tm.unknown.length > 0 && html`<div class="small warn-text" title=${t('ui.team.unknown_hint')}>${t('ui.team.unknown', { names: tm.unknown.join(', ') })}</div>`}
+            ${tm.unreachable && tm.unreachable.length > 0 && html`<div class="small err-text"><span class="rdot"></span> ${t('ui.team.unreachable', { names: tm.unreachable.join(', ') })}</div>`}</td>
           <td class="small">${people(tm.managers)}</td>
           <td class="small">${people(tm.operators)}</td>
           <td class="small">${people(tm.viewers)}</td>
           <td><a href=${'#/monitors?q=' + encodeURIComponent('team:' + tm.name)}>${tm.monitors}</a></td>
-          <td class="right nowrap"><button class="btn sm" onClick=${() => edit(tm)}>${t('ui.edit')}</button>
-            ${' '}<button class="btn sm danger" onClick=${() => remove(tm)}>${t('ui.delete')}</button></td>
+          <td class="right nowrap">${(!me.teams || me.teams[tm.name] === 'manager') && html`<button class="btn sm" onClick=${() => edit(tm)}>${t('ui.edit')}</button>`}
+            ${!me.teams && html`${' '}<button class="btn sm danger" onClick=${() => remove(tm)}>${t('ui.delete')}</button>`}</td>
         </tr>`)}</tbody></table>`}
     </div></div>
     ${form && html`<${Modal} title=${form.edit ? form.name : t('ui.team.add')} onClose=${() => setForm(null)}>
@@ -220,7 +221,7 @@ function Teams() {
         ${field('operators', t('ui.team.operators'), t('ui.team.operators_hint'))}
         ${field('viewers', t('ui.team.viewers'), t('ui.team.viewers_hint'))}
         <${Field} label=${t('ui.policy')} hint=${t('ui.team.policy_hint')}>
-          <select value=${form.policy} onChange=${(e) => setForm({ ...form, policy: e.target.value })}>
+          <select value=${form.policy} onChange=${(e) => setForm({ ...form, policy: e.target.value })} disabled=${!!me.teams}>
             <option value="">–</option>
             ${((pols.data) || []).map(p => html`<option value=${p.name}>${p.name}</option>`)}
           </select><//>
@@ -596,6 +597,9 @@ const TABS = ['general', 'nodes', 'users', 'teams', 'audit', 'scripts', 'tunable
 
 export function Settings({ tab, user }) {
   useDocTitle(t('ui.nav.settings'));
+  // A team's manager only has their teams here.
+  if (me.teams) tab = 'teams';
+  const tabs = me.teams ? ['teams'] : TABS;
   let body;
   switch (tab) {
     case 'nodes': body = html`<${Nodes} embedded />`; break;
@@ -613,7 +617,7 @@ export function Settings({ tab, user }) {
     default: body = html`<${General} />`;
   }
   return html`<div class="page">
-    <div class="tabs">${TABS.map(k => html`<a href=${'#/settings/' + k} class=${tab === k ? 'on' : ''}>${t('ui.set.tab.' + k)}</a>`)}</div>
+    <div class="tabs">${tabs.map(k => html`<a href=${'#/settings/' + k} class=${tab === k ? 'on' : ''}>${t('ui.set.tab.' + k)}</a>`)}</div>
     ${body}
   </div>`;
 }

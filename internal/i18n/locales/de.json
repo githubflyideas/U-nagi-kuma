@@ -1493,5 +1493,6 @@
 "ui.dir.need_notify": "Wählen Sie mindestens einen Kanal, über den diese Person erreicht wird.",
 "ui.dir.reach.no_channel": "Kein Weg der Erreichbarkeit gewählt",
 "ui.dir.reach.no_address": "Die Adresse, die der Kanal braucht, fehlt",
-"ui.dir.reach.channel_gone": "Der gewählte Kanal existiert nicht mehr"
+"ui.dir.reach.channel_gone": "Der gewählte Kanal existiert nicht mehr",
+"ui.team.unreachable": "Kann bei Ausfällen der gemeinsamen Infrastruktur nicht benachrichtigt werden: {names} (unter Alarmierung › Kontakte einen Kontakt mit dem Login verknüpfen und „Benachrichtigen über“ wählen)"
 }
