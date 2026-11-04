@@ -42,15 +42,19 @@ export function useFetch(fn, deps) {
   return { ...state, reload: load, setData: (d) => setState(s => ({ ...s, data: typeof d === 'function' ? d(s.data) : d })) };
 }
 
-// useLive calls f (debounced) on the given live event types.
+// useLive calls f on the given live event types, at most once per delay:
+// the first event of a burst starts the wait and later ones join it. A
+// wait that restarted on every event would never end while events keep
+// coming (critical monitors report every round), and the page would stop
+// updating on exactly the busy installations that need it.
 export function useLive(types, f, delay = 400) {
   const ref = useRef(f);
   ref.current = f;
   useEffect(() => {
     let timer = null;
     const fire = () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => ref.current(), delay);
+      if (timer) return;
+      timer = setTimeout(() => { timer = null; ref.current(); }, delay);
     };
     const offs = [...types, 'reset'].map(tp => onLive(tp, fire));
     return () => { clearTimeout(timer); offs.forEach(o => o()); };

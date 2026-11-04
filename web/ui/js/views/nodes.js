@@ -235,7 +235,8 @@ function SiteLocal() {
   };
   return html`<div class="card"><div class="hd"><h2>${t('ui.sl.title')}</h2></div><div class="bd form">
     <p class="small muted" style=${{ margin: 0 }}>${t('ui.sl.hint')}</p>
-    <textarea class="ltr mono" rows="6" value=${cur} onInput=${(e) => setText(e.target.value)} aria-label=${t('ui.sl.title')}></textarea>
+    <textarea class="ltr mono" rows="6" value=${cur} onInput=${(e) => setText(e.target.value)} aria-label=${t('ui.sl.title')}
+      placeholder=${'$FILE revision=1\nrouter IN PING 192.168.1.1'}></textarea>
     ${diags && html`<ul class="small err-text">${diags.map(x => html`<li>${x.pos ? x.pos.line + ': ' : ''}${x.message || x.msg}</li>`)}</ul>`}
     <div class="row"><div class="spacer"></div><button class="btn primary" disabled=${busy || text === null} onClick=${save}>${t('ui.save')}</button></div>
   </div></div>`;
