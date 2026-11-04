@@ -316,7 +316,8 @@ func runL1(ctx context.Context, p udpPlan, o opts, payload []byte) Result {
 	if o.str("host-check", "on") != "off" {
 		alive = make(chan Result, 1)
 		ip := u.c.RemoteAddr().(*net.UDPAddr).AddrPort().Addr().Unmap()
-		go func() { alive <- hostCheck(ctx, ip) }()
+		check := hostCheck
+		go func() { alive <- check(ctx, ip) }()
 	}
 	_, lat, err := u.exchange(ctx, payload, 0, func([]byte) bool { return true })
 	ev := newEvidence(u.peer, payload, nil)

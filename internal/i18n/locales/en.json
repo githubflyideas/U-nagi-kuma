@@ -1460,5 +1460,6 @@
 "ui.dv.versions": "version {v} (term {term}), taken over with {base}",
 "ui.dv.view": "View",
 "ui.dv.dismiss": "Dismiss",
-"reason.inconclusive": "Inconclusive: no reply, and the host does not answer either"
+"reason.inconclusive": "Inconclusive: no reply, and the host does not answer either",
+"reason.port_busy": "Source port in use on this node"
 }

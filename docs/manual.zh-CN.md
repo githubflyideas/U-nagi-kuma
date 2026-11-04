@@ -104,6 +104,7 @@ main     IN STATUSPAGE "服务状态" select="group:public"
 - HTTPS 检查以及带 `tls=yes` 的 TCP 检查会同时监控证书：剩余不到 `probe.cert-warn-days`（62）天为降级，不到 `probe.cert-critical-days`（7）天为故障；已过期的证书一律判为故障，设置了 `insecure=yes` 也一样。监控项上的 `cert-days=`、`cert-critical-days=` 可单独设置阈值（写 0 表示关闭）。
 - PING 检查每次发送 3 个请求，未回复的超过 `probe.ping-loss`（50%）即判为故障；丢包较少时显示为性能下降。监控项上的 `loss=` 可单独设置阈值（`loss=0` 表示只有全部丢失才算故障）。
 - 只能证明端口没有关闭的 UDP 检查（L1，标记为“弱”：`SYSLOG`、`snmptrap`、未知端口），只有在主机本身能 ping 通（或 TCP 探测有响应）时，才把“没有回复”算作“大概率开放”。主机也不响应时显示为“未知”而不是正常；主机被报告不可达时判为故障。对完全不响应任何探测的主机，可写 `host-check=off`，只凭沉默判断。
+- 每个节点上，对同一地址的 ping 和 UDP 弱检查至少间隔 `probe.same-target-gap`（1 秒）开始，因为设备会限制 ICMP 回复的数量，同时发出的一批请求可能被当成丢包或端口开放。使用相同固定源端口（`src-port=`）的检查会排队执行；端口一直被占用或被其他程序占用时，该轮检查为“未知”，不会判为故障。
 - `DOMAIN` 监控域名注册的到期时间，通过 RDAP（没有 RDAP 时用 WHOIS）向注册局查询，默认每 6 小时检查一次，最频繁每小时一次。剩余不到 `days=`（30）天为降级，不到 `critical-days=`（7）天为故障；注册局都无法查询时为 UNKNOWN，不会判为故障。**监控 › 到期时间** 按到期先后列出所有域名和 TLS 证书。
 - `unagikuma keywords` 列出所有 UDP 关键字及其检查深度。
 - 每天 10:00（`notify.daily-report-at`）发送状态日报：列出宕机与正常的主机，以及所有异常服务；在 **通告和状态 › 状态日报** 中可预览和立即发送。

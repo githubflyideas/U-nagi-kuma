@@ -1450,5 +1450,6 @@
 "ui.dv.versions": "버전 {v}(임기 {term}), 인수 시 {base}",
 "ui.dv.view": "보기",
 "ui.dv.dismiss": "닫기",
-"reason.inconclusive": "판단 불가: 응답이 없고 호스트도 응답하지 않음"
+"reason.inconclusive": "판단 불가: 응답이 없고 호스트도 응답하지 않음",
+"reason.port_busy": "이 노드에서 출발지 포트가 사용 중"
 }

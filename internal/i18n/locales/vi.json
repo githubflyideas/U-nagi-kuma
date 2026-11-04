@@ -1450,5 +1450,6 @@
 "ui.dv.versions": "phiên bản {v} (nhiệm kỳ {term}), tiếp quản với {base}",
 "ui.dv.view": "Xem",
 "ui.dv.dismiss": "Bỏ qua",
-"reason.inconclusive": "Không xác định được: không có phản hồi và máy chủ cũng không trả lời"
+"reason.inconclusive": "Không xác định được: không có phản hồi và máy chủ cũng không trả lời",
+"reason.port_busy": "Cổng nguồn đang được dùng trên nút này"
 }

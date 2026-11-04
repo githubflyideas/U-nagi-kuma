@@ -1450,5 +1450,6 @@
 "ui.dv.versions": "版本 {v}（任期 {term}），接管时为 {base}",
 "ui.dv.view": "查看",
 "ui.dv.dismiss": "忽略",
-"reason.inconclusive": "无法判断：没有回复，主机也不响应"
+"reason.inconclusive": "无法判断：没有回复，主机也不响应",
+"reason.port_busy": "本节点的源端口被占用"
 }

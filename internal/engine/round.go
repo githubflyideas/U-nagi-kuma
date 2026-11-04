@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/githubflyideas/unagikuma/internal/keywords"
 	"github.com/githubflyideas/unagikuma/internal/netscope"
 	"github.com/githubflyideas/unagikuma/internal/probe"
 )
@@ -43,6 +44,35 @@ type gateRun struct {
 	obs   []Observation
 }
 
+// spacingKey groups the checks whose packets the target answers from a
+// budget of its own: pings, and weak UDP checks that hear a closed port
+// only through ICMP port unreachable (and ping the host alongside).
+// Network devices and hosts rate-limit those replies; checks of one
+// address that start together (a host watched by several teams, a ping
+// next to a few UDP ports) can lose them and show loss or a closed port
+// as open. "" for every other check.
+func spacingKey(m *MonitorSpec) string {
+	if m.Address == "" {
+		return ""
+	}
+	if m.Ping || strings.EqualFold(m.Probe.Type, "UDP") && m.Depth == string(keywords.L1) {
+		return strings.ToLower(m.Address)
+	}
+	return ""
+}
+
+// spaceAfter records that a ping-like round to key started now.
+func (e *Engine) spaceAfter(key string, now time.Time) {
+	gap := e.cfg.Tunables.Duration("probe.same-target-gap")
+	if key == "" || gap <= 0 {
+		return
+	}
+	if e.nextStart == nil || len(e.nextStart) > 4096 {
+		e.nextStart = map[string]time.Time{}
+	}
+	e.nextStart[key] = now.Add(gap)
+}
+
 // dispatchDue starts the rounds that are due, within the concurrency and
 // packet-rate budgets.
 func (e *Engine) dispatchDue(ctx context.Context, wg *sync.WaitGroup) {
@@ -53,8 +83,15 @@ func (e *Engine) dispatchDue(ctx context.Context, wg *sync.WaitGroup) {
 		if m == nil || rt == nil || m.Paused || m.Push || rt.Running {
 			continue
 		}
+		key := spacingKey(m)
+		if t, busy := e.nextStart[key]; key != "" && busy && now.Before(t) {
+			// Another check of this address started a moment ago.
+			e.sched.Set(name, t)
+			continue
+		}
 		if !e.participates(m) {
 			// Agents only: no local probe, no local budget.
+			e.spaceAfter(key, now)
 			due := rt.Due
 			if due.IsZero() {
 				due = now
@@ -81,6 +118,7 @@ func (e *Engine) dispatchDue(ctx context.Context, wg *sync.WaitGroup) {
 			continue
 		}
 		e.pps.Allow(now)
+		e.spaceAfter(key, now)
 		due := rt.Due
 		if due.IsZero() {
 			due = now

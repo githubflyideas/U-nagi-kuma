@@ -1450,5 +1450,6 @@
 "ui.dv.versions": "バージョン {v}（任期 {term}）、引き継ぎ時 {base}",
 "ui.dv.view": "表示",
 "ui.dv.dismiss": "破棄",
-"reason.inconclusive": "判定不能：応答がなく、ホストも応答しません"
+"reason.inconclusive": "判定不能：応答がなく、ホストも応答しません",
+"reason.port_busy": "このノードで送信元ポートが使用中"
 }

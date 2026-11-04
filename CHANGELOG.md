@@ -4,9 +4,11 @@
 
 **Changed**
 - A UDP check that only proves the port is not closed (L1: `SYSLOG`, `snmptrap`, unknown ports) no longer counts silence as OK on its own: a host that is switched off cannot say the port is closed either. The host is pinged alongside (or knocked on over TCP without ping permission); silence is OK while it answers, UNKNOWN when it does not, and a failure when it is reported unreachable. `host-check=off` keeps the old reading.
+- Pings and weak UDP checks of the same address start at least a second apart on each node (`probe.same-target-gap`). A host watched by several people, or a ping next to a few UDP ports, no longer gets them in one burst, which devices answer only in part.
 - PING checks fail when more than half of their echo requests go unanswered (`probe.ping-loss`, 50%); before, only a total loss failed. `loss=` on a monitor still wins, and `loss=0` keeps the old behaviour.
 
 **Fixed**
+- Two UDP checks with the same fixed source port (`src-port=`) at the same time: the second could not bind it and failed. They now take turns; a port that stays busy, or that another program holds, leaves that round UNKNOWN.
 - A PING check with `size=8` reported an internal error when an ICMP error came back.
 - A UDP reply that only came after a retransmission had its latency measured from the retransmission, so a service that needed a second try looked fast. It now counts from the first request.
 - The UDP echo check failed on a stray datagram that arrived before the echo; it now waits for the echo and fails only if nothing else came.

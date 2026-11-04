@@ -51,6 +51,7 @@ const (
 	ReasonClockSkew         = "clock_skew"           // abstain (engine): this node's clock is off, time-based checks cannot judge
 	ReasonExpiring          = "expiring"             // fail: the domain's registration expires (or expired)
 	ReasonRegistry          = "registry_unavailable" // abstain: no registry answered the expiry lookup
+	ReasonPortBusy          = "port_busy"            // abstain, local: a fixed source port (src-port=) is taken on this node
 	ReasonInconclusive      = "inconclusive"         // abstain: no answer either way (a silent UDP port on a host that does not answer)
 	ReasonConfig            = "config_error"         // abstain: spec invalid at run time
 	ReasonInternal          = "internal_error"       // abstain
@@ -91,7 +92,7 @@ func LocalAbstain(reason string) bool {
 	switch reason {
 	case ReasonPrivilege, ReasonPlatform, ReasonSecretUnavailable, ReasonLocalRateLimited,
 		ReasonIsolated, ReasonLocalNetwork, ReasonLocalSuspend, ReasonLocalStall,
-		ReasonLocalDNS, ReasonClockSkew, ReasonNoRoute, ReasonConfig, ReasonInternal:
+		ReasonLocalDNS, ReasonClockSkew, ReasonNoRoute, ReasonConfig, ReasonInternal, ReasonPortBusy:
 		return true
 	}
 	return false

@@ -1450,5 +1450,6 @@
 "ui.dv.versions": "versi {v} (masa {term}), diambil alih dengan {base}",
 "ui.dv.view": "Lihat",
 "ui.dv.dismiss": "Abaikan",
-"reason.inconclusive": "Tidak dapat dipastikan: tidak ada balasan, dan host juga tidak menjawab"
+"reason.inconclusive": "Tidak dapat dipastikan: tidak ada balasan, dan host juga tidak menjawab",
+"reason.port_busy": "Port sumber sedang dipakai di node ini"
 }

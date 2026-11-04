@@ -207,11 +207,14 @@ type Engine struct {
 	unsent       []unsentNote            // system notices that could not be sent (told after a local outage)
 	folded       map[string]*backstopBuf // per policy: alerts the backstop held back
 
-	sem     chan struct{}
-	stats   selfStats
-	pps     *ratelimit.Bucket
-	results chan roundResult
-	votes   chan RemoteVote
+	sem   chan struct{}
+	stats selfStats
+	pps   *ratelimit.Bucket
+	// nextStart is when the next ping-like round to an address may start
+	// (probe.same-target-gap); loop goroutine only.
+	nextStart map[string]time.Time
+	results   chan roundResult
+	votes     chan RemoteVote
 
 	rounds   map[string]*pendingRound // open cluster rounds by id
 	nodes    map[string]*nodeRuntime  // agents by name

@@ -133,6 +133,7 @@ var defs = []Def{
 
 	// ---- probe safety ----
 	{Key: "probe.ping-loss", Kind: Int, Default: "50", Min: "0", Max: "100", Desc: "PING checks fail when more than this percentage of their echo requests go unanswered, unless the monitor sets loss= (0 = off: only a total loss fails; any loss still marks the check DEGRADED)", DescZH: "PING 检查中未收到回复的请求占比超过此百分比时判为故障（监控项可用 loss= 覆盖；0 关闭：只有全部丢失才判故障，有丢包仍显示为性能下降）"},
+	{Key: "probe.same-target-gap", Kind: Duration, Default: "1s", Min: "0s", Max: "1m", Desc: "minimum time between the start of two pings or weak UDP checks of the same address on a node, so that the target's limit on ICMP replies does not fake loss or open ports (0 = off)", DescZH: "同一节点上对同一地址的两次 ping 或 UDP 弱检查之间的最短间隔，避免目标对 ICMP 回复的限速造成假丢包或把关闭的端口误判为开放（0 关闭）"},
 	{Key: "probe.push-grace", Kind: Duration, Default: "5m", Min: "0s", Max: "7d", Desc: "default grace after a PUSH monitor's period before it is late", DescZH: "PUSH 监控超过周期后的默认宽限时间", Override: "PUSH grace="},
 	{Key: "probe.max-concurrency", Kind: Int, Default: "256", Min: "1", Max: "10000", Desc: "concurrent probes per node", DescZH: "每个节点的并发探测上限"},
 	{Key: "probe.exec-concurrency", Kind: Int, Default: "8", Min: "1", Max: "256", Desc: "EXEC plugins running at once per node", DescZH: "每个节点同时运行的 EXEC 插件数上限"},

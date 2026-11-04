@@ -1459,5 +1459,6 @@
 "ui.dv.versions": "version {v} (mandat {term}), reprise avec {base}",
 "ui.dv.view": "Voir",
 "ui.dv.dismiss": "Ignorer",
-"reason.inconclusive": "Indéterminé : aucune réponse, et l’hôte ne répond pas non plus"
+"reason.inconclusive": "Indéterminé : aucune réponse, et l’hôte ne répond pas non plus",
+"reason.port_busy": "Port source déjà utilisé sur ce nœud"
 }

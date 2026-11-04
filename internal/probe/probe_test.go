@@ -20,6 +20,7 @@ import (
 	"net/netip"
 	"net/url"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -781,5 +782,54 @@ func TestSecretsScrubbed(t *testing.T) {
 	all := string(r.Evidence.Request) + string(r.Evidence.Response) + r.Detail
 	if strings.Contains(all, secret) || strings.Contains(all, url.QueryEscape(secret)) || !strings.Contains(all, "***") {
 		t.Fatalf("secret recorded:\n%s", all)
+	}
+}
+
+// Checks with the same fixed source port take turns instead of failing to
+// bind; one that would have no time left, or a port another program holds,
+// leaves the check undecided rather than failing the target.
+func TestUDPSourcePortTurns(t *testing.T) {
+	free := func() string {
+		c, err := net.ListenPacket("udp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer c.Close()
+		return strconv.Itoa(c.LocalAddr().(*net.UDPAddr).Port)
+	}
+	slow := udpServer(t, func(req []byte) []byte { time.Sleep(200 * time.Millisecond); return req })
+	raw := func(addr, port string, timeout time.Duration) Spec {
+		return Spec{Type: "UDP", Target: addr, Timeout: timeout, Opts: map[string]string{"template": "raw", "src-port": port, "retransmit": "0"}}
+	}
+	port := free()
+	var wg sync.WaitGroup
+	results := make([]Result, 3)
+	for i := range results {
+		wg.Add(1)
+		go func() { defer wg.Done(); results[i] = Run(context.Background(), raw(slow, port, 2*time.Second)) }()
+	}
+	wg.Wait()
+	for i, r := range results {
+		if r.Vote != VoteOK {
+			t.Errorf("check %d with a shared source port: %+v", i, r)
+		}
+	}
+	// The holder takes all of its time: the other one gives up undecided.
+	silent := udpServer(t, func([]byte) []byte { return nil })
+	port = free()
+	done := make(chan Result, 1)
+	go func() { done <- Run(context.Background(), raw(silent, port, 600*time.Millisecond)) }()
+	time.Sleep(50 * time.Millisecond)
+	want(t, Run(context.Background(), raw(slow, port, 600*time.Millisecond)), VoteAbstain, ReasonPortBusy)
+	want(t, <-done, VoteFail, ReasonTimeout)
+	// Another program has the port.
+	hold, err := net.ListenPacket("udp", ":"+port)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer hold.Close()
+	want(t, Run(context.Background(), raw(slow, port, time.Second)), VoteAbstain, ReasonPortBusy)
+	if !LocalAbstain(ReasonPortBusy) {
+		t.Error("a busy source port says nothing about the target")
 	}
 }

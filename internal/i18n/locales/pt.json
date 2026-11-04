@@ -1459,5 +1459,6 @@
 "ui.dv.versions": "versão {v} (mandato {term}), assumida com {base}",
 "ui.dv.view": "Ver",
 "ui.dv.dismiss": "Dispensar",
-"reason.inconclusive": "Inconclusivo: sem resposta, e o host também não responde"
+"reason.inconclusive": "Inconclusivo: sem resposta, e o host também não responde",
+"reason.port_busy": "Porta de origem em uso neste nó"
 }

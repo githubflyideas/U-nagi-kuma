@@ -1459,5 +1459,6 @@
 "ui.dv.versions": "Version {v} (Amtszeit {term}), übernommen mit {base}",
 "ui.dv.view": "Anzeigen",
 "ui.dv.dismiss": "Verwerfen",
-"reason.inconclusive": "Nicht entscheidbar: keine Antwort, und der Host antwortet auch nicht"
+"reason.inconclusive": "Nicht entscheidbar: keine Antwort, und der Host antwortet auch nicht",
+"reason.port_busy": "Quellport auf diesem Knoten belegt"
 }
