@@ -112,7 +112,7 @@ func TestManagersHearOfSharedFailures(t *testing.T) {
 	rec := &smtpRecorder{}
 	host, port, _ := net.SplitHostPort(rec.listen(t))
 	a, fp, _, _ := newApp(t, `$FILE revision=1 interval=1s retry=500ms timeout=300ms attempts=1
-$SET engine.first-round-delay=0s suspend.recheck-spread=0s
+$SET engine.first-round-delay=0s suspend.recheck-spread=0s notify.backstop-max=50
 mail    IN CHANNEL email host=`+host+` port=`+port+` tls=none from=mon@example.com to=ops@example.com
 default IN POLICY chain=mail
 web     IN TEAM managers=li operators=zhang
@@ -147,6 +147,12 @@ pg      IN TCP 10.0.0.3:5432 team=db
 				return
 			}
 			if time.Now().After(deadline) {
+				for id := int64(1); id < 6; id++ {
+					ds, _ := a.Store().Decisions(id, "", time.Time{}, time.Now())
+					for _, d := range ds {
+						t.Logf("%d %s %s %s %s %v %s", id, d.IntentID, d.Monitor, d.Kind, d.Step, d.Recipients, d.Note)
+					}
+				}
 				t.Fatalf("%s: recipients %v, want %v", what, got, want)
 			}
 			time.Sleep(100 * time.Millisecond)
@@ -168,4 +174,10 @@ pg      IN TCP 10.0.0.3:5432 team=db
 	if got := rec.recipients(); strings.Join(got, ",") != "ops@example.com" {
 		t.Fatalf("a team monitor's failure reached %v", got)
 	}
+	// The managers who were told of a failure are told of its recovery.
+	rec.mu.Lock()
+	rec.msgs = nil
+	rec.mu.Unlock()
+	fp.set("gw", false)
+	wait("gw recovered", "ops@example.com", "li@example.com")
 }
