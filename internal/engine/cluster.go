@@ -531,7 +531,7 @@ type AgentVote struct {
 // local network detector and suspend watchdog. Safe for any goroutine.
 func (e *Engine) ProbeFor(ctx context.Context, name string, spec probe.Spec, scope netscope.Scope) AgentVote {
 	start := e.now()
-	res := e.deps.Probe(ctx, spec)
+	res := e.runProbe(ctx, spec)
 	end := e.now()
 	out := AgentVote{Result: res, Vote: res.Vote, Reason: res.Reason}
 	e.do(func() {

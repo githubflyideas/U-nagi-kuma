@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+**New**
+- Monitors that check exactly the same thing (one service watched by two teams, say) are pointed out by `unagikuma check` and, while you type, by the monitor form. `share=yes` lets one use the other's check instead of sending its own (`probe.share-window`, 10s); each keeps its own thresholds, incidents and notifications. The form also says how many other monitors watch the same host.
+
 **Changed**
 - A UDP check that only proves the port is not closed (L1: `SYSLOG`, `snmptrap`, unknown ports) no longer counts silence as OK on its own: a host that is switched off cannot say the port is closed either. The host is pinged alongside (or knocked on over TCP without ping permission); silence is OK while it answers, UNKNOWN when it does not, and a failure when it is reported unreachable. `host-check=off` keeps the old reading.
 - Pings and weak UDP checks of the same address start at least a second apart on each node (`probe.same-target-gap`). A host watched by several people, or a ping next to a few UDP ports, no longer gets them in one burst, which devices answer only in part.

@@ -1451,5 +1451,9 @@
 "ui.dv.view": "表示",
 "ui.dv.dismiss": "破棄",
 "reason.inconclusive": "判定不能：応答がなく、ホストも応答しません",
-"reason.port_busy": "このノードで送信元ポートが使用中"
+"reason.port_busy": "このノードで送信元ポートが使用中",
+"ui.mon.same_check": "{names} がすでにまったく同じチェックをしています。",
+"ui.mon.share": "1 回のチェックを共用する（share=yes）",
+"ui.mon.share_hint": "対象へのチェックは 1 回だけです。しきい値・インシデント・通知は各監視項目が個別に持ちます。",
+"ui.mon.same_host": "このホストを監視している項目がほかに {n} 件あります。"
 }

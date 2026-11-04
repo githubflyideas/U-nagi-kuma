@@ -33,6 +33,7 @@ var engineOpts = map[string]bool{
 	"attempts": true, "recover-attempts": true, "nodes": true, "quorum": true, "on-insufficient": true,
 	"on-node-loss": true, "partial-escalate": true, "scope": true, "policy": true, "degraded": true,
 	"disabled": true, "period": true, "grace": true, "parent": true, "device": true, "handler": true, "was": true,
+	"share": true,
 }
 
 // ProbeSpec builds the probe spec of a monitor. resolve substitutes
@@ -65,7 +66,7 @@ func ProbeSpec(m *config.Monitor, resolve func(string) (string, error)) (probe.S
 			o["template"] = m.UDP.Template
 		}
 	}
-	spec := probe.Spec{Name: m.Name, Type: m.Type, Target: target, Opts: o, Timeout: m.Timeout}
+	spec := probe.Spec{Name: m.Name, Type: m.Type, Target: target, Opts: o, Timeout: m.Timeout, Share: m.Share}
 	if resolve != nil {
 		// The values ${secret:} references stand for, to scrub them from
 		// what the probe records.

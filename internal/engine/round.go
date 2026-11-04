@@ -156,7 +156,7 @@ func (e *Engine) dispatchDue(ctx context.Context, wg *sync.WaitGroup) {
 				res = probe.Result{Vote: probe.VoteAbstain, Reason: probe.ReasonSecretUnavailable, Detail: secretErr}
 			} else {
 				rctx, cancel := context.WithTimeout(ctx, spec.Timeout+e.cfg.Tunables.Duration("engine.round-grace"))
-				res = e.deps.Probe(rctx, spec)
+				res = e.runProbe(rctx, spec)
 				cancel()
 			}
 			rr := roundResult{name: name, round: round, defHash: defHash, start: start, end: e.now(), due: due, res: res}

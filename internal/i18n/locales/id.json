@@ -1451,5 +1451,9 @@
 "ui.dv.view": "Lihat",
 "ui.dv.dismiss": "Abaikan",
 "reason.inconclusive": "Tidak dapat dipastikan: tidak ada balasan, dan host juga tidak menjawab",
-"reason.port_busy": "Port sumber sedang dipakai di node ini"
+"reason.port_busy": "Port sumber sedang dipakai di node ini",
+"ui.mon.same_check": "{names} sudah memeriksa hal yang persis sama.",
+"ui.mon.share": "Gunakan satu pemeriksaan untuk keduanya (share=yes)",
+"ui.mon.share_hint": "Target diperiksa sekali; setiap monitor tetap punya ambang, insiden, dan notifikasinya sendiri.",
+"ui.mon.same_host": "{n} monitor lain memeriksa host ini."
 }

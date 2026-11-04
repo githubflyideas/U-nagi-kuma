@@ -1460,5 +1460,9 @@
 "ui.dv.view": "Ver",
 "ui.dv.dismiss": "Dispensar",
 "reason.inconclusive": "Inconclusivo: sem resposta, e o host também não responde",
-"reason.port_busy": "Porta de origem em uso neste nó"
+"reason.port_busy": "Porta de origem em uso neste nó",
+"ui.mon.same_check": "{names} já verifica exatamente o mesmo.",
+"ui.mon.share": "Usar uma única verificação para ambos (share=yes)",
+"ui.mon.share_hint": "O alvo é verificado uma vez; cada monitor mantém seus próprios limites, incidentes e notificações.",
+"ui.mon.same_host": "Outros {n} monitores verificam este host."
 }

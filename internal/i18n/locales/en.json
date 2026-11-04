@@ -1461,5 +1461,9 @@
 "ui.dv.view": "View",
 "ui.dv.dismiss": "Dismiss",
 "reason.inconclusive": "Inconclusive: no reply, and the host does not answer either",
-"reason.port_busy": "Source port in use on this node"
+"reason.port_busy": "Source port in use on this node",
+"ui.mon.same_check": "{names} already check exactly this.",
+"ui.mon.share": "Use one check for both (share=yes)",
+"ui.mon.share_hint": "The target is checked once; each monitor keeps its own thresholds, incidents and notifications.",
+"ui.mon.same_host": "{n} other monitors check this host."
 }

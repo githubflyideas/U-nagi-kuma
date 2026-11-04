@@ -1451,5 +1451,9 @@
 "ui.dv.view": "보기",
 "ui.dv.dismiss": "닫기",
 "reason.inconclusive": "판단 불가: 응답이 없고 호스트도 응답하지 않음",
-"reason.port_busy": "이 노드에서 출발지 포트가 사용 중"
+"reason.port_busy": "이 노드에서 출발지 포트가 사용 중",
+"ui.mon.same_check": "{names}이(가) 이미 똑같은 검사를 하고 있습니다.",
+"ui.mon.share": "검사 한 번을 함께 사용(share=yes)",
+"ui.mon.share_hint": "대상은 한 번만 검사되며, 임계값·장애·알림은 각 모니터가 따로 유지합니다.",
+"ui.mon.same_host": "이 호스트를 검사하는 다른 모니터가 {n}개 있습니다."
 }

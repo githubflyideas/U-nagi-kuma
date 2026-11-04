@@ -36,6 +36,7 @@ func (s *Server) routes() {
 	s.handle("POST /api/v1/monitors/{name}/pause", "write", s.monitorPause)
 	s.handle("POST /api/v1/probe", "write", s.probeOnce)
 	s.handle("POST /api/v1/quickadd/parse", "read", s.quickadd)
+	s.handle("POST /api/v1/monitors/same-check", "read", s.sameCheck)
 
 	// Incidents, events, notifications.
 	s.handle("GET /api/v1/incidents", "read", s.incidents)

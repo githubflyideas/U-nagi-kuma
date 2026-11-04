@@ -1460,5 +1460,9 @@
 "ui.dv.view": "Ver",
 "ui.dv.dismiss": "Descartar",
 "reason.inconclusive": "No concluyente: sin respuesta y el host tampoco responde",
-"reason.port_busy": "Puerto de origen en uso en este nodo"
+"reason.port_busy": "Puerto de origen en uso en este nodo",
+"ui.mon.same_check": "{names} ya comprueba exactamente lo mismo.",
+"ui.mon.share": "Usar una sola comprobación para ambos (share=yes)",
+"ui.mon.share_hint": "El destino se comprueba una vez; cada monitor conserva sus propios umbrales, incidentes y notificaciones.",
+"ui.mon.same_host": "Otros {n} monitores comprueban este host."
 }

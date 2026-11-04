@@ -1460,5 +1460,9 @@
 "ui.dv.view": "Anzeigen",
 "ui.dv.dismiss": "Verwerfen",
 "reason.inconclusive": "Nicht entscheidbar: keine Antwort, und der Host antwortet auch nicht",
-"reason.port_busy": "Quellport auf diesem Knoten belegt"
+"reason.port_busy": "Quellport auf diesem Knoten belegt",
+"ui.mon.same_check": "{names} prüft bereits genau dasselbe.",
+"ui.mon.share": "Eine Prüfung für beide verwenden (share=yes)",
+"ui.mon.share_hint": "Das Ziel wird einmal geprüft; jeder Monitor behält seine eigenen Schwellen, Vorfälle und Benachrichtigungen.",
+"ui.mon.same_host": "{n} weitere Monitore prüfen diesen Host."
 }

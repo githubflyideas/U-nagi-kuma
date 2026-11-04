@@ -3,6 +3,7 @@ package app
 import (
 	"testing"
 
+	"github.com/githubflyideas/unagikuma/internal/config"
 	"github.com/githubflyideas/unagikuma/internal/probe"
 	"github.com/githubflyideas/unagikuma/internal/tunables"
 )
@@ -57,5 +58,19 @@ func TestPingDefaults(t *testing.T) {
 	pingDefaults(&s, off)
 	if len(s.Opts) != 0 {
 		t.Errorf("default turned off: %v", s.Opts)
+	}
+}
+
+// share=yes reaches the probe spec as a flag, not as a probe option.
+func TestProbeSpecShare(t *testing.T) {
+	s, err := ProbeSpec(&config.Monitor{Name: "b", Type: "PING", Target: "10.0.0.5", Opts: map[string]string{"share": "yes", "count": "3"}, Share: true}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !s.Share || s.Opts["share"] != "" || s.Opts["count"] != "3" {
+		t.Fatalf("%+v", s)
+	}
+	if err := probe.Validate(s); err != nil {
+		t.Fatal(err)
 	}
 }

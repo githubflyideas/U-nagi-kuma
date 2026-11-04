@@ -1460,5 +1460,9 @@
 "ui.dv.view": "Voir",
 "ui.dv.dismiss": "Ignorer",
 "reason.inconclusive": "Indéterminé : aucune réponse, et l’hôte ne répond pas non plus",
-"reason.port_busy": "Port source déjà utilisé sur ce nœud"
+"reason.port_busy": "Port source déjà utilisé sur ce nœud",
+"ui.mon.same_check": "{names} vérifie déjà exactement la même chose.",
+"ui.mon.share": "Utiliser une seule vérification pour les deux (share=yes)",
+"ui.mon.share_hint": "La cible n’est vérifiée qu’une fois ; chaque moniteur garde ses propres seuils, incidents et notifications.",
+"ui.mon.same_host": "{n} autres moniteurs vérifient cet hôte."
 }

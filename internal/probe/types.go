@@ -111,6 +111,9 @@ type Spec struct {
 	// a probe records (evidence, detail) is scrubbed of them, wherever in
 	// the exchange they appear: a URL query, a custom header, a body.
 	Secrets []string `json:",omitempty"`
+	// Share lets the node answer with the result of an identical check
+	// that started a moment ago instead of running its own (share=yes).
+	Share bool `json:",omitempty"`
 }
 
 // Field is one decoded protocol field for the packet viewer.

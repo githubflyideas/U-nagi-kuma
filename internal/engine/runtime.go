@@ -213,8 +213,12 @@ type Engine struct {
 	// nextStart is when the next ping-like round to an address may start
 	// (probe.same-target-gap); loop goroutine only.
 	nextStart map[string]time.Time
-	results   chan roundResult
-	votes     chan RemoteVote
+	// share holds recent probe executions for share=yes monitors;
+	// shareWindow is probe.share-window, readable from any goroutine.
+	share       sharing
+	shareWindow atomic.Int64
+	results     chan roundResult
+	votes       chan RemoteVote
 
 	rounds   map[string]*pendingRound // open cluster rounds by id
 	nodes    map[string]*nodeRuntime  // agents by name
@@ -351,6 +355,7 @@ func (e *Engine) applyTunables(ts tunables.Set) {
 	if e.sem == nil || cap(e.sem) != n {
 		e.sem = make(chan struct{}, max(1, n))
 	}
+	e.shareWindow.Store(int64(ts.Duration("probe.share-window")))
 	pps := float64(ts.Int("probe.max-pps"))
 	if e.pps == nil {
 		e.pps = ratelimit.New(pps, int(pps))

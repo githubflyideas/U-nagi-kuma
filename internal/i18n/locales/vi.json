@@ -1451,5 +1451,9 @@
 "ui.dv.view": "Xem",
 "ui.dv.dismiss": "Bỏ qua",
 "reason.inconclusive": "Không xác định được: không có phản hồi và máy chủ cũng không trả lời",
-"reason.port_busy": "Cổng nguồn đang được dùng trên nút này"
+"reason.port_busy": "Cổng nguồn đang được dùng trên nút này",
+"ui.mon.same_check": "{names} đã kiểm tra đúng y như vậy.",
+"ui.mon.share": "Dùng chung một lần kiểm tra cho cả hai (share=yes)",
+"ui.mon.share_hint": "Mục tiêu chỉ được kiểm tra một lần; mỗi giám sát vẫn giữ ngưỡng, sự cố và thông báo riêng.",
+"ui.mon.same_host": "Có {n} giám sát khác đang kiểm tra máy chủ này."
 }

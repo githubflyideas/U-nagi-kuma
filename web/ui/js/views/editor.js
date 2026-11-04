@@ -94,6 +94,7 @@ export function MonitorEditor({ name }) {
   const [busy, setBusy] = useState(false);
   const [probe, setProbe] = useState(null);
   const [probing, setProbing] = useState(false);
+  const [same, setSame] = useState(null);
 
   useEffect(() => {
     if (!editing) {
@@ -114,6 +115,17 @@ export function MonitorEditor({ name }) {
     }, setErr);
   }, [name]);
 
+  // While the target is being written: monitors that already check exactly
+  // the same thing (they can share one check), and how many watch the host.
+  const draftKey = f ? JSON.stringify([f.type, f.target, f.port, f.opts]) : '';
+  useEffect(() => {
+    if (!f || f.type === 'PUSH' || !f.target.trim()) { setSame(null); return undefined; }
+    const timer = setTimeout(() => {
+      post('/monitors/same-check', { record: { ...record(), name: 'x' }, exclude: name || '' }).then(setSame, () => setSame(null));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [draftKey]);
+
   if (!f) return html`<div class="page">${err ? html`<${ErrorBox} error=${err} />` : html`<${Loading} />`}</div>`;
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   const setOpt = (i, k, v) => { const opts = f.opts.slice(); opts[i] = { ...opts[i], [k]: v }; setF({ ...f, opts }); };
@@ -125,14 +137,14 @@ export function MonitorEditor({ name }) {
     const opts = f.opts.filter(o => o.k !== k);
     setF({ ...f, opts: v ? [...opts, { k, v }] : opts });
   };
-  const record = () => {
+  function record() {
     const opts = {};
     for (const o of f.opts) if (o.k.trim()) opts[o.k.trim()] = o.v;
     for (const k of ['title', 'group', 'tags', 'policy', 'description']) if (f[k].trim()) opts[k] = f[k].trim();
     let target = f.type === 'PUSH' ? '' : f.target.trim();
     if (hasPort(f.type)) target = joinHostPort(target, f.port.trim());
     return { name: f.name.trim(), type: f.type, target, interval: f.interval.trim(), opts };
-  };
+  }
   const groups = [...new Set(((mons.data && mons.data.items) || []).map(r => r.group).filter(Boolean))].sort();
   const test = async () => {
     setProbing(true);
@@ -176,6 +188,13 @@ export function MonitorEditor({ name }) {
           <${Field} label=${t('ui.mon.port') + (DEFAULT_PORT[f.type] ? '' : ' *')} hint=${DEFAULT_PORT[f.type] ? t('ui.mon.port_default', { port: DEFAULT_PORT[f.type] }) : t('ui.mon.port_required')}>
             <input type="number" class="ltr" min="1" max="65535" value=${f.port} onInput=${set('port')} placeholder=${DEFAULT_PORT[f.type]} required=${!DEFAULT_PORT[f.type]} /><//>
         </div>`}
+        ${same && same.same.length > 0 && html`<div class="banner warning"><div class="col" style=${{ gap: '6px' }}>
+          <div>${t('ui.mon.same_check', { names: same.same.map(m => m.title || m.name).join(', ') })}</div>
+          <label class="row nowrap"><input type="checkbox" checked=${optVal('share') === 'yes'} onChange=${(e) => setOwn('share')({ target: { value: e.target.checked ? 'yes' : '' } })} />
+            <span>${t('ui.mon.share')}</span></label>
+          <div class="small muted">${t('ui.mon.share_hint')}</div>
+        </div></div>`}
+        ${same && same.same.length === 0 && same.host > 0 && html`<div class="small muted">${t('ui.mon.same_host', { n: same.host })}</div>`}
         ${f.type === 'DNS' && html`<div class="col" style=${{ gap: '10px' }}>
           <div class="two">
             <${Field} label=${t('ui.mon.dns_query')} hint=${t('ui.mon.dns_query_hint')}>

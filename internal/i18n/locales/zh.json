@@ -1451,5 +1451,9 @@
 "ui.dv.view": "查看",
 "ui.dv.dismiss": "忽略",
 "reason.inconclusive": "无法判断：没有回复，主机也不响应",
-"reason.port_busy": "本节点的源端口被占用"
+"reason.port_busy": "本节点的源端口被占用",
+"ui.mon.same_check": "{names} 已在做完全相同的检查。",
+"ui.mon.share": "共用一次检查（share=yes）",
+"ui.mon.share_hint": "目标只被检查一次；各监控项仍各自保留阈值、故障和通知。",
+"ui.mon.same_host": "另有 {n} 个监控项在检查这台主机。"
 }
