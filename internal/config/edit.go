@@ -228,9 +228,20 @@ func (f *File) findRecord(name string) (*Stmt, *Record) {
 // UpsertRecord replaces a record in place (keeping its trailing comment
 // when the new one has none), or appends it after the last record of the
 // same type, or at the end of the file.
+// ErrNameTaken: the name is used by a record of another kind. Names are
+// unique across all record types, and saving a channel, a policy or a team
+// must never replace a monitor (or the other way round) of the same name.
+var ErrNameTaken = errors.New("the name is already used by another kind of record")
+
 func (f *File) UpsertRecord(r RecordSpec) error {
 	if err := r.check(); err != nil {
 		return err
+	}
+	if _, old := f.findRecord(r.Name); old != nil {
+		same := strings.EqualFold(old.Type, r.Type) || IsMonitorType(strings.ToUpper(old.Type)) && IsMonitorType(strings.ToUpper(r.Type))
+		if !same {
+			return fmt.Errorf("%w: %s is a %s", ErrNameTaken, r.Name, strings.ToUpper(old.Type))
+		}
 	}
 	ls := f.lines()
 	cr := f.eol()

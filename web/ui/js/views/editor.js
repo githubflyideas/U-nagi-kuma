@@ -61,7 +61,7 @@ const TYPE_OPTS = {
 };
 // Options shown as their own form fields rather than in the table
 // ("proto" is implied by the service types).
-const META = new Set(['title', 'description', 'tags', 'group', 'policy', 'proto']);
+const META = new Set(['title', 'description', 'tags', 'group', 'policy', 'team', 'proto']);
 
 function secondsToInterval(s) {
   if (!s) return '';
@@ -88,6 +88,7 @@ export function MonitorEditor({ name }) {
   useDocTitle(name ? t('ui.edit') + ' ' + name : t('ui.mon.add'));
   const editing = !!name;
   const policies = useFetch(() => get('/policies'), []);
+  const teams = useFetch(() => get('/teams'), []);
   const mons = useFetch(() => get('/monitors'), []);
   const [f, setF] = useState(null);
   const [err, setErr] = useState(null);
@@ -98,7 +99,7 @@ export function MonitorEditor({ name }) {
 
   useEffect(() => {
     if (!editing) {
-      setF({ key: newKey(), type: 'HTTP', name: '', title: '', target: '', port: '', interval: '', group: '', tags: '', policy: '', description: '', opts: [], message: '' });
+      setF({ key: newKey(), type: 'HTTP', name: '', title: '', target: '', port: '', interval: '', group: '', tags: '', policy: '', team: '', description: '', opts: [], message: '' });
       return;
     }
     get('/monitors/' + enc(name)).then(d => {
@@ -111,7 +112,7 @@ export function MonitorEditor({ name }) {
         if (port === DEFAULT_PORT[type]) port = '';
       }
       setF({ etag: d.row.etag, type, name, title: o.title || '', target, port, interval: secondsToInterval(d.row.interval_s), group: o.group || '', tags: o.tags || '',
-        policy: o.policy || '', description: o.description || '', opts, message: '' });
+        policy: o.policy || '', team: o.team || '', description: o.description || '', opts, message: '' });
     }, setErr);
   }, [name]);
 
@@ -140,7 +141,7 @@ export function MonitorEditor({ name }) {
   function record() {
     const opts = {};
     for (const o of f.opts) if (o.k.trim()) opts[o.k.trim()] = o.v;
-    for (const k of ['title', 'group', 'tags', 'policy', 'description']) if (f[k].trim()) opts[k] = f[k].trim();
+    for (const k of ['title', 'group', 'tags', 'policy', 'team', 'description']) if (f[k].trim()) opts[k] = f[k].trim();
     let target = f.type === 'PUSH' ? '' : f.target.trim();
     if (hasPort(f.type)) target = joinHostPort(target, f.port.trim());
     return { name: f.name.trim(), type: f.type, target, interval: f.interval.trim(), opts };
@@ -219,6 +220,11 @@ export function MonitorEditor({ name }) {
             <datalist id="groups">${groups.map(g => html`<option value=${g} />`)}</datalist><//>
           <${Field} label=${t('ui.tags')} hint=${t('ui.mon.tags_hint')}><input type="text" class="ltr" value=${f.tags} onInput=${set('tags')} placeholder="env:prod,db" /><//>
         </div>
+        ${teams.data && teams.data.items.length > 0 && html`<${Field} label=${t('ui.team.field')} hint=${t('ui.team.field_hint')}>
+          <select value=${f.team} onChange=${set('team')}>
+            <option value="">${t('ui.team.shared')}</option>
+            ${teams.data.items.map(tm => html`<option value=${tm.name}>${tm.title}</option>`)}
+          </select><//>`}
         <${Field} label=${t('ui.description')}><textarea rows="2" value=${f.description} onInput=${set('description')}></textarea><//>
         <${Field} label=${t('ui.mon.options')} hint=${t('ui.mon.options_hint')}>
           <datalist id="optkeys">${suggestions.map(k => html`<option value=${k} />`)}</datalist>

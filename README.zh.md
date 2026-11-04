@@ -96,7 +96,7 @@ docker exec -it unagikuma /unagikuma reset-password admin
 
 ## 了解更多
 
-- [用户手册](docs/manual.zh-CN.md) — 其他所有内容,一步一步讲清楚
+- [用户手册(英文)](docs/manual.md) — 其他所有内容,一步一步讲清楚;完整手册只有英文版
 - [更新日志](CHANGELOG.md)
 
 ## 许可证

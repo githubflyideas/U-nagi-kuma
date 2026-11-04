@@ -33,7 +33,7 @@ var engineOpts = map[string]bool{
 	"attempts": true, "recover-attempts": true, "nodes": true, "quorum": true, "on-insufficient": true,
 	"on-node-loss": true, "partial-escalate": true, "scope": true, "policy": true, "degraded": true,
 	"disabled": true, "period": true, "grace": true, "parent": true, "device": true, "handler": true, "was": true,
-	"share": true,
+	"share": true, "team": true,
 }
 
 // ProbeSpec builds the probe spec of a monitor. resolve substitutes

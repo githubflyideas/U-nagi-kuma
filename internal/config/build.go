@@ -36,7 +36,7 @@ type Options struct {
 // Names kept free for later versions, so a file written for one of them
 // says it needs a newer release instead of failing as a syntax error.
 var (
-	reservedTypes      = map[string]bool{"TEAM": true, "SCHEDULE": true, "ROTA": true, "ROUTE": true, "TEMPLATE": true, "CHANGE": true, "PERSON": true}
+	reservedTypes      = map[string]bool{"SCHEDULE": true, "ROTA": true, "ROUTE": true, "TEMPLATE": true, "CHANGE": true, "PERSON": true}
 	reservedDirectives = map[string]bool{"TIMEZONE": true, "HOLIDAYS": true}
 )
 
@@ -47,7 +47,7 @@ var paramOpts = map[string]bool{
 	"interval": true, "retry": true, "timeout": true, "attempts": true, "recover-attempts": true,
 	"degraded": true, "quorum": true, "on-insufficient": true, "on-filtered": true, "on-node-loss": true,
 	"scope": true, "policy": true, "partial-escalate": true, "disabled": true, "grace": true,
-	"parent": true, "nodes": true, "share": true,
+	"parent": true, "nodes": true, "share": true, "team": true,
 }
 
 var refRe = regexp.MustCompile(`\$\{(secret|env):([A-Za-z0-9_.-]+)\}`)
@@ -262,6 +262,8 @@ func (b *builder) build() {
 			maintRecs = append(maintRecs, r)
 		case r.Type == "PERIOD":
 			b.period(r)
+		case r.Type == "TEAM":
+			b.team(r)
 		case reservedTypes[r.Type]:
 			b.errf(r.TypePos, "needs_newer", "record type %s is reserved for a later version of unagikuma", r.Type)
 		default:
@@ -779,6 +781,7 @@ func (b *builder) monitor(r Record, defaults []Opt, scope *scopeDir) {
 	if v, ok := m.Opts["device"]; ok {
 		m.Device = v
 	}
+	m.Team = m.Opts["team"]
 	if v, ok := m.Opts["parent"]; ok {
 		for _, p := range strings.Split(v, ",") {
 			if p = strings.TrimSpace(p); p != "" {
@@ -1368,6 +1371,7 @@ func (b *builder) crossRefs() {
 	}
 	b.checkParents()
 	b.checkSameChecks()
+	b.checkTeams()
 	for _, n := range b.cfg.Nodes {
 		if b.cfg.FindPolicy(n.Policy) == nil {
 			b.errf(n.Pos, "unknown_policy", "node %s: policy %q is not defined", n.Name, n.Policy)
@@ -1427,6 +1431,79 @@ func ClassifyChange(old, new *Monitor) ChangeClass {
 		return ChangeMeta
 	}
 	return ChangeNone
+}
+
+// teamUserRe is what a member entry may look like: a user name without
+// spaces or commas (commas separate the list).
+var teamUserRe = regexp.MustCompile(`^[^\s,]{1,64}$`)
+
+// team reads a TEAM record:
+//
+//	ops IN TEAM title="Operations" managers=li,wang operators=zhang viewers=zhao policy=ops
+func (b *builder) team(r Record) {
+	if r.TargetOK && r.Target != "-" {
+		b.errf(r.TypePos, "syntax", "TEAM takes no target")
+	}
+	t := &Team{Name: r.Name, Pos: r.NamePos, Lines: lines(r.Stmt)}
+	seen := map[string]string{}
+	for _, o := range r.Opts {
+		switch o.Key {
+		case "title":
+			if o.Value == "" || len([]rune(o.Value)) > 64 {
+				b.errf(o.Pos, "invalid_value", "title must be 1 to 64 characters")
+			}
+			t.Title = o.Value
+		case "description":
+			t.Description = o.Value
+		case "policy":
+			t.Policy = o.Value
+		case "managers", "operators", "viewers":
+			var list []string
+			for _, u := range strings.Split(o.Value, ",") {
+				if u = strings.TrimSpace(u); u == "" {
+					continue
+				}
+				if !teamUserRe.MatchString(u) {
+					b.errf(o.Pos, "invalid_value", "%s: %q is not a user name", o.Key, u)
+					continue
+				}
+				if prev, dup := seen[u]; dup {
+					b.errf(o.Pos, "invalid_value", "%s is listed twice in team %s (%s and %s): a member has one role per team", u, r.Name, prev, o.Key)
+					continue
+				}
+				seen[u] = o.Key
+				list = append(list, u)
+			}
+			switch o.Key {
+			case "managers":
+				t.Managers = list
+			case "operators":
+				t.Operators = list
+			default:
+				t.Viewers = list
+			}
+		default:
+			b.errf(o.Pos, "unknown_option", "TEAM has no option %s (title, description, managers, operators, viewers, policy)", o.Key)
+		}
+	}
+	if t.Title == "" {
+		t.Title = t.Name
+	}
+	b.cfg.Teams = append(b.cfg.Teams, t)
+}
+
+// checkTeams verifies the references between teams, policies and monitors.
+func (b *builder) checkTeams() {
+	for _, t := range b.cfg.Teams {
+		if t.Policy != "" && b.cfg.FindPolicy(t.Policy) == nil {
+			b.errf(t.Pos, "unknown_policy", "team %s: policy %q is not defined", t.Name, t.Policy)
+		}
+	}
+	for _, m := range b.cfg.Monitors {
+		if m.Team != "" && b.cfg.FindTeam(m.Team) == nil {
+			b.errf(m.Pos, "unknown_team", "%s: team %q is not defined (add: %s IN TEAM managers=…)", m.Name, m.Team, m.Team)
+		}
+	}
 }
 
 // CheckKey identifies what a monitor checks and from where: the type, the
