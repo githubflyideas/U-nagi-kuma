@@ -1,14 +1,14 @@
 # Changelog
 
-## Unreleased
+## v2.1.0 — 2026-11-05
+
+Version 2.1: teams. Several teams share one installation and its checks, each sees and changes only its own monitors, and when the shared infrastructure fails the managers of the teams it affects are told. Contacts now always have a way to be reached. Nothing changes until a team is defined.
 
 **New**
-- Teams (**Settings › Teams**): people who own monitors, each with one role per team (manager, operator, viewer); a person can be in several teams and manage several. A monitor joins a team with **Team** in its form (`team=NAME`); monitors without one are the shared infrastructure. Teams are `TEAM` records in monitors.bind, so they reach every node with the configuration. The monitor list shows the team and filters with `team:`. What each role may see and do follows in the next steps.
-
-- Teams are isolated from each other. A team member sees only their teams' monitors, incidents, events, reports and maintenance windows (and only the state of shared monitors theirs depend on); managers and operators change only their teams' monitors, viewers read. Everything else, from channels to the raw configuration, stays with administrators: an API route is closed to team members unless it was reviewed for them, so new routes are closed too. The live updates and incident reports are filtered the same way.
-
-- Team notifications: a team's monitors use the team's `policy=` unless they name their own; when the shared infrastructure fails, the managers of the teams it affects (those with monitors depending on it, or every team when none does) are told right away through their own contact channels. **Settings › Teams** names managers who cannot be reached.
-- A team's managers change their own team's people, title and description under **Settings › Teams**.
+- Teams (**Settings › Teams**): people who own monitors, each with one role per team (manager, operator, viewer); a person can be in several teams and manage several. A monitor joins a team with **Team** in its form (`team=NAME`, also through `$DEFAULT`); monitors without one are the shared infrastructure. Teams are `TEAM` records in monitors.bind, so they reach every node with the configuration. The monitor list shows the team and filters with `team:`.
+- Teams are isolated from each other. A team member sees only their teams' monitors, incidents, events, reports and maintenance windows (and only the state of shared monitors theirs depend on); managers and operators change only their teams' monitors, viewers read. Everything else, from channels to the raw configuration, stays with administrators: an API route is closed to team members unless it was reviewed for them, so new routes are closed too. Live updates and incident reports are filtered the same way.
+- Team notifications: a team's monitors use the team's `policy=` unless they name their own. When the shared infrastructure fails, the managers of the teams it affects (those with monitors depending on it, or every team when none does) are told right away through their own contact channels, and told again when it recovers. **Settings › Teams** names managers who cannot be reached.
+- A team's managers change their own team's people, title and description under **Settings › Teams**; creating and deleting teams and changing a team's policy stay with administrators.
 - Whoever an escalation step told about a problem also gets its recovery notice.
 
 **Changed**
