@@ -132,6 +132,7 @@ var defs = []Def{
 	{Key: "cluster.clock-skew", Kind: Duration, Default: "1s", Min: "100ms", Max: "1m", Desc: "clock skew beyond which time-sensitive votes abstain", DescZH: "节点时钟偏差超过多少，时间相关检查的票改为弃权"},
 
 	// ---- probe safety ----
+	{Key: "probe.ping-loss", Kind: Int, Default: "50", Min: "0", Max: "100", Desc: "PING checks fail when more than this percentage of their echo requests go unanswered, unless the monitor sets loss= (0 = off: only a total loss fails; any loss still marks the check DEGRADED)", DescZH: "PING 检查中未收到回复的请求占比超过此百分比时判为故障（监控项可用 loss= 覆盖；0 关闭：只有全部丢失才判故障，有丢包仍显示为性能下降）"},
 	{Key: "probe.push-grace", Kind: Duration, Default: "5m", Min: "0s", Max: "7d", Desc: "default grace after a PUSH monitor's period before it is late", DescZH: "PUSH 监控超过周期后的默认宽限时间", Override: "PUSH grace="},
 	{Key: "probe.max-concurrency", Kind: Int, Default: "256", Min: "1", Max: "10000", Desc: "concurrent probes per node", DescZH: "每个节点的并发探测上限"},
 	{Key: "probe.exec-concurrency", Kind: Int, Default: "8", Min: "1", Max: "256", Desc: "EXEC plugins running at once per node", DescZH: "每个节点同时运行的 EXEC 插件数上限"},

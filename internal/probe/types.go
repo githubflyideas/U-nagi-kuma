@@ -51,6 +51,7 @@ const (
 	ReasonClockSkew         = "clock_skew"           // abstain (engine): this node's clock is off, time-based checks cannot judge
 	ReasonExpiring          = "expiring"             // fail: the domain's registration expires (or expired)
 	ReasonRegistry          = "registry_unavailable" // abstain: no registry answered the expiry lookup
+	ReasonInconclusive      = "inconclusive"         // abstain: no answer either way (a silent UDP port on a host that does not answer)
 	ReasonConfig            = "config_error"         // abstain: spec invalid at run time
 	ReasonInternal          = "internal_error"       // abstain
 )

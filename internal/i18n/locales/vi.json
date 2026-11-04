@@ -1449,5 +1449,6 @@
 "ui.dv.hint": "Máy chủ chính bị thay thế giữ cấu hình khác với cấu hình máy chủ này đã tiếp quản. Nó không được áp dụng: hãy so sánh và chuyển phần cần thiết thủ công.",
 "ui.dv.versions": "phiên bản {v} (nhiệm kỳ {term}), tiếp quản với {base}",
 "ui.dv.view": "Xem",
-"ui.dv.dismiss": "Bỏ qua"
+"ui.dv.dismiss": "Bỏ qua",
+"reason.inconclusive": "Không xác định được: không có phản hồi và máy chủ cũng không trả lời"
 }

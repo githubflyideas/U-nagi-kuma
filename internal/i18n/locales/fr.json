@@ -1458,5 +1458,6 @@
 "ui.dv.hint": "Un maître remplacé avait une configuration différente de celle reprise ici. Elle n'a pas été appliquée : comparez et reportez à la main ce qu'il faut.",
 "ui.dv.versions": "version {v} (mandat {term}), reprise avec {base}",
 "ui.dv.view": "Voir",
-"ui.dv.dismiss": "Ignorer"
+"ui.dv.dismiss": "Ignorer",
+"reason.inconclusive": "Indéterminé : aucune réponse, et l’hôte ne répond pas non plus"
 }

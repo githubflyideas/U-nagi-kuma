@@ -1459,5 +1459,6 @@
 "ui.dv.hint": "A replaced master kept a configuration different from the one this master took over with. It was not applied: compare it and carry over what you need by hand.",
 "ui.dv.versions": "version {v} (term {term}), taken over with {base}",
 "ui.dv.view": "View",
-"ui.dv.dismiss": "Dismiss"
+"ui.dv.dismiss": "Dismiss",
+"reason.inconclusive": "Inconclusive: no reply, and the host does not answer either"
 }

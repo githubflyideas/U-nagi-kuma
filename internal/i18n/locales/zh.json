@@ -1449,5 +1449,6 @@
 "ui.dv.hint": "被替换的主节点保留了与本主节点接管时不同的配置。它未被应用：请对比后手动迁移需要的部分。",
 "ui.dv.versions": "版本 {v}（任期 {term}），接管时为 {base}",
 "ui.dv.view": "查看",
-"ui.dv.dismiss": "忽略"
+"ui.dv.dismiss": "忽略",
+"reason.inconclusive": "无法判断：没有回复，主机也不响应"
 }

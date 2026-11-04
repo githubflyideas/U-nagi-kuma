@@ -1449,5 +1449,6 @@
 "ui.dv.hint": "Master yang diganti menyimpan konfigurasi berbeda dari yang diambil alih master ini. Tidak diterapkan: bandingkan dan pindahkan yang perlu secara manual.",
 "ui.dv.versions": "versi {v} (masa {term}), diambil alih dengan {base}",
 "ui.dv.view": "Lihat",
-"ui.dv.dismiss": "Abaikan"
+"ui.dv.dismiss": "Abaikan",
+"reason.inconclusive": "Tidak dapat dipastikan: tidak ada balasan, dan host juga tidak menjawab"
 }

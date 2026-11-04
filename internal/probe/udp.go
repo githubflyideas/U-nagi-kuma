@@ -1,6 +1,7 @@
 package probe
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"errors"
@@ -33,14 +34,14 @@ var templateOpts = map[string]map[string]bool{
 	"dns":      {"query": true, "qtype": true, "rcode": true, "expect": true, "expect-all": true, "aa": true, "min-answers": true, "recurse": true},
 	"ntp":      {"max-offset": true, "max-stratum": true},
 	"snmp":     {"version": true, "community": true, "oid": true, "expect": true, "expect-num": true},
-	"snmptrap": {"community": true},
+	"snmptrap": {"community": true, "host-check": true},
 	"time":     {"max-offset": true},
 	"tftp":     {"file": true, "expect": true},
 	"sunrpc":   {"expect-program": true},
-	"syslog":   {},
-	"l1":       {},
+	"syslog":   {"host-check": true},
+	"l1":       {"host-check": true},
 	"raw": {"send": true, "send-hex": true, "expect": true, "expect-hex": true, "expect-regex": true, "expect-len": true,
-		"accept-from": true, "src-port": true},
+		"accept-from": true, "src-port": true, "host-check": true},
 }
 
 // planUDP resolves keyword, port, template and depth.
@@ -120,6 +121,9 @@ func validateUDP(s Spec, o opts) error {
 	}
 	if _, err := o.intOpt("retransmit", 1, 0, 5); err != nil {
 		return err
+	}
+	if v := o.str("host-check", "on"); v != "on" && v != "off" {
+		return fmt.Errorf("host-check=%s: use on or off", v)
 	}
 	switch p.template {
 	case "dns":
@@ -224,6 +228,11 @@ func dialUDP(ctx context.Context, p udpPlan, o opts) (*udpSock, Result, bool) {
 // exchange sends req and waits for a datagram accepted by accept,
 // retransmitting up to `retransmit` times within the deadline. Datagrams
 // that are not accepted (stale, spoofed, wrong id) are ignored.
+//
+// The latency is that of one request when the first one was answered. A
+// reply that comes after a retransmission may answer any of the copies
+// sent, so its latency counts from the first one: too long rather than a
+// misleadingly short time for a service that needed a second try.
 func (u *udpSock) exchange(ctx context.Context, req []byte, retransmit int, accept func([]byte) bool) ([]byte, time.Duration, error) {
 	deadline, _ := ctx.Deadline()
 	total := time.Until(deadline)
@@ -249,7 +258,7 @@ func (u *udpSock) exchange(ctx context.Context, req []byte, retransmit int, acce
 				return nil, time.Since(start), err
 			}
 			if accept == nil || accept(buf[:n]) {
-				return append([]byte(nil), buf[:n]...), time.Since(sentAt), nil
+				return append([]byte(nil), buf[:n]...), replyLatency(attempt, start, sentAt), nil
 			}
 		}
 		if ctx.Err() != nil {
@@ -257,6 +266,15 @@ func (u *udpSock) exchange(ctx context.Context, req []byte, retransmit int, acce
 		}
 	}
 	return nil, time.Since(start), context.DeadlineExceeded
+}
+
+// replyLatency is the latency of a reply that arrived during the given
+// attempt (0 = the first send), see exchange.
+func replyLatency(attempt int, first, last time.Time) time.Duration {
+	if attempt > 0 {
+		return time.Since(first)
+	}
+	return time.Since(last)
 }
 
 func (u *udpSock) Close() { u.c.Close() }
@@ -271,9 +289,20 @@ func udpFail(u *udpSock, err error, req []byte, o opts, hint string) Result {
 	return r
 }
 
+// hostCheck asks whether a host is there: one ICMP echo, or TCP when ping
+// is not allowed for this process (a variable for tests).
+var hostCheck = func(ctx context.Context, ip netip.Addr) Result {
+	return runPing(ctx, Spec{Type: "PING", Target: ip.String(), Opts: map[string]string{"count": "1", "fallback": "tcp"}})
+}
+
 // runL1 is the weak delivery check: send a harmless datagram; an ICMP port
-// unreachable proves the port is closed, silence is accepted as "probably
-// open". It is labelled L1 everywhere for that reason.
+// unreachable proves the port is closed. Silence alone proves nothing: a
+// host that is switched off cannot send port unreachable either. So the
+// host is checked alongside (ICMP echo, or TCP when ping is not allowed)
+// and silence counts as "probably open" only while the host answers. A
+// host that does not answer leaves the check undecided rather than green;
+// one reported unreachable fails it. host-check=off keeps the old reading
+// for hosts that answer nothing at all. It is labelled L1 everywhere.
 func runL1(ctx context.Context, p udpPlan, o opts, payload []byte) Result {
 	u, r, good := dialUDP(ctx, p, o)
 	if !good {
@@ -282,6 +311,12 @@ func runL1(ctx context.Context, p udpPlan, o opts, payload []byte) Result {
 	defer u.Close()
 	if !u.errsOK {
 		return abstain(ReasonPlatform, "this platform cannot observe ICMP port unreachable on UDP sockets")
+	}
+	var alive chan Result
+	if o.str("host-check", "on") != "off" {
+		alive = make(chan Result, 1)
+		ip := u.c.RemoteAddr().(*net.UDPAddr).AddrPort().Addr().Unmap()
+		go func() { alive <- hostCheck(ctx, ip) }()
 	}
 	_, lat, err := u.exchange(ctx, payload, 0, func([]byte) bool { return true })
 	ev := newEvidence(u.peer, payload, nil)
@@ -292,6 +327,20 @@ func runL1(ctx context.Context, p udpPlan, o opts, payload []byte) Result {
 		return res
 	case errors.Is(err, context.DeadlineExceeded):
 		res := ok("no ICMP port unreachable (weak signal)")
+		res.Evidence = ev
+		if alive == nil {
+			return res
+		}
+		h := <-alive
+		switch {
+		case h.Vote == VoteOK:
+			res.Detail = "no ICMP port unreachable and the host answers (weak signal)"
+			return res
+		case h.Vote == VoteFail && h.Reason == ReasonHostUnreachable:
+			res = fail(ReasonHostUnreachable, "no reply, and the host is unreachable: %s", h.Detail)
+		default:
+			res = abstain(ReasonInconclusive, "no reply, and the host does not answer ping either: cannot tell whether the port is open (host-check=off accepts silence)")
+		}
 		res.Evidence = ev
 		return res
 	}
@@ -323,15 +372,27 @@ func runEcho(ctx context.Context, p udpPlan, o opts) Result {
 	}
 	defer u.Close()
 	nonce := randBytes(size)
-	resp, lat, err := u.exchange(ctx, nonce, retr, nil)
+	// Only the echo of this request counts: a late or foreign datagram is
+	// set aside and the wait goes on. If nothing else came, the last such
+	// datagram shows the service answers, but not with an echo.
+	var other []byte
+	resp, lat, err := u.exchange(ctx, nonce, retr, func(b []byte) bool {
+		if bytes.Equal(b, nonce) {
+			return true
+		}
+		other = append(other[:0], b...)
+		return false
+	})
+	if err != nil && other != nil && errors.Is(err, context.DeadlineExceeded) {
+		res := fail(ReasonAssertFailed, "the reply is not an echo of the request")
+		res.Evidence = newEvidence(u.peer, nonce, other)
+		return res
+	}
 	if err != nil {
 		return udpFail(u, err, nonce, o, "")
 	}
 	res := ok("echo matched")
 	res.Latency, res.Evidence = lat, newEvidence(u.peer, nonce, resp)
-	if string(resp) != string(nonce) {
-		res.Vote, res.Reason, res.Detail = VoteFail, ReasonAssertFailed, "the reply is not an echo of the request"
-	}
 	return res
 }
 

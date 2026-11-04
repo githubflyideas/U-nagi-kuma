@@ -1458,5 +1458,6 @@
 "ui.dv.hint": "Um mestre substituído tinha uma configuração diferente da assumida por este. Ela não foi aplicada: compare e leve à mão o que precisar.",
 "ui.dv.versions": "versão {v} (mandato {term}), assumida com {base}",
 "ui.dv.view": "Ver",
-"ui.dv.dismiss": "Dispensar"
+"ui.dv.dismiss": "Dispensar",
+"reason.inconclusive": "Inconclusivo: sem resposta, e o host também não responde"
 }

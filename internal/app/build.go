@@ -150,6 +150,23 @@ func certDefaults(spec *probe.Spec, ts tunables.Set) {
 	}
 }
 
+// pingDefaults gives PING checks the default loss threshold
+// (probe.ping-loss) unless the monitor sets loss=; 0 turns it off.
+func pingDefaults(spec *probe.Spec, ts tunables.Set) {
+	if spec.Type != "PING" {
+		return
+	}
+	if _, set := spec.Opts["loss"]; set {
+		return
+	}
+	if n := ts.Int("probe.ping-loss"); n > 0 {
+		if spec.Opts == nil {
+			spec.Opts = map[string]string{}
+		}
+		spec.Opts["loss"] = strconv.Itoa(n) + "%"
+	}
+}
+
 // validators are the config.Options hooks.
 func (a *App) validators() config.Options {
 	return config.Options{
@@ -196,6 +213,7 @@ func (a *App) engineConfig(cfg *config.Config) engine.Config {
 	for _, m := range cfg.Monitors {
 		spec, err := ProbeSpec(m, resolve)
 		certDefaults(&spec, cfg.Tunables)
+		pingDefaults(&spec, cfg.Tunables)
 		depth := string(probe.DepthOf(spec))
 		weak := depth == string(keywords.L1) || (m.UDP != nil && m.UDP.Entry != nil && m.UDP.Entry.Stateful)
 		ms := engine.MonitorSpec{

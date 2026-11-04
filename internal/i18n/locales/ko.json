@@ -1449,5 +1449,6 @@
 "ui.dv.hint": "교체된 마스터가 이 마스터가 인수할 때와 다른 구성을 가지고 있었습니다. 적용되지 않았으니 비교 후 필요한 부분을 직접 옮기세요.",
 "ui.dv.versions": "버전 {v}(임기 {term}), 인수 시 {base}",
 "ui.dv.view": "보기",
-"ui.dv.dismiss": "닫기"
+"ui.dv.dismiss": "닫기",
+"reason.inconclusive": "판단 불가: 응답이 없고 호스트도 응답하지 않음"
 }

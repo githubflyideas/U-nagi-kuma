@@ -70,6 +70,7 @@ func unconnectedExchange(ctx context.Context, c *net.UDPConn, dst *net.UDPAddr, 
 	deadline, _ := ctx.Deadline()
 	slot := time.Until(deadline) / time.Duration(retransmit+1)
 	buf := make([]byte, 65535)
+	start := time.Now()
 	for attempt := 0; attempt <= retransmit; attempt++ {
 		sentAt := time.Now()
 		if _, err := c.WriteToUDP(req, dst); err != nil {
@@ -92,7 +93,7 @@ func unconnectedExchange(ctx context.Context, c *net.UDPConn, dst *net.UDPAddr, 
 				continue
 			}
 			if accept(buf[:n], from) {
-				return append([]byte(nil), buf[:n]...), from, time.Since(sentAt), nil
+				return append([]byte(nil), buf[:n]...), from, replyLatency(attempt, start, sentAt), nil
 			}
 		}
 		if ctx.Err() != nil {

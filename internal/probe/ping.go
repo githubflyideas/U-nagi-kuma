@@ -157,7 +157,7 @@ func runPing(ctx context.Context, s Spec) Result {
 					delete(sent, q)
 				}
 			case *icmp.DstUnreach:
-				if len(body.Data) > 0 && bytes.Contains(body.Data, nonce[4:12]) {
+				if len(body.Data) > 0 && bytes.Contains(body.Data, nonceTag(nonce)) {
 					unreachable = fmt.Sprintf("ICMP destination unreachable (code %d) from %v", m.Code, from)
 				}
 			}
@@ -205,6 +205,12 @@ func runPing(ctx context.Context, s Spec) Result {
 		}
 	}
 	return r
+}
+
+// nonceTag is the random part of a request that an ICMP error quotes back:
+// up to 8 bytes after the ID and sequence, fewer when size= is smaller.
+func nonceTag(nonce []byte) []byte {
+	return nonce[4:min(len(nonce), 12)]
 }
 
 func sameHost(a net.Addr, ip netip.Addr) bool {

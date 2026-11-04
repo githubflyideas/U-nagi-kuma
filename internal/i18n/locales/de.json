@@ -1458,5 +1458,6 @@
 "ui.dv.hint": "Ein ersetzter Master hatte eine andere Konfiguration als die, mit der dieser Master übernahm. Sie wurde nicht angewendet: vergleichen und Benötigtes von Hand übernehmen.",
 "ui.dv.versions": "Version {v} (Amtszeit {term}), übernommen mit {base}",
 "ui.dv.view": "Anzeigen",
-"ui.dv.dismiss": "Verwerfen"
+"ui.dv.dismiss": "Verwerfen",
+"reason.inconclusive": "Nicht entscheidbar: keine Antwort, und der Host antwortet auch nicht"
 }
