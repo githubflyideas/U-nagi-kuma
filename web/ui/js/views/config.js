@@ -39,7 +39,7 @@ function EditTab() {
   };
   return html`<div class="col" style=${{ gap: '12px' }}>
     <div class="row">
-      <span class="muted small ltr">${cur.data.path} · serial ${cur.data.serial}</span>
+      <span class="muted small ltr">${cur.data.path} · ${t('ui.config.serial')} ${cur.data.serial}</span>
       <div class="spacer"></div>
       <button class="btn" onClick=${copy}>${t('ui.config.copy')}</button>
       <button class="btn" onClick=${cur.reload}>${t('ui.config.reload')}</button>

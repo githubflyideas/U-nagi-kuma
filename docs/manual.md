@@ -64,8 +64,8 @@ WantedBy=multi-user.target
 ## monitors.bind
 
 ```text
-; serial  interval  retry  timeout  attempts
-@ IN SOA unagikuma. admin.example.com. ( 2026102301 1m 15s 5s 3 )
+; revision, then the defaults for every monitor
+$FILE revision=2026102301 interval=1m retry=15s timeout=5s attempts=3
 
 $SET notify.repeat=30m
 
@@ -88,7 +88,7 @@ company  IN DOMAIN example.com days=45 critical-days=10
 main     IN STATUSPAGE "Service status" select="group:public"
 ```
 
-- After editing the file by hand, **increase the serial**; Unagikuma then validates and applies it. Saving a monitor, channel or policy in the web UI raises the serial for you. **Configuration › monitors.bind** shows the file read-only, with a copy button; edit it on the server. A file with errors is never applied: the last good version keeps running and the UI shows what is wrong.
+- After editing the file by hand, **increase the revision** on the `$FILE` line; Unagikuma then validates and applies it. Saving a monitor, channel or policy in the web UI raises it for you. Files from earlier releases start with an `@ IN SOA … ( serial interval retry timeout attempts )` line instead; it still works the same way, and its first number is the revision. **Configuration › monitors.bind** shows the file read-only, with a copy button; edit it on the server. A file with errors is never applied: the last good version keeps running and the UI shows what is wrong.
 - Credentials never need to be in the file: store them under **Settings › Secrets** and refer to them as `${secret:name}`. Values from the environment can be used as `${env:NAME}` when the server is started with `--allow-env NAME`.
 - Monitors are grouped into hosts by the address they check; `device=core-sw1` groups monitors of several addresses under one name. A host with a PING monitor is UP or DOWN by that ping.
 - `parent=gw` (or `parent=sw1,gw`) declares a dependency: while a parent is down, a failing child is shown as UNREACHABLE and not notified. If the child is still down once its parents are back, it is notified as usual.
@@ -349,7 +349,7 @@ unagikuma agent [flags]          run a probe node for a master
 unagikuma node add|list|token|revoke
                                 manage probe nodes and their tokens
 unagikuma check [file]           validate a monitors.bind file
-unagikuma serial [bump] [file]   print or increase the serial
+unagikuma serial [bump] [file]   print or increase the revision
 unagikuma probe <target> [k=v]   run one check now, e.g. "udp 10.0.0.1:ntp"
 unagikuma keywords [dialect]     list the UDP keywords
 unagikuma backup [--passphrase-file F] [--history]
@@ -394,5 +394,5 @@ Everything the UI does goes through a REST API under `/api/v1`. Create a token u
 - **Ping checks say "checked over TCP" or "privilege".** This host does not allow ping for Unagikuma. Allow unprivileged ping (`sudo sysctl -w net.ipv4.ping_group_range="0 2147483647"`) or give the binary `CAP_NET_RAW`; see Quick start.
 - **A script check stays paused.** Enabling it lists the nodes that lack the script; **Settings › Check scripts** shows each node's copy.
 - **"Monitoring data cannot be written".** The data directory refuses writes (full disk, read-only file system) for longer than `storage.write-alert` (1 minute). Results and events are kept in memory and written once space is back; a red banner in the UI and `/healthz` (`"status": "degraded"`) say so meanwhile. Free disk space; the incident resolves itself.
-- **An edit to monitors.bind is ignored.** Increase the serial; a file with errors is never applied, and the UI shows the error with its line.
+- **An edit to monitors.bind is ignored.** Increase the revision; a file with errors is never applied, and the UI shows the error with its line.
 - **The standby has no copy.** **Settings › Nodes** shows when it last fetched the master's state and the last error; it retries after `cluster.standby-retry` and on every configuration change.

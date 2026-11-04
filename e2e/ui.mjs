@@ -112,7 +112,7 @@ await step('configuration editor shows monitors.bind', async () => {
   await page.goto(base + '/#/config/edit');
   // Polled with evaluate: waitForFunction needs eval, which the UI's CSP forbids.
   await until('monitors.bind in the editor', () => page.evaluate(() =>
-    document.body.innerText.includes('IN SOA') || [...document.querySelectorAll('textarea')].some((t) => t.value.includes('IN SOA'))));
+    /IN SOA|\$FILE/.test(document.body.innerText) || [...document.querySelectorAll('textarea')].some((t) => /IN SOA|\$FILE/.test(t.value))));
 });
 
 await step('Nagios import previews', async () => {

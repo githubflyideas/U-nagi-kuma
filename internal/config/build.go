@@ -118,10 +118,20 @@ func (b *builder) build() {
 			d := s.directive()
 			pos := s.Tokens[0].Pos
 			// $VERSION may come first: it says how to read the rest.
-			if !soaSeen && d.Name != "VERSION" {
-				b.errf(pos, "soa_first", "the SOA record must come first")
+			if !soaSeen && d.Name != "VERSION" && d.Name != "FILE" {
+				b.errf(pos, "soa_first", "the file header ($FILE) must come first")
 			}
 			switch d.Name {
+			case "FILE":
+				if soaSeen {
+					b.errf(pos, "duplicate_soa", "only one file header ($FILE or SOA) is allowed")
+					continue
+				}
+				if recordSeen {
+					b.errf(pos, "soa_first", "the file header ($FILE) must come first")
+				}
+				soaSeen = true
+				b.fileHeader(d)
 			case "QUORUM", "DIALECT":
 				if p, dup := globalOnce[d.Name]; dup {
 					b.errf(pos, "duplicate_directive", "$%s already set at line %d", d.Name, p.Line)
@@ -208,18 +218,18 @@ func (b *builder) build() {
 		}
 		if r.Type == "SOA" {
 			if soaSeen {
-				b.errf(r.TypePos, "duplicate_soa", "only one SOA record is allowed")
+				b.errf(r.TypePos, "duplicate_soa", "only one file header ($FILE or SOA) is allowed")
 				continue
 			}
 			if recordSeen {
-				b.errf(r.TypePos, "soa_first", "the SOA record must come first")
+				b.errf(r.TypePos, "soa_first", "the file header must come first")
 			}
 			soaSeen = true
 			b.soa(r)
 			continue
 		}
 		if !soaSeen && !recordSeen {
-			b.errf(r.NamePos, "soa_first", "the SOA record must come first")
+			b.errf(r.NamePos, "soa_first", "the file header ($FILE) must come first")
 		}
 		recordSeen = true
 		if !ValidName(r.Name) {
@@ -259,7 +269,7 @@ func (b *builder) build() {
 		}
 	}
 	if !soaSeen {
-		b.errf(Pos{File: b.f.Path, Line: 1, Col: 1}, "missing_soa", "missing SOA record (@ IN SOA master. admin.example.com. ( serial interval retry timeout attempts ))")
+		b.errf(Pos{File: b.f.Path, Line: 1, Col: 1}, "missing_soa", "missing file header: start the file with $FILE revision=1")
 	}
 	ts, err := tunables.New(setOverrides)
 	if err != nil {
@@ -373,6 +383,81 @@ func dupKeys(opts []Opt) *Opt {
 }
 
 func lines(s *Stmt) [2]int { return [2]int{s.StartLine, s.EndLine} }
+
+// Header defaults: what a $FILE line leaves out.
+var headerDefaults = Defaults{Interval: time.Minute, Retry: 15 * time.Second, Timeout: 5 * time.Second, Attempts: 3}
+
+// fileHeader reads the file header:
+//
+//	$FILE revision=N [master=NAME] [admin=EMAIL] [interval=D] [retry=D] [timeout=D] [attempts=N]
+//
+// It holds what the older SOA record holds, by name; only the revision is
+// required.
+func (b *builder) fileHeader(d Directive) {
+	b.cfg.MName, b.cfg.Defaults = "unagikuma", headerDefaults
+	seen := map[string]bool{}
+	var timeoutPos Pos
+	for _, t := range d.Args {
+		k, v, ok := t.option()
+		if !ok {
+			b.errf(t.Pos, "syntax", "$FILE takes options: revision=N, and optionally master=, admin=, interval=, retry=, timeout=, attempts=")
+			continue
+		}
+		if seen[k] {
+			b.errf(t.Pos, "duplicate_option", "option %s given twice", k)
+			continue
+		}
+		seen[k] = true
+		switch k {
+		case "revision":
+			n, err := strconv.ParseUint(v, 10, 32)
+			if err != nil || n == 0 {
+				b.errf(t.Pos, "invalid_serial", "revision must be an integer between 1 and 4294967295")
+			}
+			b.cfg.Serial = uint32(n)
+		case "master":
+			if !ValidName(v) {
+				b.errf(t.Pos, "invalid_name", "master: invalid node name %q", v)
+				continue
+			}
+			b.cfg.MName = v
+		case "admin":
+			b.cfg.RName = v
+		case "interval", "retry", "timeout":
+			dur, err := tunables.ParseDuration(v)
+			if err != nil || dur <= 0 {
+				b.errf(t.Pos, "invalid_duration", "invalid duration %q", v)
+				continue
+			}
+			switch k {
+			case "interval":
+				b.cfg.Defaults.Interval = dur
+			case "retry":
+				b.cfg.Defaults.Retry = dur
+			default:
+				b.cfg.Defaults.Timeout, timeoutPos = dur, t.Pos
+			}
+		case "attempts":
+			n, err := strconv.Atoi(v)
+			if err != nil || n < 1 || n > 100 {
+				b.errf(t.Pos, "invalid_value", "attempts must be an integer between 1 and 100")
+				continue
+			}
+			b.cfg.Defaults.Attempts = n
+		default:
+			b.errf(t.Pos, "unknown_option", "$FILE has no option %s (revision, master, admin, interval, retry, timeout, attempts)", k)
+		}
+	}
+	if !seen["revision"] {
+		b.errf(d.Stmt.Tokens[0].Pos, "invalid_serial", "$FILE needs revision=N (increase it after editing by hand)")
+	}
+	if df := b.cfg.Defaults; df.Timeout >= df.Interval {
+		if timeoutPos.Line == 0 {
+			timeoutPos = d.Stmt.Tokens[0].Pos
+		}
+		b.warnf(timeoutPos, "timeout_ge_interval", "timeout %s is not shorter than the interval %s", df.Timeout, df.Interval)
+	}
+}
 
 func (b *builder) soa(r Record) {
 	b.cfg.MName = strings.TrimSuffix(r.Target, ".")

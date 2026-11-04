@@ -37,12 +37,24 @@ func (f *File) eol() string {
 	return ""
 }
 
-// soaSerialToken finds the serial token of the SOA record.
-func (f *File) soaSerialToken() (*Token, error) {
+// serialToken finds the token that holds the revision: revision=N on the
+// $FILE line (prefix "revision="), or the serial of an SOA record.
+func (f *File) serialToken() (t *Token, prefix string, err error) {
 	for i := range f.Stmts {
 		s := &f.Stmts[i]
 		if s.isDirective() {
-			continue
+			d := s.directive()
+			if d.Name != "FILE" {
+				continue
+			}
+			for j := 1; j < len(s.Tokens); j++ {
+				t := &s.Tokens[j]
+				if k, _, ok := t.option(); ok && k == "revision" {
+					key, _, _ := strings.Cut(t.Raw, "=")
+					return t, key + "=", nil
+				}
+			}
+			return nil, "", errors.New("$FILE has no revision")
 		}
 		r, d := s.record()
 		if d != nil || r.Type != "SOA" {
@@ -56,38 +68,42 @@ func (f *File) soaSerialToken() (*Token, error) {
 			}
 			// name IN SOA mname rname serial ...
 			if n == 5 {
-				return t, nil
+				return t, "", nil
 			}
 			n++
 		}
-		return nil, errors.New("SOA has no serial")
+		return nil, "", errors.New("SOA has no serial")
 	}
-	return nil, errors.New("no SOA record")
+	return nil, "", errors.New("no file header")
 }
 
-// Serial returns the serial written in the file.
+// Serial returns the revision written in the file.
 func (f *File) Serial() (uint32, error) {
-	t, err := f.soaSerialToken()
+	t, prefix, err := f.serialToken()
 	if err != nil {
 		return 0, err
 	}
-	n, err := strconv.ParseUint(t.Text, 10, 32)
+	v := t.Text
+	if prefix != "" {
+		_, v, _ = t.option()
+	}
+	n, err := strconv.ParseUint(v, 10, 32)
 	if err != nil {
-		return 0, fmt.Errorf("invalid serial %q", t.Text)
+		return 0, fmt.Errorf("invalid revision %q", v)
 	}
 	return uint32(n), nil
 }
 
-// SetSerial replaces the serial in place, keeping the rest of the line.
+// SetSerial replaces the revision in place, keeping the rest of the line.
 func (f *File) SetSerial(n uint32) error {
-	t, err := f.soaSerialToken()
+	t, prefix, err := f.serialToken()
 	if err != nil {
 		return err
 	}
 	ls := f.lines()
 	line := ls[t.Pos.Line-1]
 	idx := byteIndexOfCol(line, t.Pos.Col)
-	ls[t.Pos.Line-1] = line[:idx] + strconv.FormatUint(uint64(n), 10) + line[idx+len(t.Raw):]
+	ls[t.Pos.Line-1] = line[:idx] + prefix + strconv.FormatUint(uint64(n), 10) + line[idx+len(t.Raw):]
 	return f.setLines(ls)
 }
 
@@ -457,7 +473,7 @@ func (f *File) RenameRecord(oldName, newName string) error {
 
 // SetTunables rewrites the $SET directives: set adds or changes keys,
 // unset removes them. Existing $SET lines are updated in place; new keys
-// go on a new $SET line after the last directive (or the SOA).
+// go on a new $SET line after the last directive (or the file header).
 func (f *File) SetTunables(set map[string]string, unset []string) error {
 	for k, v := range set {
 		if !optKeyRe.MatchString(k) || oneLine(k, v) != nil {
@@ -589,11 +605,11 @@ func serialDate(s uint32) (time.Time, bool) {
 func CheckSerial(newSerial, active uint32) error {
 	switch {
 	case newSerial == 0:
-		return errors.New("serial must be at least 1")
+		return errors.New("the revision must be at least 1")
 	case active != 0 && newSerial < active:
-		return fmt.Errorf("serial %d is lower than the active %d (use history → rollback to go back)", newSerial, active)
+		return fmt.Errorf("revision %d is lower than the active %d (use history → rollback to go back)", newSerial, active)
 	case active != 0 && uint64(newSerial) > uint64(active)+1_000_000:
-		return fmt.Errorf("serial %d jumps more than 1000000 above the active %d (typo?)", newSerial, active)
+		return fmt.Errorf("revision %d jumps more than 1000000 above the active %d (typo?)", newSerial, active)
 	}
 	return nil
 }

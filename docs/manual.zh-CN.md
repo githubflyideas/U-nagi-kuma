@@ -64,8 +64,8 @@ WantedBy=multi-user.target
 ## monitors.bind
 
 ```text
-; 序列号  间隔  重试  超时  尝试次数
-@ IN SOA unagikuma. admin.example.com. ( 2026102301 1m 15s 5s 3 )
+; 版本号，以及所有监控项的默认值
+$FILE revision=2026102301 interval=1m retry=15s timeout=5s attempts=3
 
 $SET notify.repeat=30m
 
@@ -88,7 +88,7 @@ company  IN DOMAIN example.com days=45 critical-days=10
 main     IN STATUSPAGE "服务状态" select="group:public"
 ```
 
-- 手工编辑后请**增大序列号**，Unagikuma 会校验并自动生效。在网页里保存监控、通道或策略时序列号会自动增加。**配置 › monitors.bind** 只读显示该文件，可一键复制；需要直接修改请在服务器上编辑。有错误的文件不会生效：上一个正确的版本继续运行，界面会指出错在哪里。
+- 手工编辑后请**增大 `$FILE` 行的版本号（revision）**，Unagikuma 会校验并自动生效。在网页里保存监控、通道或策略时版本号会自动增加。早期版本写出的文件以 `@ IN SOA … ( 序列号 间隔 重试 超时 尝试次数 )` 开头，照样可用，其中第一个数字就是版本号。**配置 › monitors.bind** 只读显示该文件，可一键复制；需要直接修改请在服务器上编辑。有错误的文件不会生效：上一个正确的版本继续运行，界面会指出错在哪里。
 - 凭据不必写进文件：在 **设置 › 密钥** 中保存，然后用 `${secret:名称}` 引用。用 `--allow-env NAME` 启动时，也可以用 `${env:NAME}` 引用环境变量。
 - 监控项按检查的地址归入主机；`device=core-sw1` 可以把不同地址的监控项归到同一个名字下。有 PING 监控的主机，其 UP / DOWN 由这个 ping 决定。
 - `parent=gw`（或 `parent=sw1,gw`）声明依赖关系：父项故障期间，失败的子项显示为“不可达”，不发通知；父项恢复后子项仍然故障，再照常通知。
@@ -332,7 +332,7 @@ unagikuma agent [参数]             作为探测节点连接 master
 unagikuma node add|list|token|revoke
                                   管理探测节点及其令牌
 unagikuma check [文件]             校验 monitors.bind
-unagikuma serial [bump] [文件]     显示或增大序列号
+unagikuma serial [bump] [文件]     显示或增大版本号
 unagikuma probe <目标> [k=v]       立即执行一次检查，如 "udp 10.0.0.1:ntp"
 unagikuma keywords [方言]          列出 UDP 关键字
 unagikuma backup [--passphrase-file 文件] [--history]
@@ -377,5 +377,5 @@ unagikuma restore --passphrase-file pass.txt unagikuma-20261101-0300.ukbackup
 - **Ping 检查提示“通过 TCP 检查”或权限不足。** 本机不允许 Unagikuma 发送 ping。允许非特权 ping（`sudo sysctl -w net.ipv4.ping_group_range="0 2147483647"`）或给程序 `CAP_NET_RAW` 权限，见快速开始。
 - **脚本检查一直是暂停状态。** 启用时会列出缺少脚本的节点；**设置 › 检查脚本** 显示每个节点上的脚本情况。
 - **"监控数据无法写入"。** 数据目录持续 `storage.write-alert`（1 分钟）以上无法写入（磁盘已满、文件系统只读）。期间检查结果和事件暂存在内存中，空间恢复后会补写；界面顶部会显示红色横幅，`/healthz` 也会返回 `"status": "degraded"`。清理磁盘空间后，故障会自动恢复。
-- **改了 monitors.bind 但没生效。** 请增大序列号；有错误的文件不会生效，界面会显示错误所在的行。
+- **改了 monitors.bind 但没生效。** 请增大版本号；有错误的文件不会生效，界面会显示错误所在的行。
 - **备用节点没有状态副本。** **设置 › 节点** 显示它上次拉取主节点状态的时间和最近一次错误；失败后会在 `cluster.standby-retry` 后重试，每次配置变更后也会重新拉取。

@@ -72,16 +72,17 @@ func shaOf(b []byte) string {
 	return hex.EncodeToString(h[:])
 }
 
-// Starter is the monitors.bind written on first run: SOA only; monitors
-// come from the setup wizard, the editor or an import.
+// Starter is the monitors.bind written on first run: the header only;
+// monitors come from the setup wizard, the editor or an import.
 func Starter(now time.Time) []byte { return starter(now) }
 
 func starter(now time.Time) []byte {
 	serial, _, _ := config.NextSerial(0, now)
 	return []byte(fmt.Sprintf(`; unagikuma monitors.bind
-; Edit here or in the Web UI. After editing by hand, increase the serial
-; (first number in the SOA) and unagikuma applies the change by itself.
-@   IN  SOA  unagikuma.  admin.localhost. ( %d 1m 15s 5s 3 )
+; Edit here or in the Web UI. After editing by hand, increase the revision
+; below and unagikuma applies the change by itself. interval, retry,
+; timeout and attempts are the defaults for every monitor.
+$FILE revision=%d master=unagikuma interval=1m retry=15s timeout=5s attempts=3
 `, serial))
 }
 
@@ -269,7 +270,7 @@ func (cm *configManager) check() {
 	case config.HasErrors(diags):
 		cm.setBanner(&Banner{Kind: "error", Code: "invalid", Message: "monitors.bind has errors; the previous version keeps running", Diags: diags})
 	case cfg.Serial == cm.cur.Serial:
-		cm.setBanner(&Banner{Kind: "warning", Code: "serial_not_bumped", Message: "monitors.bind changed but the serial was not increased", Serial: cfg.Serial})
+		cm.setBanner(&Banner{Kind: "warning", Code: "serial_not_bumped", Message: "monitors.bind changed but the revision was not increased", Serial: cfg.Serial})
 	case config.CheckSerial(cfg.Serial, cm.cur.Serial) != nil:
 		cm.setBanner(&Banner{Kind: "warning", Code: "serial_lower", Message: config.CheckSerial(cfg.Serial, cm.cur.Serial).Error(), Serial: cfg.Serial})
 	default:

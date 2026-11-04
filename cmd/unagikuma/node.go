@@ -148,7 +148,7 @@ func nodeAdd(out io.Writer, path, data, name, title, region, server string) erro
 	if err := replaceFile(path, f.Bytes()); err != nil {
 		return err
 	}
-	fmt.Fprintf(out, "Node %s added to %s (serial %d → %d); a running server applies it within seconds.\n", name, path, cur, next)
+	fmt.Fprintf(out, "Node %s added to %s (revision %d → %d); a running server applies it within seconds.\n", name, path, cur, next)
 	return nodeIssue(out, data, name, server)
 }
 
