@@ -11,7 +11,7 @@ import (
 // tactical summarises hosts and services by state, split into unhandled
 // and handled (acknowledged, silenced, in maintenance) like an operations
 // console needs it.
-func (s *Server) tactical() map[string]any {
+func (s *Server) tactical(req *http.Request) map[string]any {
 	cfg := s.app.Config().Config
 	incs := s.incidentIndex()
 	type split struct {
@@ -21,6 +21,9 @@ func (s *Server) tactical() map[string]any {
 	}
 	services := map[string]*split{}
 	for _, r := range s.app.Engine().Rows() {
+		if !seesMonitor(req, r.Name) {
+			continue
+		}
 		row := s.rowBase(r, cfg, incs)
 		sp := services[row.Status]
 		if sp == nil {
@@ -36,7 +39,7 @@ func (s *Server) tactical() map[string]any {
 		}
 	}
 	hosts := map[string]int{}
-	for _, h := range s.hostList() {
+	for _, h := range s.hostList(req) {
 		hosts[h.Status]++
 	}
 	return map[string]any{"services": services, "hosts": hosts}
@@ -72,6 +75,9 @@ func (s *Server) availability(w http.ResponseWriter, r *http.Request) (any, erro
 	}
 	out := []row{}
 	for _, m := range cfg.Monitors {
+		if !seesMonitor(r, m.Name) {
+			continue
+		}
 		u, err := s.app.Store().UptimeOf(m.Name, from, now)
 		if err != nil {
 			return nil, err
@@ -127,6 +133,9 @@ func (s *Server) expiry(w http.ResponseWriter, r *http.Request) (any, error) {
 	}
 	out := []row{}
 	for _, m := range s.app.Engine().Rows() {
+		if !seesMonitor(r, m.Name) {
+			continue
+		}
 		for what, key := range map[string]string{"cert": "cert.days", "domain": "domain.days"} {
 			if d, ok := m.Metrics[key]; ok {
 				out = append(out, row{m.Name, m.Title, what, m.Target, d, m.Status})

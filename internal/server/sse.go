@@ -27,10 +27,15 @@ type Hub struct {
 }
 
 type sseEvent struct {
-	seq  uint64
-	typ  string
-	data []byte
+	seq     uint64
+	typ     string
+	data    []byte
+	monitor string // the monitor it is about, "" for none
 }
+
+// sseFilter decides what one client receives: the event as is, a changed
+// copy, or nothing (false).
+type sseFilter func(ev sseEvent) (sseEvent, bool)
 
 type sseSub struct {
 	ch      chan sseEvent
@@ -47,7 +52,11 @@ func NewHub(boot string, ringSize int, maxSubs func() int) *Hub {
 }
 
 // Publish sends an event of type typ to every client.
-func (h *Hub) Publish(typ string, v any) {
+func (h *Hub) Publish(typ string, v any) { h.PublishFor(typ, "", v) }
+
+// PublishFor sends an event about a monitor ("" for none), so that clients
+// that may not see that monitor can be left out.
+func (h *Hub) PublishFor(typ, monitor string, v any) {
 	data, err := json.Marshal(v)
 	if err != nil {
 		return
@@ -55,7 +64,7 @@ func (h *Hub) Publish(typ string, v any) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.seq++
-	ev := sseEvent{seq: h.seq, typ: typ, data: data}
+	ev := sseEvent{seq: h.seq, typ: typ, data: data, monitor: monitor}
 	h.ring[h.next] = ev
 	h.next = (h.next + 1) % len(h.ring)
 	if h.next == 0 {
@@ -141,7 +150,10 @@ func (h *Hub) unsubscribe(s *sseSub) {
 func (h *Hub) id(seq uint64) string { return h.boot + "-" + strconv.FormatUint(seq, 10) }
 
 // ServeHTTP streams events. Authentication happens before this handler.
-func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) { h.ServeFiltered(w, r, nil) }
+
+// ServeFiltered streams events through filter (nil = everything).
+func (h *Hub) ServeFiltered(w http.ResponseWriter, r *http.Request, filter sseFilter) {
 	fl, ok := w.(http.Flusher)
 	if !ok {
 		writeError(w, Errorf(http.StatusInternalServerError, CodeInternal, "streaming unsupported"))
@@ -168,6 +180,12 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "event: reset\ndata: {}\n\n")
 	}
 	for _, ev := range replay {
+		if filter != nil {
+			var keep bool
+			if ev, keep = filter(ev); !keep {
+				continue
+			}
+		}
 		h.write(w, ev)
 	}
 	fl.Flush()
@@ -181,6 +199,12 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case ev, ok := <-sub.ch:
 			if !ok {
 				return // dropped as too slow
+			}
+			if filter != nil {
+				var keep bool
+				if ev, keep = filter(ev); !keep {
+					continue
+				}
 			}
 			h.write(w, ev)
 			fl.Flush()

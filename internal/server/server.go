@@ -16,7 +16,9 @@ import (
 	"time"
 
 	"github.com/githubflyideas/unagikuma/internal/app"
+	"github.com/githubflyideas/unagikuma/internal/engine"
 	"github.com/githubflyideas/unagikuma/internal/ratelimit"
+	"github.com/githubflyideas/unagikuma/internal/store"
 )
 
 // Options configure the server.
@@ -31,17 +33,21 @@ type Options struct {
 }
 
 // Server is the HTTP layer.
+// routeInfo is a registered API route (for the tests that walk them all).
+type routeInfo struct{ pattern, scope string }
+
 type Server struct {
-	app   *app.App
-	opts  Options
-	log   *slog.Logger
-	hub   *Hub
-	mux   *http.ServeMux
-	now   func() time.Time
-	api   *ratelimit.Keyed
-	login *ratelimit.Keyed
-	push  *ratelimit.Keyed
-	subs  *ratelimit.Keyed // public status page subscriptions, per IP
+	routeList []routeInfo
+	app       *app.App
+	opts      Options
+	log       *slog.Logger
+	hub       *Hub
+	mux       *http.ServeMux
+	now       func() time.Time
+	api       *ratelimit.Keyed
+	login     *ratelimit.Keyed
+	push      *ratelimit.Keyed
+	subs      *ratelimit.Keyed // public status page subscriptions, per IP
 
 	setupMu    sync.Mutex
 	setupToken string
@@ -73,6 +79,9 @@ type authInfo struct {
 	token   string
 	role    string
 	areas   []string // $SCOPE sections a limited operator may change
+	// team is set for a member of one or more teams (not an administrator):
+	// it sees and changes only what its teams own.
+	team *teamScope
 }
 
 type ctxKey struct{}
@@ -138,6 +147,18 @@ func (s *Server) publishLoop() {
 			// Events were dropped: tell clients to refetch everything.
 			s.hub.Publish("reset", map[string]any{})
 		}
+		monitor := ""
+		switch v := ev.v.(type) {
+		case map[string]any:
+			if n, ok := v["name"].(string); ok {
+				monitor = n
+			}
+			if n, ok := v["monitor"].(string); ok {
+				monitor = n
+			}
+		case engine.Event:
+			monitor = v.Monitor
+		}
 		if ev.typ == "state" {
 			if m, ok := ev.v.(map[string]any); ok {
 				if name, _ := m["name"].(string); name != "" {
@@ -147,7 +168,7 @@ func (s *Server) publishLoop() {
 				}
 			}
 		}
-		s.hub.Publish(ev.typ, ev.v)
+		s.hub.PublishFor(ev.typ, monitor, ev.v)
 	}
 }
 
@@ -175,6 +196,7 @@ type apiFunc func(w http.ResponseWriter, r *http.Request) (any, error)
 // handle registers an API endpoint with authentication and scope checks.
 // scope "" means public; "read" also accepts any authenticated caller.
 func (s *Server) handle(pattern, scope string, f apiFunc) {
+	s.routeList = append(s.routeList, routeInfo{pattern, scope})
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if scope != "" {
 			ai, err := s.authenticate(r)
@@ -184,6 +206,10 @@ func (s *Server) handle(pattern, scope string, f apiFunc) {
 			}
 			if !ai.scopes[scope] && !ai.scopes["admin"] {
 				writeError(w, Errorf(http.StatusForbidden, CodeForbidden, "this token lacks the %q scope", scope))
+				return
+			}
+			if ai.team != nil && !teamRoutes[pattern] {
+				writeError(w, errTeamOnly)
 				return
 			}
 			if ai.session && r.Method != http.MethodGet && r.Method != http.MethodHead {
@@ -273,8 +299,14 @@ func (s *Server) authenticate(r *http.Request) (*authInfo, error) {
 	if err != nil {
 		return nil, errUnauthorized
 	}
-	return &authInfo{user: se.User.Username, userID: se.User.ID, csrf: se.CSRF, session: true,
-		scopes: roleScopes(se.User.Role), role: se.User.Role, areas: se.User.Areas}, nil
+	ai := &authInfo{user: se.User.Username, userID: se.User.ID, csrf: se.CSRF, session: true,
+		scopes: roleScopes(se.User.Role), role: se.User.Role, areas: se.User.Areas}
+	if se.User.Role != store.RoleAdmin {
+		if ts := teamScopeFor(s.app.Config().Config, se.User.Username); ts != nil {
+			ai.team, ai.scopes = ts, ts.scopes()
+		}
+	}
+	return ai, nil
 }
 
 func (s *Server) ip(r *http.Request) string { return clientIP(r, s.opts.TrustedProxy) }

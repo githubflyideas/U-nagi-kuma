@@ -1,7 +1,7 @@
 // Application shell: session, navigation and routing.
 import { html, render, useState, useEffect } from './lib.js';
 import { t, tn, setLang, detectLang, loadLanguages, langList, currentLang, fmtTime, detailText } from './i18n.js';
-import { get, post, del, setCSRF, onUnauthorized } from './api.js';
+import { get, post, del, setCSRF, setMe, me, onUnauthorized } from './api.js';
 import { startLive, stopLive, onConnection } from './live.js';
 import { useRoute, href, Toasts, ConfirmHost, useFetch, useLive, errText, Field } from './ui.js';
 import { Overview } from './views/overview.js';
@@ -129,6 +129,8 @@ const NAV = [
   ['/settings', 'ui.nav.settings', '⚙'],
 ];
 
+const TEAM_NAV = new Set(['/', '/monitors', '/problems', '/events']);
+
 const OLD_ALERT_TABS = { changes: 'changes', notices: 'pages', report: 'report' };
 
 function Shell({ user, onLogout, onLang }) {
@@ -182,7 +184,8 @@ function Shell({ user, onLogout, onLang }) {
   const banner = ov.data && ov.data.banner;
   // A single machine keeps nodes under Settings; with remote nodes they
   // get their own place in the sidebar.
-  const nav = NAV.filter(([path]) => path !== '/nodes' || (ov.data && ov.data.layout === 'cluster'));
+  // A team member works with their teams' monitors only.
+  const nav = NAV.filter(([path]) => (path !== '/nodes' || (ov.data && ov.data.layout === 'cluster')) && (!me.teams || TEAM_NAV.has(path)));
   return html`<div class=${'shell' + (mini ? ' mini' : '')}>
     <aside class=${'side' + (open ? ' open' : '')}>
       <a class="brand" href="#/"><${Logo} /><div>Unagikuma</div></a>
@@ -276,6 +279,7 @@ function Root() {
     try {
       const s = await get('/session');
       setCSRF(s.csrf);
+      setMe(s);
       startLive();
       setSt({ phase: 'in', user: s.user });
     } catch (e) {
@@ -295,7 +299,13 @@ function Root() {
     onUnauthorized(() => { stopLive(); setSt({ phase: 'login' }); });
     check();
   }, []);
-  const signedIn = (r) => { setCSRF(r.csrf); startLive(); setSt({ phase: 'in', user: r.user }); location.hash = '#/'; };
+  const signedIn = async (r) => {
+    setCSRF(r.csrf);
+    try { setMe(await get('/session')); } catch { setMe(null); }
+    startLive();
+    setSt({ phase: 'in', user: r.user });
+    location.hash = '#/';
+  };
   const logout = async () => {
     try { await del('/session'); } catch { /* ignore */ }
     stopLive();

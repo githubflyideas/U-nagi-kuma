@@ -2,7 +2,7 @@
 // a glance, what needs attention and what was held back.
 import { html, useState } from '../lib.js';
 import { t, tn, dur, fmtNum } from '../i18n.js';
-import { get, post } from '../api.js';
+import { get, post, me } from '../api.js';
 import { useFetch, useLive, Card, Loading, ErrorBox, Dot, Ago, Empty, Pill, Seg, msText, reasonText, quorumText, pct, openMonitor, enc, toast, toastError, useDocTitle, gwBad } from '../ui.js';
 import { IncidentList } from './problems.js';
 
@@ -37,7 +37,7 @@ export function HealthCard({ health }) {
   const gw = h.gateway;
   const hb = h.heartbeat;
   const hbStatus = !hb.configured ? 'pending' : hb.last_error ? 'critical' : 'ok';
-  return html`<${Card} title=${t('ui.health.title')} actions=${html`<a class="btn sm" href="#/settings/general">${t('ui.health.configure')}</a>`}>
+  return html`<${Card} title=${t('ui.health.title')} actions=${me.teams ? null : html`<a class="btn sm" href="#/settings/general">${t('ui.health.configure')}</a>`}>
     <div class="health">
       <div class="hitem"><${Dot} status=${uplinkStatus(up)} />
         <div><b>${t('ui.health.uplink')}</b>

@@ -10,7 +10,7 @@ import (
 // address, with a host state in the Nagios sense.
 type hostJSON = hostview.Host
 
-func (s *Server) hostList() []hostJSON {
+func (s *Server) hostList(req *http.Request) []hostJSON {
 	cfg := s.app.Config().Config
 	status := map[string]string{}
 	for _, r := range s.app.Engine().Rows() {
@@ -18,6 +18,9 @@ func (s *Server) hostList() []hostJSON {
 	}
 	svcs := make([]hostview.Service, 0, len(cfg.Monitors))
 	for _, m := range cfg.Monitors {
+		if !seesMonitor(req, m.Name) {
+			continue
+		}
 		svcs = append(svcs, hostview.Service{Name: m.Name, Host: m.HostKey(), Address: m.Host(), Area: m.Area, Group: m.Group,
 			Ping: m.Type == "PING", Status: status[m.Name]})
 	}
@@ -25,5 +28,5 @@ func (s *Server) hostList() []hostJSON {
 }
 
 func (s *Server) hosts(w http.ResponseWriter, r *http.Request) (any, error) {
-	return map[string]any{"items": s.hostList()}, nil
+	return map[string]any{"items": s.hostList(r)}, nil
 }
