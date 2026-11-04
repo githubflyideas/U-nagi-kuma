@@ -193,6 +193,9 @@ func (s *Server) monitors(w http.ResponseWriter, r *http.Request) (any, error) {
 	q := parseQuery(r.URL.Query().Get("q"))
 	var out []rowJSON
 	for _, row := range s.app.Engine().Rows() {
+		if !seesMonitor(r, row.Name) {
+			continue
+		}
 		rj := s.rowFrom(row, cfg, incs)
 		if q.match(rj) {
 			out = append(out, rj)
@@ -395,6 +398,9 @@ func (s *Server) heartbeats(w http.ResponseWriter, r *http.Request) (any, error)
 	now := s.now()
 	items := map[string][]store.Cell{}
 	for _, n := range names {
+		if !seesMonitor(r, n) {
+			continue
+		}
 		c, err := s.app.Store().Cells(n, now.Add(-d), now, cells)
 		if err != nil {
 			return nil, err
@@ -407,7 +413,7 @@ func (s *Server) heartbeats(w http.ResponseWriter, r *http.Request) (any, error)
 func (s *Server) monitorDetail(w http.ResponseWriter, r *http.Request) (any, error) {
 	name := s.monitorParam(r)
 	row, ok := s.row(name)
-	if !ok {
+	if !ok || !seesMonitor(r, name) {
 		return nil, notFound("monitor")
 	}
 	cur := s.app.Config()
@@ -421,6 +427,20 @@ func (s *Server) monitorDetail(w http.ResponseWriter, r *http.Request) (any, err
 		path["exit"] = exitJSON(h)
 	}
 	out["path"] = path
+	// The state of what it depends on, also for a team member who may not
+	// open those monitors: it explains why this one is unreachable.
+	type parentState struct {
+		Name   string `json:"name"`
+		Status string `json:"status"`
+		Open   bool   `json:"open"`
+	}
+	ps := []parentState{}
+	for _, p := range row.Parents {
+		if pr, ok := s.app.Engine().Row(p); ok {
+			ps = append(ps, parentState{Name: p, Status: string(pr.Status), Open: seesMonitor(r, p)})
+		}
+	}
+	out["parent_states"] = ps
 	if m != nil {
 		lines := strings.Split(cur.Text, "\n")
 		text := strings.Join(lines[m.Lines[0]-1:m.Lines[1]], "\n")
@@ -476,6 +496,9 @@ func (s *Server) monitorDetail(w http.ResponseWriter, r *http.Request) (any, err
 }
 
 func (s *Server) monitorLatency(w http.ResponseWriter, r *http.Request) (any, error) {
+	if !seesMonitor(r, s.monitorParam(r)) {
+		return nil, notFound("monitor")
+	}
 	_, d := rangeOf(r)
 	pts, err := s.app.Store().Latency(s.monitorParam(r), s.now().Add(-d), s.now())
 	if err != nil {
@@ -485,13 +508,16 @@ func (s *Server) monitorLatency(w http.ResponseWriter, r *http.Request) (any, er
 }
 
 func (s *Server) monitorTimeline(w http.ResponseWriter, r *http.Request) (any, error) {
+	if !seesMonitor(r, s.monitorParam(r)) {
+		return nil, notFound("monitor")
+	}
 	return s.app.Store().Events(store.EventFilter{Monitor: s.monitorParam(r), Before: qInt64(r, "before"), Limit: qInt(r, "limit", 50)})
 }
 
 func (s *Server) monitorPush(w http.ResponseWriter, r *http.Request) (any, error) {
 	name := s.monitorParam(r)
 	m := s.app.Config().Config.FindMonitor(name)
-	if m == nil || m.Type != "PUSH" {
+	if m == nil || m.Type != "PUSH" || !seesMonitor(r, name) {
 		return nil, notFound("push monitor")
 	}
 	tok, err := s.app.Store().PushToken(name)
@@ -503,7 +529,7 @@ func (s *Server) monitorPush(w http.ResponseWriter, r *http.Request) (any, error
 
 func (s *Server) monitorPushRotate(w http.ResponseWriter, r *http.Request) (any, error) {
 	name := s.monitorParam(r)
-	if m := s.app.Config().Config.FindMonitor(name); m == nil || m.Type != "PUSH" {
+	if m := s.app.Config().Config.FindMonitor(name); m == nil || m.Type != "PUSH" || !seesMonitor(r, name) {
 		return nil, notFound("push monitor")
 	}
 	if !s.allowsMonitor(authOf(r), name) {
@@ -604,13 +630,16 @@ func (s *Server) monitorCreate(w http.ResponseWriter, r *http.Request) (any, err
 	if spec.Name == "" {
 		return nil, Errorf(http.StatusBadRequest, CodeInvalid, "name is required")
 	}
-	if ai := authOf(r); ai.restricted() {
+	if ai := authOf(r); len(ai.areas) > 0 {
 		if req.Record.Area == nil {
 			spec.Area = ai.areas[0] // into the caller's own section
 		}
 		if !ai.allowsArea(spec.Area) {
 			return nil, errOutsideAreas
 		}
+	}
+	if err := teamOfNewRecord(authOf(r), &spec); err != nil {
+		return nil, err
 	}
 	if s.app.Config().Config.HasName(spec.Name) {
 		return nil, Errorf(http.StatusConflict, CodeConflict, "%s already exists", spec.Name)
@@ -647,7 +676,7 @@ func (s *Server) monitorUpdate(w http.ResponseWriter, r *http.Request) (any, err
 	if err := decodeJSON(r, s.maxBody(), &req); err != nil {
 		return nil, err
 	}
-	if s.app.Config().Config.FindMonitor(name) == nil {
+	if s.app.Config().Config.FindMonitor(name) == nil || !seesMonitor(r, name) {
 		return nil, notFound("monitor")
 	}
 	spec := req.spec()
@@ -656,6 +685,9 @@ func (s *Server) monitorUpdate(w http.ResponseWriter, r *http.Request) (any, err
 	}
 	if ai := authOf(r); !s.allowsMonitor(ai, name) || (spec.MoveArea && !ai.allowsArea(spec.Area)) {
 		return nil, errOutsideAreas
+	}
+	if err := teamOfNewRecord(authOf(r), &spec); err != nil {
+		return nil, err
 	}
 	st, err := s.app.EditConfig(authOf(r).user, req.Message, s.guardExec(authOf(r), ifMatch(r, name, func(f *config.File) error {
 		if spec.Name != name {
@@ -673,7 +705,7 @@ func (s *Server) monitorUpdate(w http.ResponseWriter, r *http.Request) (any, err
 
 func (s *Server) monitorDelete(w http.ResponseWriter, r *http.Request) (any, error) {
 	name := s.monitorParam(r)
-	if s.app.Config().Config.FindMonitor(name) == nil {
+	if s.app.Config().Config.FindMonitor(name) == nil || !seesMonitor(r, name) {
 		return nil, notFound("monitor")
 	}
 	if !s.allowsMonitor(authOf(r), name) {
@@ -703,7 +735,7 @@ func (s *Server) monitorBulkDelete(w http.ResponseWriter, r *http.Request) (any,
 	}
 	cfg := s.app.Config().Config
 	for _, name := range req.Names {
-		if cfg.FindMonitor(name) == nil {
+		if cfg.FindMonitor(name) == nil || !seesMonitor(r, name) {
 			return nil, notFound("monitor")
 		}
 		if !s.allowsMonitor(authOf(r), name) {
@@ -753,7 +785,7 @@ func (s *Server) monitorBulkPause(w http.ResponseWriter, r *http.Request) (any, 
 	seen := map[string]bool{}
 	for _, name := range req.Names {
 		m := cfg.FindMonitor(name)
-		if m == nil {
+		if m == nil || !seesMonitor(r, name) {
 			return nil, notFound("monitor")
 		}
 		if !s.allowsMonitor(authOf(r), name) {
@@ -824,6 +856,9 @@ func (s *Server) monitorBulkPause(w http.ResponseWriter, r *http.Request) (any, 
 // monitorPause toggles disabled=yes on the record (pausing is configuration).
 func (s *Server) monitorPause(w http.ResponseWriter, r *http.Request) (any, error) {
 	name := s.monitorParam(r)
+	if !seesMonitor(r, name) {
+		return nil, notFound("monitor")
+	}
 	if !s.allowsMonitor(authOf(r), name) {
 		return nil, errOutsideAreas
 	}
@@ -881,6 +916,9 @@ func recordFromFile(f *config.File, name string) (config.RecordSpec, error) {
 }
 
 func (s *Server) monitorCheck(w http.ResponseWriter, r *http.Request) (any, error) {
+	if !seesMonitor(r, s.monitorParam(r)) {
+		return nil, notFound("monitor")
+	}
 	err := s.app.Engine().CheckNow(s.monitorParam(r))
 	switch {
 	case errors.Is(err, engine.ErrNotFound):
@@ -996,7 +1034,7 @@ func (s *Server) sameCheck(w http.ResponseWriter, r *http.Request) (any, error) 
 	key, host := draft.CheckKey(), draft.HostKey()
 	for _, m := range cur.Config.Monitors {
 		switch {
-		case m.Name == req.Exclude || m.Disabled:
+		case m.Name == req.Exclude || m.Disabled || !seesMonitor(r, m.Name):
 		case key != "" && m.CheckKey() == key:
 			out.Same = append(out.Same, mon{m.Name, m.Title})
 		case host != "" && m.Type != "PUSH" && m.HostKey() == host:
@@ -1072,6 +1110,9 @@ func (s *Server) quickadd(w http.ResponseWriter, r *http.Request) (any, error) {
 			if d.Severity == config.SevError {
 				out.Errors = append(out.Errors, lineErr{i + 1, d.Msg})
 				bad = true
+			} else if d.Code == "same_check" && teamOf(r) != nil {
+				// It names a monitor the team member may not see.
+				continue
 			} else {
 				rc.Warnings = append(rc.Warnings, d.Msg)
 			}

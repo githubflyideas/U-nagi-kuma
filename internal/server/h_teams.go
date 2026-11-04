@@ -36,7 +36,11 @@ func (s *Server) teams(w http.ResponseWriter, r *http.Request) (any, error) {
 	}
 	etags := s.recordETags()
 	out := []teamJSON{}
+	ts := teamOf(r)
 	for _, t := range cfg.Teams {
+		if ts != nil && ts.roles[t.Name] == "" {
+			continue // a team member sees their own teams only
+		}
 		tj := teamJSON{Name: t.Name, Title: t.Title, Description: t.Description, Policy: t.Policy,
 			Managers: nonNil(t.Managers), Operators: nonNil(t.Operators), Viewers: nonNil(t.Viewers), ETag: etags[t.Name]}
 		for _, m := range cfg.Monitors {

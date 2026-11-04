@@ -47,6 +47,9 @@ func exitJSON(h engine.Health) map[string]any {
 }
 
 func (s *Server) overview(w http.ResponseWriter, r *http.Request) (any, error) {
+	if ts := teamOf(r); ts != nil {
+		return s.teamOverview(r), nil
+	}
 	ov := s.app.Engine().Overview()
 	now := s.now()
 	counts := map[string]int{"total": 0}
@@ -170,7 +173,7 @@ func (s *Server) overview(w http.ResponseWriter, r *http.Request) (any, error) {
 		"instance": s.app.Instance(), "serial": ov.Serial, "layout": layout, "counts": counts, "unhandled": ov.Unhandled,
 		"degraded": ov.Degraded, "value_week": week, "health": health, "channels": chans, "expiring": expiring,
 		"open_system": ov.OpenSystem, "pending_notifications": ov.PendingIntents, "banner": s.app.Banner(),
-		"alerting_configured": alerting, "nodes": nodes, "paths": paths, "tactical": s.tactical(), "script_problems": s.scriptCount(),
+		"alerting_configured": alerting, "nodes": nodes, "paths": paths, "tactical": s.tactical(r), "script_problems": s.scriptCount(),
 		"superseded": s.app.SupersededBy(), "term": s.app.Term(), "contact_issues": len(s.app.ChannelIssues()),
 		"people": len(s.app.Directory().People()), "status_pages": len(cfg.StatusPages), "storage": s.app.Store().WriteHealth(),
 	}, nil
@@ -188,6 +191,9 @@ func (s *Server) incidents(w http.ResponseWriter, r *http.Request) (any, error) 
 			if !inc.State.Open() || inc.State.Drill {
 				continue
 			}
+			if !seesMonitor(r, inc.Monitor) {
+				continue
+			}
 			if engine.Unhandled(&inc, now) == (state == "unhandled") {
 				row := store.IncidentRowOf(inc)
 				row.Acks, _ = s.app.Store().Acks(inc.ID)
@@ -202,7 +208,7 @@ func (s *Server) incidents(w http.ResponseWriter, r *http.Request) (any, error) 
 	default:
 		state = "all"
 	}
-	return s.app.Store().Incidents(state, r.URL.Query().Get("monitor"), qInt64(r, "before"), qInt(r, "limit", 100))
+	return s.app.Store().IncidentsOf(state, r.URL.Query().Get("monitor"), teamOf(r).list(), qInt64(r, "before"), qInt(r, "limit", 100))
 }
 
 func pathID(r *http.Request) (int64, error) {
@@ -225,8 +231,8 @@ func (s *Server) incidentAck(w http.ResponseWriter, r *http.Request) (any, error
 	if err != nil {
 		return nil, err
 	}
-	if !s.allowsIncident(authOf(r), id) {
-		return nil, errOutsideAreas
+	if err := s.incidentGate(r, id); err != nil {
+		return nil, err
 	}
 	var req struct {
 		Comment  string `json:"comment"`
@@ -257,8 +263,8 @@ func (s *Server) incidentUnack(w http.ResponseWriter, r *http.Request) (any, err
 	if err != nil {
 		return nil, err
 	}
-	if !s.allowsIncident(authOf(r), id) {
-		return nil, errOutsideAreas
+	if err := s.incidentGate(r, id); err != nil {
+		return nil, err
 	}
 	if err := s.app.Engine().Unack(id, authOf(r).user); err != nil {
 		return nil, engineErr(err)
@@ -272,8 +278,8 @@ func (s *Server) incidentSilence(w http.ResponseWriter, r *http.Request) (any, e
 	if err != nil {
 		return nil, err
 	}
-	if !s.allowsIncident(authOf(r), id) {
-		return nil, errOutsideAreas
+	if err := s.incidentGate(r, id); err != nil {
+		return nil, err
 	}
 	var req struct {
 		DurationS int `json:"duration_s"`
@@ -300,7 +306,7 @@ func (s *Server) incidentBulk(w http.ResponseWriter, r *http.Request) (any, erro
 	}
 	done := 0
 	for _, id := range req.IDs {
-		if !s.allowsIncident(authOf(r), id) {
+		if s.incidentGate(r, id) != nil {
 			continue
 		}
 		var err error
@@ -329,7 +335,7 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) (any, error) {
 	if t := q.Get("type"); t != "" {
 		types = strings.Split(strings.ToUpper(t), ",")
 	}
-	return s.app.Store().Events(store.EventFilter{Monitor: q.Get("monitor"), Types: types, Severity: q.Get("severity"),
+	return s.app.Store().Events(store.EventFilter{Monitor: q.Get("monitor"), Only: teamOf(r).list(), Types: types, Severity: q.Get("severity"),
 		Before: qInt64(r, "before"), Limit: qInt(r, "limit", 100)})
 }
 

@@ -126,6 +126,43 @@ await step('a team is added and owns a monitor', async () => {
   if (errors.length) throw new Error(errors.join(' | '));
 });
 
+await step('a team member sees only their team', async () => {
+  // The administrator adds an account and makes it an operator of webteam.
+  const ok = await page.evaluate(async () => {
+    const csrf = (await (await fetch('/api/v1/session')).json()).csrf;
+    const h = { 'Content-Type': 'application/json', 'X-Unagikuma-CSRF': csrf };
+    const u = await fetch('/api/v1/users', { method: 'POST', headers: h, body: JSON.stringify({ username: 'teamop', password: 'team-pass-1', role: 'operator' }) });
+    const tm = await fetch('/api/v1/teams', { method: 'POST', headers: h, body: JSON.stringify({ name: 'webteam', managers: ['admin'], operators: ['teamop'] }) });
+    return u.ok && tm.ok;
+  });
+  if (!ok) throw new Error('could not set up the team member');
+  const tctx = await browser.newContext({ viewport: { width: 1366, height: 900 }, locale: 'en-US' });
+  const tp = await tctx.newPage();
+  const terr = [];
+  tp.on('pageerror', (e) => terr.push(e.message));
+  await tp.goto(base);
+  await tp.fill('input[autocomplete=username]', 'teamop');
+  await tp.fill('input[autocomplete=current-password]', 'team-pass-1');
+  await tp.click('.auth .btn.primary');
+  await tp.waitForSelector('nav.nav');
+  const nav = await tp.$$eval('nav.nav a', (as) => as.map((a) => a.getAttribute('href')));
+  if (nav.join(' ') !== '#/ #/monitors #/problems #/events') throw new Error('menu: ' + nav.join(' '));
+  const mons = await tp.evaluate(async () => (await (await fetch('/api/v1/monitors')).json()).items.map((m) => m.name));
+  if (mons.join(',') !== 'same-check-b') throw new Error('monitors: ' + mons.join(','));
+  for (const [route, sel] of [['#/', '.fp-scroll'], ['#/monitors', '.mon-list, .tbl, .hive'], ['#/problems', '.page'], ['#/events', '.page'], ['#/monitors/same-check-b', '.mon-head']]) {
+    await tp.goto(base + '/' + route);
+    try {
+      await tp.waitForSelector(sel, { timeout: 8000 });
+    } catch (e) {
+      await tp.screenshot({ path: `${out}/team-member-${route.replace(/\W+/g, '-')}.png`, fullPage: true }).catch(() => {});
+      throw new Error(route + ': ' + e.message.split('\n')[0] + (terr.length ? ' — script errors: ' + terr.join(' | ') : ''));
+    }
+  }
+  if ((await tp.content()).includes('127.0.0.1-1')) throw new Error('another monitor is shown');
+  await tctx.close();
+  if (terr.length) throw new Error(terr.join(' | '));
+});
+
 await step('configuration editor shows monitors.bind', async () => {
   await page.goto(base + '/#/config/edit');
   // Polled with evaluate: waitForFunction needs eval, which the UI's CSP forbids.

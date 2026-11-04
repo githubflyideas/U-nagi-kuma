@@ -1,7 +1,7 @@
 // Event log and notification log.
 import { html, useState } from '../lib.js';
 import { t, fmtTime } from '../i18n.js';
-import { get, qs } from '../api.js';
+import { get, qs, me } from '../api.js';
 import { useFetch, useLive, Loading, ErrorBox, Empty, Dot, msText, enc, href, useDocTitle } from '../ui.js';
 
 const SEV = { critical: 'critical', warning: 'degraded', info: 'ok', ok: 'ok' };
@@ -100,8 +100,8 @@ export function Events({ tab }) {
   return html`<div class="page">
     <div class="tabs">
       <a href="#/events/events" class=${tab === 'events' ? 'on' : ''}>${t('ui.events.tab')}</a>
-      <a href="#/events/notifications" class=${tab === 'notifications' ? 'on' : ''}>${t('ui.notif.tab')}</a>
+      ${!me.teams && html`<a href="#/events/notifications" class=${tab === 'notifications' ? 'on' : ''}>${t('ui.notif.tab')}</a>`}
     </div>
-    ${tab === 'notifications' ? html`<${NotificationsTab} />` : html`<${EventsTab} />`}
+    ${tab === 'notifications' && !me.teams ? html`<${NotificationsTab} />` : html`<${EventsTab} />`}
   </div>`;
 }

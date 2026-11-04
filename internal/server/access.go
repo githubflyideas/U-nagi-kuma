@@ -21,12 +21,14 @@ func roleScopes(role string) map[string]bool {
 	return map[string]bool{"read": true, "ack": true, "write": true, "admin": true}
 }
 
-func (ai *authInfo) restricted() bool { return len(ai.areas) > 0 }
+// restricted reports an account that may not change shared configuration:
+// one limited to some sections, or one that works within its teams.
+func (ai *authInfo) restricted() bool { return len(ai.areas) > 0 || ai.team != nil }
 
 // allowsArea reports whether the caller may change things in a section
 // ("" is the global section).
 func (ai *authInfo) allowsArea(area string) bool {
-	if !ai.restricted() {
+	if len(ai.areas) == 0 {
 		return true
 	}
 	for _, a := range ai.areas {
@@ -45,7 +47,7 @@ func (s *Server) allowsMonitor(ai *authInfo, name string) bool {
 		return true
 	}
 	m := s.app.Config().Config.FindMonitor(name)
-	return m != nil && ai.allowsArea(m.Area)
+	return m != nil && ai.allowsArea(m.Area) && (ai.team == nil || ai.team.writes(m.Team))
 }
 
 // allowsIncident reports whether the caller may act on an incident.

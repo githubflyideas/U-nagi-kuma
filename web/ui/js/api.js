@@ -3,6 +3,11 @@ let csrf = '';
 let onAuthLost = null;
 
 export function setCSRF(v) { csrf = v || ''; }
+
+// The signed-in account: teams is set for a member of one or more teams,
+// who works within them (the menu and pages show only what they own).
+export const me = { teams: null };
+export function setMe(s) { me.teams = (s && s.teams) || null; }
 export function getCSRF() { return csrf; }
 export function onUnauthorized(f) { onAuthLost = f; }
 

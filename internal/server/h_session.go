@@ -84,6 +84,11 @@ func (s *Server) sessionGet(w http.ResponseWriter, r *http.Request) (any, error)
 		areas = []string{}
 	}
 	out := map[string]any{"user": ai.user, "csrf": ai.csrf, "role": role, "areas": areas, "scopes": ai.scopes}
+	// A team member works within their teams: the UI shows them only what
+	// those teams own.
+	if ai.team != nil {
+		out["teams"] = ai.team.roles
+	}
 	return out, nil
 }
 

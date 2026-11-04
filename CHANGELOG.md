@@ -5,6 +5,8 @@
 **New**
 - Teams (**Settings › Teams**): people who own monitors, each with one role per team (manager, operator, viewer); a person can be in several teams and manage several. A monitor joins a team with **Team** in its form (`team=NAME`); monitors without one are the shared infrastructure. Teams are `TEAM` records in monitors.bind, so they reach every node with the configuration. The monitor list shows the team and filters with `team:`. What each role may see and do follows in the next steps.
 
+- Teams are isolated from each other. A team member sees only their teams' monitors, incidents, events, reports and maintenance windows (and only the state of shared monitors theirs depend on); managers and operators change only their teams' monitors, viewers read. Everything else, from channels to the raw configuration, stays with administrators: an API route is closed to team members unless it was reviewed for them, so new routes are closed too. The live updates and incident reports are filtered the same way.
+
 **Changed**
 - The user manual is in English only; the separate Chinese manual is gone. The web UI and the README stay in 15 languages, and each README links to the English manual.
 

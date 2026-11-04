@@ -49,9 +49,15 @@ func (a *App) ReportLang(lang string) string {
 
 // Postmortem builds the report of an incident.
 func (a *App) Postmortem(id int64, lang string) (*postmortem.Report, error) {
+	return a.PostmortemFor(id, lang, false)
+}
+
+// PostmortemFor is Postmortem; ownChangesOnly leaves out configuration
+// changes that did not touch the incident's monitor.
+func (a *App) PostmortemFor(id int64, lang string, ownChangesOnly bool) (*postmortem.Report, error) {
 	return postmortem.Build(a.store, id, postmortem.Options{
 		Lang: a.ReportLang(lang), Location: a.opts.Location, Now: time.Now(),
-		Coverage: CoverageOf(a.cfg.current().Config, a.incidentMonitor(id)),
+		Coverage: CoverageOf(a.cfg.current().Config, a.incidentMonitor(id)), OwnChangesOnly: ownChangesOnly,
 	})
 }
 

@@ -7,6 +7,7 @@ import (
 
 	"github.com/githubflyideas/unagikuma/internal/cluster"
 	"github.com/githubflyideas/unagikuma/internal/license"
+	"github.com/githubflyideas/unagikuma/internal/store"
 )
 
 func (s *Server) routes() {
@@ -155,8 +156,16 @@ func (s *Server) routes() {
 
 	// Live stream.
 	s.mux.Handle("GET /api/v1/stream", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if _, err := s.authenticate(r); err != nil {
+		ai, err := s.authenticate(r)
+		if err != nil {
 			writeError(w, err)
+			return
+		}
+		// Every account but an administrator's goes through the team
+		// filter, which follows configuration changes: one added to a
+		// team while connected stops seeing other teams' events at once.
+		if ai.session && ai.role != store.RoleAdmin {
+			s.hub.ServeFiltered(w, r, s.teamStream(ai.user))
 			return
 		}
 		s.hub.ServeHTTP(w, r)

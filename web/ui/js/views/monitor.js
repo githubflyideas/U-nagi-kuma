@@ -1,7 +1,7 @@
 // Monitor detail: state, availability, latency chart, evidence, history.
 import { html, useState, useEffect, useRef } from '../lib.js';
 import { t, tn, dur, fmtTime, fmtNum, currentLang, detailText, axisTimes } from '../i18n.js';
-import { get, post, del, ifMatch } from '../api.js';
+import { get, post, del, ifMatch, me } from '../api.js';
 import { useFetch, useLive, Card, Loading, ErrorBox, Empty, Pill, Dot, quorumText, Beats, Ago, Copy, Seg, pct, msText, reasonText, enc, go, toast, toastError, confirmDialog, useDocTitle, gwBad } from '../ui.js';
 import { IncidentList } from './problems.js';
 import { EventRows } from './events.js';
@@ -258,10 +258,12 @@ export function MonitorDetail({ name }) {
         <${Card} title=${t('ui.mon.settings')}>
           <dl class="kv">
             <dt>${t('ui.interval')}</dt><dd>${dur(row.interval_s)}</dd>
-            ${row.parents && html`<dt>${t('ui.mon.parents')}</dt><dd>${row.parents.map((p, i) => html`${i ? ', ' : ''}<a href=${'#/monitors/' + enc(p)}>${p}</a>`)}</dd>`}
+            ${row.parents && html`<dt>${t('ui.mon.parents')}</dt><dd>${(d.data.parent_states || row.parents.map(p => ({ name: p, open: true }))).map((p, i) => html`${i ? ', ' : ''}${p.open
+              ? html`<a href=${'#/monitors/' + enc(p.name)}>${p.name}</a>`
+              : html`<span>${p.name}</span>`}${p.status ? html` <${Pill} status=${p.status} />` : ''}`)}</dd>`}
             ${d.data.timeout_s ? html`<dt>${t('ui.timeout')}</dt><dd>${dur(d.data.timeout_s)}</dd>` : ''}
             <dt>${t('ui.attempts')}</dt><dd>${row.max_attempts}</dd>
-            <dt>${t('ui.policy')}</dt><dd><a href="#/alerts/policies">${row.policy}</a></dd>
+            <dt>${t('ui.policy')}</dt><dd>${me.teams ? row.policy : html`<a href="#/alerts/policies">${row.policy}</a>`}</dd>
             <dt>${t('ui.mon.last_check')}</dt><dd><${Ago} at=${row.last_check} /></dd>
             <dt>${t('ui.mon.next_check')}</dt><dd><${Ago} at=${row.next_check} /></dd>
             <dt>${t('ui.mon.changed')}</dt><dd><${Ago} at=${row.last_change} /></dd>

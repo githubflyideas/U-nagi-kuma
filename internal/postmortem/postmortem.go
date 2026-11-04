@@ -103,6 +103,10 @@ type Options struct {
 	Location *time.Location
 	Now      time.Time
 	Coverage Coverage
+	// OwnChangesOnly keeps the changes that touched this monitor and leaves
+	// out the rest of the configuration's history (a report read by a team
+	// member must not show what other teams changed).
+	OwnChangesOnly bool
 }
 
 func (o Options) t(key string, args ...any) string { return i18n.T(o.Lang, "pm."+key, args...) }
@@ -168,6 +172,15 @@ func Build(st *store.Store, id int64, o Options) (*Report, error) {
 	}
 
 	changes := r.leadUpChanges(st)
+	if o.OwnChangesOnly {
+		var own []store.AuditEntry
+		for _, a := range changes {
+			if mentions(a, r.Incident.Monitor) {
+				own = append(own, a)
+			}
+		}
+		changes = own
+	}
 	r.Changes = changes
 	r.Liveness = liveness(st, rounds, r.FailedAt.Add(-time.Hour), end, o.Coverage.Interval, o)
 

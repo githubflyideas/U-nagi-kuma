@@ -55,7 +55,10 @@ type EventRow struct {
 
 // EventFilter selects events.
 type EventFilter struct {
-	Monitor  string
+	Monitor string
+	// Only, when set, keeps the events of these monitors and nothing else
+	// (an empty list keeps none): what a team member may see.
+	Only     *[]string
 	Types    []string
 	Severity string
 	Before   int64 // cursor: id < Before
@@ -75,6 +78,10 @@ func (s *Store) Events(f EventFilter) (Page[EventRow], error) {
 	var args []any
 	if f.Monitor != "" {
 		where, args = append(where, "monitor=?"), append(args, f.Monitor)
+	}
+	if f.Only != nil {
+		w, a := inList("monitor", *f.Only)
+		where, args = append(where, w), append(args, a...)
 	}
 	if len(f.Types) > 0 {
 		where = append(where, "type IN (?"+strings.Repeat(",?", len(f.Types)-1)+")")
@@ -272,8 +279,30 @@ func (s *Store) Acks(incident int64) ([]AckRecord, error) {
 
 // Incidents lists incidents: filter open | resolved | all; monitor optional.
 func (s *Store) Incidents(filter, monitor string, before int64, limit int) (Page[IncidentRow], error) {
+	return s.IncidentsOf(filter, monitor, nil, before, limit)
+}
+
+// inList is "col IN (?,...)" for vals; with no values it matches nothing.
+func inList(col string, vals []string) (string, []any) {
+	if len(vals) == 0 {
+		return "0", nil
+	}
+	args := make([]any, len(vals))
+	for i, v := range vals {
+		args[i] = v
+	}
+	return col + " IN (?" + strings.Repeat(",?", len(vals)-1) + ")", args
+}
+
+// IncidentsOf is Incidents limited to the monitors in only when it is not
+// nil (an empty list keeps none): what a team member may see.
+func (s *Store) IncidentsOf(filter, monitor string, only *[]string, before int64, limit int) (Page[IncidentRow], error) {
 	var where []string
 	var args []any
+	if only != nil {
+		w, a := inList("monitor", *only)
+		where, args = append(where, w), append(args, a...)
+	}
 	switch filter {
 	case "open":
 		where = append(where, "resolved_at=0 AND closed=0")
