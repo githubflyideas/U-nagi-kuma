@@ -19,6 +19,7 @@ Version 2.0: servers in a cluster keep monitoring and alerting on their own whil
 - PING checks fail when more than half of their echo requests go unanswered (`probe.ping-loss`, 50%); before, only a total loss failed. `loss=` on a monitor still wins, and `loss=0` keeps the old behaviour.
 
 **Fixed**
+- Pages and the menu badges stopped updating while live events kept coming faster than their refresh delay, as they do with a few failing monitors on short intervals: each event pushed the refresh back. They now refresh at most a moment after the first event.
 - Two UDP checks with the same fixed source port (`src-port=`) at the same time: the second could not bind it and failed. They now take turns; a port that stays busy, or that another program holds, leaves that round UNKNOWN.
 - A PING check with `size=8` reported an internal error when an ICMP error came back.
 - A UDP reply that only came after a retransmission had its latency measured from the retransmission, so a service that needed a second try looked fast. It now counts from the first request.
