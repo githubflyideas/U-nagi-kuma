@@ -21,10 +21,27 @@ import { IncidentReport } from './views/incident.js';
 import { DrawerHost } from './views/drawer.js';
 import { PaletteHost, openPalette } from './views/palette.js';
 
-// The console is dark unless the user picks light or the system setting.
+// Built-in themes beyond light and dark (themes.css), by their own names.
+const THEMES = ['stijl', 'raster', 'delft', 'tessel', 'vermeer', 'affiche', 'polychromie', 'decoupe', 'atelier', 'simultane', 'tac-1', 'tac-2', 'tac-3', 'tac-4', 'tac-5'];
+const THEME_NAMES = { stijl: 'Stijl', raster: 'Raster', delft: 'Delft', tessel: 'Tessel', vermeer: 'Vermeer',
+  affiche: 'Affiche', polychromie: 'Polychromie', decoupe: 'Découpé', atelier: 'Atelier', simultane: 'Simultané',
+  'tac-1': 'Tactical 晨白', 'tac-2': 'Tactical 石灰', 'tac-3': 'Tactical 石墨', 'tac-4': 'Tactical 午夜', 'tac-5': 'Tactical 近黑' };
+
+// Layouts rearrange the console (layouts.css); each brings the palette it
+// was designed with, which can then be changed on its own.
+const LAYOUTS = ['console', 'gazette', 'wall', 'folio', 'dock', 'terminal', 'tactical'];
+const LAYOUT_NAMES = { console: 'Console', gazette: 'Gazette', wall: 'Wall', folio: 'Folio', dock: 'Dock', terminal: 'Terminal', tactical: 'Tactical 战术' };
+const LAYOUT_PALETTE = { gazette: 'raster', wall: 'stijl', folio: 'delft', dock: 'decoupe', terminal: 'affiche', tactical: 'tac-2' };
+
+function applyLayout(v) {
+  if (LAYOUTS.includes(v) && v !== 'console') document.documentElement.dataset.layout = v;
+  else delete document.documentElement.dataset.layout;
+}
+
+// The console is dark unless the user picks light, a theme or the system setting.
 function applyTheme(v) {
   v = v || 'dark';
-  if (v === 'light' || v === 'dark') document.documentElement.dataset.theme = v;
+  if (v === 'light' || v === 'dark' || THEMES.includes(v)) document.documentElement.dataset.theme = v;
   else delete document.documentElement.dataset.theme;
 }
 
@@ -138,6 +155,7 @@ function Shell({ user, onLogout, onLang }) {
   const [open, setOpen] = useState(false);
   const [live, setLive] = useState(false);
   const [theme, setTheme] = useState(storage('unagikuma.theme') || 'dark');
+  const [layout, setLayout] = useState(storage('unagikuma.layout') || 'console');
   const [mini, setMini] = useState(storage('unagikuma.side') === 'mini');
   const ov = useFetch(() => get('/overview'), []);
   useLive(['incident', 'state', 'serial', 'banner', 'directory'], ov.reload, 1500);
@@ -149,6 +167,10 @@ function Shell({ user, onLogout, onLang }) {
   const setup = setupIssues(ov.data);
   const first = '/' + (route.parts[0] || '');
   const changeTheme = (v) => { setTheme(v); storage('unagikuma.theme', v); applyTheme(v); };
+  const changeLayout = (v) => {
+    setLayout(v); storage('unagikuma.layout', v); applyLayout(v);
+    if (LAYOUT_PALETTE[v]) changeTheme(LAYOUT_PALETTE[v]);
+  };
   // On a wide screen the button folds the sidebar to icons; on a phone it
   // slides the sidebar in.
   const toggleSide = () => {
@@ -203,10 +225,14 @@ function Shell({ user, onLogout, onLang }) {
       </nav>
       <div class="foot">
         <${LangSelect} onChange=${onLang} />
+        <select aria-label=${t('ui.layout')} value=${layout} onChange=${(e) => changeLayout(e.target.value)}>
+          ${LAYOUTS.map(v => html`<option value=${v}>${t('ui.layout')}: ${LAYOUT_NAMES[v]}</option>`)}
+        </select>
         <select aria-label=${t('ui.theme')} value=${theme} onChange=${(e) => changeTheme(e.target.value)}>
           <option value="auto">${t('ui.theme.auto')}</option>
           <option value="light">${t('ui.theme.light')}</option>
           <option value="dark">${t('ui.theme.dark')}</option>
+          ${THEMES.map(v => html`<option value=${v}>${t('ui.theme')}: ${THEME_NAMES[v]}</option>`)}
         </select>
         <div class="row"><span class="ellipsis">${user}</span><div class="spacer"></div><button class="btn sm ghost" onClick=${onLogout}>${t('ui.logout')}</button></div>
         ${ov.data && ov.data.instance && html`<div class="host ellipsis" title=${ov.data.instance}>${ov.data.instance}</div>`}
@@ -328,6 +354,7 @@ function Root() {
 
 (async () => {
   applyTheme(storage('unagikuma.theme'));
+  applyLayout(storage('unagikuma.layout'));
   await loadLanguages();
   await setLang(detectLang(), false);
   render(html`<${Root} />`, document.getElementById('app'));

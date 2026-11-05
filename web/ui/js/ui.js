@@ -145,8 +145,10 @@ export function ErrorBox({ error, retry }) {
   return html`<div class="banner error"><div class="spacer">${errText(error)}</div>${retry && html`<button class="btn sm" onClick=${retry}>${t('ui.retry')}</button>`}</div>`;
 }
 
-export function Card({ title, actions, children, flush, class: cls }) {
-  return html`<section class=${'card ' + (cls || '')}>
+// slot names the card's role on its page, so a theme can place, reorder or
+// hide it by name (data-slot) without depending on the markup around it.
+export function Card({ title, actions, children, flush, class: cls, slot }) {
+  return html`<section class=${'card ' + (cls || '')} data-slot=${slot}>
     ${(title || actions) && html`<div class="hd"><h2>${title}</h2><div class="spacer"></div>${actions}</div>`}
     <div class=${'bd' + (flush ? ' flush' : '')}>${children}</div>
   </section>`;

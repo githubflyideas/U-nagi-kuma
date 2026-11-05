@@ -1498,5 +1498,6 @@
 "ui.field.via": "Envoyer via",
 "ui.field.program": "Commande sendmail",
 "ui.ch.program_hint": "Trouvée automatiquement (/usr/sbin/sendmail et les emplacements habituels) ; postfix, sendmail, exim, msmtp et autres la fournissent. À renseigner seulement pour un emplacement inhabituel.",
-"ui.ch.from_sendmail_hint": "Peut rester vide : le système de messagerie envoie alors au nom de cette machine, comme pour Nagios."
+"ui.ch.from_sendmail_hint": "Peut rester vide : le système de messagerie envoie alors au nom de cette machine, comme pour Nagios.",
+"ui.layout": "Mise en page"
 }

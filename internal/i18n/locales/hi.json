@@ -1494,5 +1494,6 @@
 "ui.field.via": "भेजने का तरीका",
 "ui.field.program": "sendmail कमांड",
 "ui.ch.program_hint": "अपने आप मिल जाता है (/usr/sbin/sendmail और सामान्य जगहें); postfix, sendmail, exim, msmtp आदि सभी इसे देते हैं। केवल असामान्य जगह होने पर ही भरें।",
-"ui.ch.from_sendmail_hint": "खाली छोड़ सकते हैं: तब मेल सिस्टम इस मशीन के नाम से भेजता है, जैसा Nagios के लिए करता है।"
+"ui.ch.from_sendmail_hint": "खाली छोड़ सकते हैं: तब मेल सिस्टम इस मशीन के नाम से भेजता है, जैसा Nagios के लिए करता है।",
+"ui.layout": "लेआउट"
 }

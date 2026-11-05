@@ -25,7 +25,10 @@ import (
 
 const (
 	replicaDir    = "replica"
-	replicaConfig = "master.bind" // the master's configuration, as last copied
+	replicaConfig = "master-copy.bind" // the master's configuration, as last copied
+	// replicaConfigOld is the name before the copy was renamed; kept only to
+	// move an existing copy to replicaConfig on the first start after the change.
+	replicaConfigOld = "master.bind"
 )
 
 // replicaState is what a replica runs while it cannot reach the master.
@@ -70,6 +73,11 @@ func (a *App) ReplicaStatus() ReplicaStatus {
 // loadReplica reads the configuration copy kept from the last sync.
 func (a *App) loadReplica() {
 	p := a.dataPath(replicaDir, replicaConfig)
+	if _, err := os.Stat(p); err != nil {
+		if old := a.dataPath(replicaDir, replicaConfigOld); os.Rename(old, p) == nil {
+			a.log.Info("moved the copy of the master's configuration to its new name", "file", replicaConfig)
+		}
+	}
 	b, err := os.ReadFile(p)
 	if err != nil {
 		return

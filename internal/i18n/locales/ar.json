@@ -1529,5 +1529,6 @@
 "ui.field.via": "الإرسال عبر",
 "ui.field.program": "أمر sendmail",
 "ui.ch.program_hint": "يُعثر عليه تلقائيًا (/usr/sbin/sendmail والمواضع المعتادة)؛ يوفّره postfix وsendmail وexim وmsmtp وأمثالها. حدّده فقط إذا كان في موضع غير معتاد.",
-"ui.ch.from_sendmail_hint": "يمكن تركه فارغًا: عندها يرسل نظام البريد باسم هذا الجهاز، كما يفعل مع Nagios."
+"ui.ch.from_sendmail_hint": "يمكن تركه فارغًا: عندها يرسل نظام البريد باسم هذا الجهاز، كما يفعل مع Nagios.",
+"ui.layout": "التخطيط"
 }

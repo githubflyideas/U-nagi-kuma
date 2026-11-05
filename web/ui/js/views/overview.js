@@ -20,7 +20,7 @@ function uplinkStatus(u) {
 function NodesCard({ nodes }) {
   const remote = nodes.filter(n => !n.self);
   const online = remote.filter(n => n.online).length;
-  return html`<${Card} title=${t('ui.ov.nodes')} flush actions=${html`<span class="small muted">${t('ui.ov.nodes_online', { online, n: remote.length })}</span>`}>
+  return html`<${Card} slot="nodes" title=${t('ui.ov.nodes')} flush actions=${html`<span class="small muted">${t('ui.ov.nodes_online', { online, n: remote.length })}</span>`}>
     <table class="tbl"><tbody>${nodes.map(n => html`<tr class="click" onClick=${() => { location.hash = '#/nodes'; }}>
       <td class="nowrap"><${Dot} status=${n.online ? 'ok' : (n.last_seen ? 'critical' : 'unknown')} /> <span class="name">${n.name}</span>
         ${n.self && html` <span class="tag">${t('ui.node.self')}</span>`}</td>
@@ -37,7 +37,7 @@ export function HealthCard({ health }) {
   const gw = h.gateway;
   const hb = h.heartbeat;
   const hbStatus = !hb.configured ? 'pending' : hb.last_error ? 'critical' : 'ok';
-  return html`<${Card} title=${t('ui.health.title')} actions=${me.teams ? null : html`<a class="btn sm" href="#/settings/general">${t('ui.health.configure')}</a>`}>
+  return html`<${Card} slot="health" title=${t('ui.health.title')} actions=${me.teams ? null : html`<a class="btn sm" href="#/settings/general">${t('ui.health.configure')}</a>`}>
     <div class="health">
       <div class="hitem"><${Dot} status=${uplinkStatus(up)} />
         <div><b>${t('ui.health.uplink')}</b>
@@ -379,7 +379,7 @@ function Onboarding({ d, reload }) {
   const step = (i, title, hint, body) => html`<div class=${'ob-step' + (steps[i] ? ' done' : '')}>
     <div class="ob-n" aria-label=${steps[i] ? t('ui.ob.done') : t('ui.ob.todo')} title=${steps[i] ? t('ui.ob.done') : t('ui.ob.todo')}>${steps[i] ? '✓' : '!'}</div>
     <div class="ob-b"><b>${title}</b><p class="muted small">${hint}</p>${!steps[i] && body}</div></div>`;
-  return html`<${Card} title=${t('ui.ob.title')} actions=${html`<button class="btn sm ghost" onClick=${dismiss}>${t('ui.ob.hide')}</button>`}>
+  return html`<${Card} slot="start" title=${t('ui.ob.title')} actions=${html`<button class="btn sm ghost" onClick=${dismiss}>${t('ui.ob.hide')}</button>`}>
     <div class="ob">
       ${step(0, t('ui.ob.s1'), t('ui.ob.s1_hint'), html`<div class="col">
         <textarea class="ltr mono" rows="4" value=${text} onInput=${(e) => setText(e.target.value)} placeholder=${'https://www.example.com\n10.0.0.5:5432\n10.0.0.1:ntp\nping 192.168.1.1'}></textarea>
@@ -417,31 +417,31 @@ export function Overview() {
   const d = ov.data;
   const rows = mons.data ? mons.data.items : [];
   const cluster = d.layout === 'cluster';
-  return html`<div class="page">
+  return html`<div class="page ov">
     <${Onboarding} d=${d} reload=${() => { ov.reload(); mons.reload(); }} />
-    <${Card} title=${t('ui.ov.path_title')} flush actions=${html`<span class="small muted hide-sm">${t('ui.ov.path_hint')}</span>`}>
+    <${Card} slot="paths" title=${t('ui.ov.path_title')} flush actions=${html`<span class="small muted hide-sm">${t('ui.ov.path_hint')}</span>`}>
       <${FaultPath} paths=${d.paths || []} rows=${rows} />
       <${Story} s=${storyOf(d, rows)} />
     <//>
-    <div class="grid g-side">
-      <div class="col" style=${{ gap: '16px' }}>
-        <${Card} title=${view === 'matrix' ? t('ui.ov.votes_title') : t('ui.ov.all_monitors')} flush actions=${html`<${Legend} />
+    <div class="grid g-side ov-cols">
+      <div class="col ov-col" style=${{ gap: '16px' }}>
+        <${Card} slot="monitors" title=${view === 'matrix' ? t('ui.ov.votes_title') : t('ui.ov.all_monitors')} flush actions=${html`<${Legend} />
           ${cluster && html`<${Seg} value=${view} onChange=${setView} options=${[['hive', t('ui.ov.view_hive')], ['matrix', t('ui.ov.view_matrix')]]} />`}`}>
           ${!mons.data ? html`<${Loading} />` : view === 'matrix' && cluster ? html`<${Matrix} rows=${rows} nodes=${d.paths || []} />` : html`<${Hive} rows=${rows} />`}
         <//>
-        ${d.expiring.length > 0 && html`<${Card} title=${t('ui.ov.expiring')} flush actions=${html`<a class="btn sm" href="#/expiry">${t('ui.exp.all')}</a>`}>
+        ${d.expiring.length > 0 && html`<${Card} slot="expiring" title=${t('ui.ov.expiring')} flush actions=${html`<a class="btn sm" href="#/expiry">${t('ui.exp.all')}</a>`}>
           <table class="tbl"><tbody>${d.expiring.map(x => html`<tr class="click" onClick=${() => { location.hash = '#/monitors/' + enc(x.monitor); }}>
             <td class="name">${x.title} <span class="tag">${t('ui.exp.kind.' + x.what)}</span></td><td class="right"><span class=${x.days < 7 ? 'err-text' : 'warn-text'}>${tn('ui.ov.days_left', Math.floor(x.days))}</span></td></tr>`)}</tbody></table>
         <//>`}
       </div>
-      <div class="col" style=${{ gap: '16px' }}>
-        <${Card} title=${t('ui.ov.todo')} flush actions=${html`<a class="btn sm" href="#/problems">${t('ui.ov.all_problems')}</a>`}>
+      <div class="col ov-col" style=${{ gap: '16px' }}>
+        <${Card} slot="todo" title=${t('ui.ov.todo')} flush actions=${html`<a class="btn sm" href="#/problems">${t('ui.ov.all_problems')}</a>`}>
           ${inc.data ? html`<${IncidentList} items=${inc.data.items} reload=${() => { inc.reload(); ov.reload(); }} compact />` : html`<${Loading} />`}
         <//>
-        <${Card} title=${t('ui.ov.saved_title')}><${Saved} week=${d.value_week || {}} /><//>
+        <${Card} slot="saved" title=${t('ui.ov.saved_title')}><${Saved} week=${d.value_week || {}} /><//>
         ${cluster && html`<${NodesCard} nodes=${d.nodes} serial=${d.serial} />`}
         <${HealthCard} health=${d.health} />
-        <${Card} title=${t('ui.ov.channels')} flush><${Channels} channels=${d.channels} alerting=${d.alerting_configured} /><//>
+        <${Card} slot="channels" title=${t('ui.ov.channels')} flush><${Channels} channels=${d.channels} alerting=${d.alerting_configured} /><//>
         ${d.pending_notifications > 0 && html`<div class="banner info">${tn('ui.ov.pending_notifications', d.pending_notifications)}</div>`}
       </div>
     </div>

@@ -1498,5 +1498,6 @@
 "ui.field.via": "Versand über",
 "ui.field.program": "sendmail-Befehl",
 "ui.ch.program_hint": "Wird selbst gefunden (/usr/sbin/sendmail und die üblichen Orte); postfix, sendmail, exim, msmtp und ähnliche bringen ihn mit. Nur für einen ungewöhnlichen Ort angeben.",
-"ui.ch.from_sendmail_hint": "Darf leer bleiben: Das Mailsystem sendet dann als dieser Rechner, wie bei Nagios."
+"ui.ch.from_sendmail_hint": "Darf leer bleiben: Das Mailsystem sendet dann als dieser Rechner, wie bei Nagios.",
+"ui.layout": "Layout"
 }

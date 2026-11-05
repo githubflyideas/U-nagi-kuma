@@ -1,0 +1,359 @@
+/* Built-in themes beyond light and dark. Each one is a full set of the
+   colour tokens of app.css plus a few component rules, under
+   :root[data-theme="…"] so it wins over the system dark mode as well.
+   Only system fonts: the console works offline, nothing is downloaded. */
+
+/* A sidebar painted in a theme colour keeps its controls readable. */
+:root[data-theme] .side .foot select { color: var(--text); background: var(--panel); }
+:root[data-theme] .side .foot .btn.ghost { color: inherit; }
+
+/* ============ Stijl: primary colour planes divided by heavy black lines ============ */
+:root[data-theme="stijl"] {
+  --bg: #e9e8e2; --panel: #fbfbf8; --panel-2: #f1f1ec; --border: #111111; --border-strong: #111111;
+  --text: #111111; --muted: #47473f; --faint: #85857c;
+  --accent: #1d4fa3; --accent-soft: #f3c614; --accent-text: #ffffff; --link: #1d4fa3;
+  --ok: #1f6e43; --ok-soft: #dcebdf; --degraded: #7d5f00; --degraded-soft: #f7dc5c;
+  --critical: #d6281e; --critical-soft: #f9d6d1; --unknown: #5b3f8c; --unknown-soft: #e5ddf0;
+  --pending: #5f5f58; --pending-soft: #e2e2dc; --maint: #1d4fa3; --maint-soft: #d6e0f2; --empty: #d9d9d2;
+  --shadow: none; --radius: 0; --bg-image: none;
+  --display: "Futura", "Avenir Next", "Century Gothic", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  color-scheme: light;
+}
+[data-theme="stijl"] .side { background: var(--panel); border-inline-end: 4px solid #111; backdrop-filter: none; }
+[data-theme="stijl"] .top { background: var(--panel); border-bottom: 4px solid #111; backdrop-filter: none; }
+[data-theme="stijl"] .brand { background: #d6281e; color: #fff; margin: -14px -10px 10px; padding: 18px 12px 16px; border-bottom: 4px solid #111; text-transform: uppercase; letter-spacing: .08em; font-family: var(--display); }
+[data-theme="stijl"] .nav a { border-radius: 0; text-transform: uppercase; letter-spacing: .05em; font-size: 12.5px; font-weight: 650; }
+[data-theme="stijl"] .nav a.on { background: #f3c614; color: #111; font-weight: 800; }
+[data-theme="stijl"] .nav .count { border-radius: 0; }
+[data-theme="stijl"] h1, [data-theme="stijl"] h2, [data-theme="stijl"] .top .crumbs { font-family: var(--display); text-transform: uppercase; letter-spacing: .07em; font-weight: 800; }
+[data-theme="stijl"] .card, [data-theme="stijl"] .tile, [data-theme="stijl"] .modal { border: 3px solid #111; }
+[data-theme="stijl"] .card > .hd { border-bottom: 3px solid #111; }
+[data-theme="stijl"] .tile { border-inline-start-width: 3px; }
+[data-theme="stijl"] .tile b { font-family: var(--display); }
+[data-theme="stijl"] .tile.critical { background: #d6281e; color: #fff; } [data-theme="stijl"] .tile.critical span { color: #fff; }
+[data-theme="stijl"] .tile.degraded { background: #f3c614; } [data-theme="stijl"] .tile.degraded span { color: #111; }
+[data-theme="stijl"] .tile.maintenance { background: #1d4fa3; color: #fff; } [data-theme="stijl"] .tile.maintenance span { color: #dfe7f5; }
+[data-theme="stijl"] .tbl th { background: var(--panel); color: #111; font-weight: 800; border-bottom: 3px solid #111; }
+[data-theme="stijl"] .tbl td { border-bottom: 2px solid #111; }
+[data-theme="stijl"] .tbl tr.critical td:first-child { box-shadow: inset 8px 0 0 var(--critical); }
+[data-theme="stijl"] .btn, [data-theme="stijl"] .seg, [data-theme="stijl"] .pill, [data-theme="stijl"] .tag,
+[data-theme="stijl"] .verdict, [data-theme="stijl"] .beats i, [data-theme="stijl"] .search,
+[data-theme="stijl"] input, [data-theme="stijl"] select, [data-theme="stijl"] textarea { border-radius: 0; }
+[data-theme="stijl"] .btn { border-width: 2px; border-color: #111; font-weight: 700; }
+[data-theme="stijl"] .btn.primary { text-transform: uppercase; letter-spacing: .05em; }
+[data-theme="stijl"] .tag { border: 2px solid #111; color: #111; font-weight: 700; }
+[data-theme="stijl"] .pill.critical, [data-theme="stijl"] .verdict.critical { background: #d6281e; color: #fff; }
+[data-theme="stijl"] .pill.degraded, [data-theme="stijl"] .verdict.warn { background: #f3c614; color: #111; }
+[data-theme="stijl"] .pill.maintenance, [data-theme="stijl"] .verdict.held { background: #1d4fa3; color: #fff; }
+[data-theme="stijl"] .beats i.degraded { background: #f3c614; }
+[data-theme="stijl"] .verdict i { border-radius: 0; box-shadow: none; }
+
+/* ============ Raster: one grid, lower case, black and a single signal orange ============ */
+:root[data-theme="raster"] {
+  --bg: #ededea; --panel: #f7f7f4; --panel-2: #ededea; --border: #c9c9c3; --border-strong: #1a1a1a;
+  --text: #1a1a1a; --muted: #5a5a55; --faint: #96968f;
+  --accent: #1a1a1a; --accent-soft: #ffe1d4; --accent-text: #f7f7f4; --link: #c23c08;
+  --ok: #1a1a1a; --ok-soft: #dcdcd6; --degraded: #b35f00; --degraded-soft: #ffe3bd;
+  --critical: #ff5a1f; --critical-soft: #ffe1d4; --unknown: #6d5ca8; --unknown-soft: #e3def2;
+  --pending: #6b6b65; --pending-soft: #dcdcd6; --maint: #3c6fd1; --maint-soft: #dbe5f8; --empty: #d5d5cf;
+  --shadow: none; --radius: 0;
+  --bg-image: linear-gradient(rgba(26,26,26,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(26,26,26,.06) 1px, transparent 1px);
+  --display: "Bahnschrift", "DIN Alternate", "D-DIN", "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  color-scheme: light;
+}
+[data-theme="raster"] body { background-size: 8px 8px; }
+[data-theme="raster"] .side { background: var(--bg); border-inline-end: 1px solid #1a1a1a; backdrop-filter: none; }
+[data-theme="raster"] .top { background: var(--bg); border-bottom: 1px solid #1a1a1a; backdrop-filter: none; }
+[data-theme="raster"] .brand { text-transform: lowercase; font-family: var(--display); font-weight: 600; font-size: 21px; letter-spacing: -.02em; }
+[data-theme="raster"] .nav a { border-radius: 0; text-transform: lowercase; font-family: var(--display); font-size: 15px; padding-block: 5px; }
+[data-theme="raster"] .nav a.on { background: #1a1a1a; color: #f7f7f4; }
+[data-theme="raster"] .nav .count { border-radius: 0; color: #1a1a1a; }
+[data-theme="raster"] h1, [data-theme="raster"] h2, [data-theme="raster"] .top .crumbs { font-family: var(--display); text-transform: lowercase; font-weight: 600; letter-spacing: -.01em; }
+[data-theme="raster"] h2 { font-size: 17px; }
+[data-theme="raster"] .card, [data-theme="raster"] .modal { border-color: #1a1a1a; }
+[data-theme="raster"] .card > .hd { border-bottom-color: #1a1a1a; }
+[data-theme="raster"] .tile { border: 1px solid #1a1a1a; border-top-width: 6px; border-inline-start-width: 1px; }
+[data-theme="raster"] .tile.critical { border-top-color: var(--critical); } [data-theme="raster"] .tile.degraded { border-top-color: var(--degraded); }
+[data-theme="raster"] .tile.maintenance { border-top-color: var(--maint); } [data-theme="raster"] .tile.unknown { border-top-color: var(--unknown); }
+[data-theme="raster"] .tile b { font-family: var(--display); font-size: 34px; font-weight: 500; letter-spacing: -.03em; }
+[data-theme="raster"] .tile span { text-transform: lowercase; }
+[data-theme="raster"] .tbl th { background: transparent; color: #1a1a1a; text-transform: lowercase; letter-spacing: 0; font-family: var(--display); font-size: 13px; border-bottom-color: #1a1a1a; }
+[data-theme="raster"] .tbl td { border-bottom-style: dotted; border-bottom-color: #96968f; }
+[data-theme="raster"] .btn, [data-theme="raster"] .seg, [data-theme="raster"] .pill, [data-theme="raster"] .tag,
+[data-theme="raster"] .verdict, [data-theme="raster"] .beats i, [data-theme="raster"] .search,
+[data-theme="raster"] input, [data-theme="raster"] select, [data-theme="raster"] textarea { border-radius: 0; }
+[data-theme="raster"] .btn { font-family: var(--display); text-transform: lowercase; border-color: #1a1a1a; }
+[data-theme="raster"] .pill.ok { background: transparent; box-shadow: inset 0 0 0 1px #1a1a1a; }
+[data-theme="raster"] .pill.critical, [data-theme="raster"] .verdict.critical { background: var(--critical); color: #1a1a1a; }
+[data-theme="raster"] .verdict { font-family: var(--display); }
+[data-theme="raster"] .verdict i, [data-theme="raster"] .live i { border-radius: 0; box-shadow: none; }
+[data-theme="raster"] .beats { gap: 1px; }
+
+/* ============ Delft: porcelain white, cobalt blue, serif and double rules ============ */
+:root[data-theme="delft"] {
+  --bg: #f4f6fa; --panel: #fdfdfb; --panel-2: #eef2f9; --border: #c9d4ea; --border-strong: #1f3d8a;
+  --text: #13234d; --muted: #4d5f8a; --faint: #8b9aba;
+  --accent: #1f3d8a; --accent-soft: #e2e9f7; --accent-text: #fdfdfb; --link: #1f3d8a;
+  --ok: #2c7a5a; --ok-soft: #dcefe6; --degraded: #a06610; --degraded-soft: #f6e7cb;
+  --critical: #b02a28; --critical-soft: #f6dcda; --unknown: #6a4f9e; --unknown-soft: #e8e1f3;
+  --pending: #61719a; --pending-soft: #e3e8f3; --maint: #3567c9; --maint-soft: #dce6f8; --empty: #dfe5f1;
+  --shadow: 0 1px 0 #c9d4ea; --radius: 3px;
+  --bg-image: radial-gradient(circle at 12px 12px, rgba(31,61,138,.09) 1.6px, transparent 2px), radial-gradient(circle at 0 0, rgba(31,61,138,.05) 3px, transparent 3.5px);
+  --display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, "Songti SC", "SimSun", "Noto Serif CJK SC", serif;
+  color-scheme: light;
+}
+[data-theme="delft"] body { background-size: 24px 24px, 24px 24px; }
+[data-theme="delft"] .side { background: #1f3d8a; border: 0; color: #fdfdfb; backdrop-filter: none; }
+[data-theme="delft"] .brand { color: #fdfdfb; font-family: var(--display); font-style: italic; font-weight: 600; border-bottom: 3px double rgba(253,253,251,.45); margin-bottom: 8px; }
+[data-theme="delft"] .nav a { color: #dfe6f6; }
+[data-theme="delft"] .nav a:hover { background: rgba(253,253,251,.1); }
+[data-theme="delft"] .nav a.on { background: #fdfdfb; color: #1f3d8a; }
+[data-theme="delft"] .side .foot { color: #b9c6e6; }
+[data-theme="delft"] .top { background: var(--panel); border-bottom: 3px double var(--border-strong); backdrop-filter: none; }
+[data-theme="delft"] h1, [data-theme="delft"] h2, [data-theme="delft"] .top .crumbs { font-family: var(--display); font-weight: 600; }
+[data-theme="delft"] h1 { font-size: 23px; } [data-theme="delft"] h2 { font-size: 17px; } [data-theme="delft"] .top .crumbs { font-size: 17px; }
+[data-theme="delft"] .card, [data-theme="delft"] .modal { border-color: var(--border-strong); }
+[data-theme="delft"] .card > .hd { border-bottom: 3px double var(--border-strong); }
+[data-theme="delft"] .tile { border-inline-start-width: 1px; position: relative; padding-top: 14px; }
+[data-theme="delft"] .tile::before { content: ""; position: absolute; inset: 4px; border: 1px solid var(--border); pointer-events: none; }
+[data-theme="delft"] .tile b { font-family: var(--display); font-weight: 600; }
+[data-theme="delft"] .tile.ok b { color: var(--ok); } [data-theme="delft"] .tile.critical b { color: var(--critical); }
+[data-theme="delft"] .tile.degraded b { color: var(--degraded); } [data-theme="delft"] .tile.maintenance b { color: var(--maint); }
+[data-theme="delft"] .tbl th { font-family: var(--display); font-style: italic; text-transform: none; letter-spacing: .02em; font-size: 13px; }
+[data-theme="delft"] .btn.primary { font-family: var(--display); font-style: italic; }
+[data-theme="delft"] .verdict { box-shadow: inset 0 0 0 1px currentColor; }
+
+/* ============ Affiche: Art Deco poster, ink blue, gold and wide capitals ============ */
+:root[data-theme="affiche"] {
+  --bg: #0f141d; --panel: #161d29; --panel-2: #1c2535; --border: #2a3448; --border-strong: #c9a24a;
+  --text: #efe6d2; --muted: #aba18c; --faint: #706b5f;
+  --accent: #c9a24a; --accent-soft: #2b2617; --accent-text: #0f141d; --link: #e3c271;
+  --ok: #67c39a; --ok-soft: #13291f; --degraded: #eaa53c; --degraded-soft: #33260f;
+  --critical: #ef5b45; --critical-soft: #3a1714; --unknown: #a995e6; --unknown-soft: #221d36;
+  --pending: #aba18c; --pending-soft: #222a38; --maint: #79a8de; --maint-soft: #152338; --empty: #232c3c;
+  --shadow: none; --radius: 0;
+  --bg-image: repeating-conic-gradient(from 180deg at 50% -12%, rgba(201,162,74,.06) 0deg 3deg, transparent 3deg 9deg);
+  --display: "Futura", "Avenir Next Condensed", "Arial Narrow", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  color-scheme: dark;
+}
+[data-theme="affiche"] body { background-size: auto; }
+[data-theme="affiche"] .side { background: #0b0f16; border-inline-end: 1px solid #c9a24a; backdrop-filter: none; }
+[data-theme="affiche"] .top { background: rgba(11,15,22,.85); border-bottom: 1px solid #c9a24a; }
+[data-theme="affiche"] .brand { text-transform: uppercase; letter-spacing: .3em; font-size: 13px; font-family: var(--display); color: #e3c271; border-bottom: 1px solid #c9a24a; padding-bottom: 16px; margin-bottom: 8px; }
+[data-theme="affiche"] .nav a { text-transform: uppercase; letter-spacing: .16em; font-size: 11.5px; font-family: var(--display); color: #cfc5ae; border-radius: 0; }
+[data-theme="affiche"] .nav a.on { background: transparent; color: #e3c271; box-shadow: inset 3px 0 0 #c9a24a; }
+[data-theme="affiche"] .nav .count { border-radius: 0; color: #0f141d; }
+[data-theme="affiche"] h1, [data-theme="affiche"] h2, [data-theme="affiche"] .top .crumbs { font-family: var(--display); text-transform: uppercase; letter-spacing: .2em; color: #e3c271; font-weight: 600; }
+[data-theme="affiche"] h2, [data-theme="affiche"] .top .crumbs { font-size: 13px; }
+[data-theme="affiche"] .card, [data-theme="affiche"] .modal { border-top: 2px solid var(--border-strong); }
+[data-theme="affiche"] .tile { border-top: 2px solid var(--border-strong); border-inline-start-width: 1px; text-align: center; align-items: center; }
+[data-theme="affiche"] .tile b { font-family: var(--display); font-size: 32px; font-weight: 500; letter-spacing: .04em; }
+[data-theme="affiche"] .tile span { text-transform: uppercase; letter-spacing: .18em; font-size: 10.5px; }
+[data-theme="affiche"] .tile.ok b { color: var(--ok); } [data-theme="affiche"] .tile.critical b { color: var(--critical); }
+[data-theme="affiche"] .tile.degraded b { color: var(--degraded); } [data-theme="affiche"] .tile.maintenance b { color: var(--maint); }
+[data-theme="affiche"] .tbl th { background: transparent; letter-spacing: .18em; font-size: 10.5px; }
+[data-theme="affiche"] .btn, [data-theme="affiche"] .seg, [data-theme="affiche"] .pill, [data-theme="affiche"] .tag,
+[data-theme="affiche"] .verdict, [data-theme="affiche"] .beats i, [data-theme="affiche"] .search,
+[data-theme="affiche"] input, [data-theme="affiche"] select, [data-theme="affiche"] textarea { border-radius: 0; }
+[data-theme="affiche"] .btn { text-transform: uppercase; letter-spacing: .12em; font-size: 11.5px; }
+[data-theme="affiche"] .pill, [data-theme="affiche"] .verdict { background: transparent; box-shadow: inset 0 0 0 1px currentColor; letter-spacing: .08em; }
+[data-theme="affiche"] .beats i { transform: skewX(-12deg); }
+
+/* ============ Polychromie: an architect's colour keyboard, planes of ultramarine and ochre ============ */
+:root[data-theme="polychromie"] {
+  --bg: #e6e4df; --panel: #f6f5f1; --panel-2: #ecebe6; --border: #cfccc4; --border-strong: #8d8a82;
+  --text: #24262a; --muted: #5d5e64; --faint: #94938d;
+  --accent: #34558f; --accent-soft: #dfe5f0; --accent-text: #f6f5f1; --link: #2b4a80;
+  --ok: #3d6e4f; --ok-soft: #dde9df; --degraded: #a86f17; --degraded-soft: #f2e2c2;
+  --critical: #b8432f; --critical-soft: #f2d9d2; --unknown: #6f5a8e; --unknown-soft: #e6e0ee;
+  --pending: #6b6c70; --pending-soft: #dddbd5; --maint: #34558f; --maint-soft: #dfe5f0; --empty: #d6d3cc;
+  --shadow: none; --radius: 0; --bg-image: none;
+  --display: "Avenir Next", "Futura", "Gill Sans", "Gill Sans MT", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  color-scheme: light;
+}
+[data-theme="polychromie"] .side { background: #34558f; border: 0; color: #f6f5f1; backdrop-filter: none; }
+[data-theme="polychromie"] .brand { color: #f6f5f1; font-family: var(--display); font-weight: 600; }
+[data-theme="polychromie"] .nav a { border-radius: 0; color: #e3e8f2; }
+[data-theme="polychromie"] .nav a:hover { background: rgba(246,245,241,.12); }
+[data-theme="polychromie"] .nav a.on { background: #d6a443; color: #24262a; }
+[data-theme="polychromie"] .nav .count { border-radius: 0; }
+[data-theme="polychromie"] .side .foot { color: #c3cde0; }
+[data-theme="polychromie"] .top { background: var(--panel); border-bottom: 0; box-shadow: inset 0 -6px 0 #d6a443; padding-bottom: 16px; backdrop-filter: none; }
+[data-theme="polychromie"] h1, [data-theme="polychromie"] h2, [data-theme="polychromie"] .top .crumbs { font-family: var(--display); font-weight: 600; }
+[data-theme="polychromie"] .card, [data-theme="polychromie"] .modal { border: 0; }
+[data-theme="polychromie"] .card > .hd { background: #24262a; color: #f6f5f1; border: 0; }
+[data-theme="polychromie"] .card > .hd h2 { color: #f6f5f1; }
+[data-theme="polychromie"] .card > .hd .btn:not(.primary) { background: transparent; color: #f6f5f1; border-color: #6b6c70; }
+[data-theme="polychromie"] .tile { border: 0; color: #f6f5f1; background: #6b6c70; }
+[data-theme="polychromie"] .tile span { color: rgba(246,245,241,.86); }
+[data-theme="polychromie"] .tile.ok { background: #3d6e4f; } [data-theme="polychromie"] .tile.critical { background: #b8432f; }
+[data-theme="polychromie"] .tile.degraded { background: #d6a443; color: #24262a; } [data-theme="polychromie"] .tile.degraded span { color: #3c3a33; }
+[data-theme="polychromie"] .tile.maintenance { background: #34558f; } [data-theme="polychromie"] .tile.unknown { background: #6f5a8e; }
+[data-theme="polychromie"] .tbl th { letter-spacing: .08em; }
+[data-theme="polychromie"] .btn, [data-theme="polychromie"] .seg, [data-theme="polychromie"] .pill, [data-theme="polychromie"] .tag,
+[data-theme="polychromie"] .verdict, [data-theme="polychromie"] .beats i, [data-theme="polychromie"] .search,
+[data-theme="polychromie"] input, [data-theme="polychromie"] select, [data-theme="polychromie"] textarea { border-radius: 0; }
+[data-theme="polychromie"] .btn.primary { background: #d6a443; border-color: #d6a443; color: #24262a; }
+[data-theme="polychromie"] .verdict.critical { background: #b8432f; color: #f6f5f1; }
+
+/* ============ Tessel: an engraver's black and white, interlocking tiles and hatching ============ */
+:root[data-theme="tessel"] {
+  --bg: #e8eaea; --panel: #f7f8f8; --panel-2: #eef0f0; --border: #b9bdbd; --border-strong: #1c1d1f;
+  --text: #1c1d1f; --muted: #55595b; --faint: #8f9496;
+  --accent: #1c1d1f; --accent-soft: #dfe2e2; --accent-text: #f7f8f8; --link: #1c1d1f;
+  --ok: #2f6b55; --ok-soft: #dbe7e1; --degraded: #94650c; --degraded-soft: #efe2c4;
+  --critical: #a8322a; --critical-soft: #f0d8d5; --unknown: #5c4f86; --unknown-soft: #e2deec;
+  --pending: #64686a; --pending-soft: #dde0e0; --maint: #33598c; --maint-soft: #dbe3ee; --empty: #d3d6d6;
+  --shadow: none; --radius: 0;
+  --bg-image: repeating-linear-gradient(45deg, rgba(28,29,31,.045) 0 1px, transparent 1px 7px);
+  --display: "Baskerville", "Baskerville Old Face", "Libre Baskerville", Georgia, "Songti SC", "SimSun", "Noto Serif CJK SC", serif;
+  color-scheme: light;
+}
+[data-theme="tessel"] body { background-size: auto; }
+[data-theme="tessel"] .side { background-color: #1c1d1f; border: 0; color: #f7f8f8; backdrop-filter: none;
+  background-image: conic-gradient(from 45deg at 50% 50%, #26282b 0 25%, #1c1d1f 0 50%, #26282b 0 75%, #1c1d1f 0); background-size: 28px 28px; }
+[data-theme="tessel"] .brand { color: #f7f8f8; font-family: var(--display); font-style: italic; font-size: 20px; }
+[data-theme="tessel"] .nav a { color: #d4d8d9; border-radius: 0; }
+[data-theme="tessel"] .nav a:hover { background: rgba(247,248,248,.08); }
+[data-theme="tessel"] .nav a.on { background: #f7f8f8; color: #1c1d1f; }
+[data-theme="tessel"] .side .foot { color: #a9aeb0; }
+[data-theme="tessel"] .top { background: var(--panel); border-bottom: 1px solid #1c1d1f; backdrop-filter: none; }
+[data-theme="tessel"] h1, [data-theme="tessel"] h2, [data-theme="tessel"] .top .crumbs { font-family: var(--display); font-weight: 600; letter-spacing: .01em; }
+[data-theme="tessel"] h2 { font-size: 17px; }
+[data-theme="tessel"] .card, [data-theme="tessel"] .modal { border-color: #1c1d1f; box-shadow: 4px 4px 0 rgba(28,29,31,.18); }
+[data-theme="tessel"] .card > .hd { border-bottom-color: #1c1d1f; background: repeating-linear-gradient(-45deg, rgba(28,29,31,.06) 0 1px, transparent 1px 5px); }
+[data-theme="tessel"] .tile { border: 1px solid #1c1d1f; border-inline-start-width: 6px; }
+[data-theme="tessel"] .tile b { font-family: var(--display); }
+[data-theme="tessel"] .tbl th { background: transparent; color: #1c1d1f; border-bottom-color: #1c1d1f; font-family: var(--display); font-style: italic; text-transform: none; letter-spacing: 0; font-size: 13px; }
+[data-theme="tessel"] .btn, [data-theme="tessel"] .seg, [data-theme="tessel"] .pill, [data-theme="tessel"] .tag,
+[data-theme="tessel"] .verdict, [data-theme="tessel"] .beats i, [data-theme="tessel"] .search,
+[data-theme="tessel"] input, [data-theme="tessel"] select, [data-theme="tessel"] textarea { border-radius: 0; }
+[data-theme="tessel"] .btn { border-color: #1c1d1f; }
+[data-theme="tessel"] .pill { box-shadow: inset 0 0 0 1px currentColor; }
+
+/* ============ Vermeer: a dark room lit from the left, ultramarine and lead-tin yellow ============ */
+:root[data-theme="vermeer"] {
+  --bg: #17161a; --panel: #211f22; --panel-2: #29262a; --border: #38343a; --border-strong: #5a5258;
+  --text: #efe7d6; --muted: #b3a994; --faint: #776f63;
+  --accent: #e8c547; --accent-soft: #3a3220; --accent-text: #17161a; --link: #9fb5ef;
+  --ok: #86bf93; --ok-soft: #1d2d22; --degraded: #e8a85a; --degraded-soft: #3a2a17;
+  --critical: #e0624c; --critical-soft: #3f1d18; --unknown: #b39de8; --unknown-soft: #2a2340;
+  --pending: #a49b88; --pending-soft: #2c292c; --maint: #7d9ae8; --maint-soft: #1d2540; --empty: #302c30;
+  --shadow: 0 8px 24px rgba(0,0,0,.35); --radius: 4px;
+  --bg-image: radial-gradient(900px 700px at 0% 0%, rgba(232,197,71,.10), transparent 60%), radial-gradient(700px 500px at 100% 100%, rgba(61,92,184,.14), transparent 60%);
+  --display: "Didot", "Bodoni 72", "Bodoni MT", "Iowan Old Style", Georgia, "Songti SC", "SimSun", "Noto Serif CJK SC", serif;
+  color-scheme: dark;
+}
+[data-theme="vermeer"] body { background-size: auto; }
+[data-theme="vermeer"] .side { background: #2a3f86; border: 0; color: #efe7d6; backdrop-filter: none; box-shadow: inset -12px 0 24px rgba(0,0,0,.25); }
+[data-theme="vermeer"] .brand { color: #f4dc7a; font-family: var(--display); font-size: 21px; font-weight: 600; }
+[data-theme="vermeer"] .nav a { color: #dfe3f4; }
+[data-theme="vermeer"] .nav a:hover { background: rgba(255,255,255,.08); }
+[data-theme="vermeer"] .nav a.on { background: #e8c547; color: #17161a; }
+[data-theme="vermeer"] .side .foot { color: #b9c3e6; }
+[data-theme="vermeer"] .top { background: rgba(23,22,26,.8); border-bottom-color: var(--border); }
+[data-theme="vermeer"] h1, [data-theme="vermeer"] h2, [data-theme="vermeer"] .top .crumbs { font-family: var(--display); font-weight: 600; letter-spacing: .01em; }
+[data-theme="vermeer"] h1 { font-size: 24px; } [data-theme="vermeer"] h2 { font-size: 17px; }
+[data-theme="vermeer"] .card { background: linear-gradient(105deg, rgba(232,197,71,.05), transparent 40%), var(--panel); }
+[data-theme="vermeer"] .tile { border-inline-start-width: 1px; background: linear-gradient(105deg, rgba(232,197,71,.07), transparent 50%), var(--panel); }
+[data-theme="vermeer"] .tile b { font-family: var(--display); font-size: 30px; }
+[data-theme="vermeer"] .tile.ok b { color: var(--ok); } [data-theme="vermeer"] .tile.critical b { color: var(--critical); }
+[data-theme="vermeer"] .tile.degraded b { color: var(--degraded); } [data-theme="vermeer"] .tile.maintenance b { color: var(--maint); }
+[data-theme="vermeer"] .tbl th { background: transparent; font-family: var(--display); font-style: italic; text-transform: none; letter-spacing: .02em; font-size: 13px; }
+
+/* ============ Découpé: cut-paper shapes in cobalt, coral, leaf green and sun yellow ============ */
+:root[data-theme="decoupe"] {
+  --bg: #fbfaf7; --panel: #ffffff; --panel-2: #f3f4fb; --border: #e3e5ef; --border-strong: #1e4fd8;
+  --text: #13183a; --muted: #555b7d; --faint: #9a9fbb;
+  --accent: #1e4fd8; --accent-soft: #e3eafd; --accent-text: #ffffff; --link: #1e4fd8;
+  --ok: #1f9461; --ok-soft: #d9f2e5; --degraded: #b0700a; --degraded-soft: #fff0c7;
+  --critical: #e8483a; --critical-soft: #ffe0db; --unknown: #7a52c7; --unknown-soft: #ece4fa;
+  --pending: #6b7090; --pending-soft: #e9eaf3; --maint: #1e4fd8; --maint-soft: #e3eafd; --empty: #e8e9f1;
+  --shadow: none; --radius: 18px; --bg-image: none;
+  --display: "Avenir Next", "Futura", "Trebuchet MS", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  color-scheme: light;
+}
+[data-theme="decoupe"] .side { background: #1e4fd8; border: 0; color: #fff; backdrop-filter: none; overflow: hidden; }
+[data-theme="decoupe"] .side::after { content: ""; position: absolute; inset-inline-start: -40px; bottom: -50px; width: 190px; height: 170px; background: #ff7a5c; border-radius: 62% 38% 55% 45% / 48% 60% 40% 52%; opacity: .9; pointer-events: none; }
+[data-theme="decoupe"] .side > * { position: relative; z-index: 1; }
+[data-theme="decoupe"] .brand { color: #fff; font-family: var(--display); font-weight: 800; }
+[data-theme="decoupe"] .nav a { color: #e6ecff; border-radius: 999px; }
+[data-theme="decoupe"] .nav a:hover { background: rgba(255,255,255,.12); }
+[data-theme="decoupe"] .nav a.on { background: #ffc93c; color: #13183a; }
+[data-theme="decoupe"] .side .foot { color: #e6ecff; }
+[data-theme="decoupe"] .top { background: var(--panel); backdrop-filter: none; }
+[data-theme="decoupe"] h1, [data-theme="decoupe"] h2, [data-theme="decoupe"] .top .crumbs { font-family: var(--display); font-weight: 800; }
+[data-theme="decoupe"] .tile { border: 0; color: #fff; overflow: hidden; position: relative; background: #8a8fb0; }
+[data-theme="decoupe"] .tile::after { content: ""; position: absolute; inset-inline-end: -18px; top: -22px; width: 74px; height: 64px; background: rgba(255,255,255,.22); border-radius: 58% 42% 50% 50% / 45% 55% 45% 55%; }
+[data-theme="decoupe"] .tile span { color: rgba(255,255,255,.88); }
+[data-theme="decoupe"] .tile.ok { background: #1f9461; } [data-theme="decoupe"] .tile.critical { background: #e8483a; }
+[data-theme="decoupe"] .tile.degraded { background: #ffc93c; color: #13183a; } [data-theme="decoupe"] .tile.degraded span { color: #3a3416; }
+[data-theme="decoupe"] .tile.maintenance { background: #1e4fd8; } [data-theme="decoupe"] .tile.unknown { background: #7a52c7; }
+[data-theme="decoupe"] .tile b { font-family: var(--display); font-weight: 800; }
+[data-theme="decoupe"] .btn, [data-theme="decoupe"] .seg, [data-theme="decoupe"] .search { border-radius: 999px; }
+[data-theme="decoupe"] .beats i { border-radius: 999px; }
+[data-theme="decoupe"] .tbl th { background: transparent; }
+
+/* ============ Atelier: folded sheet steel, rivets and enamel-painted parts ============ */
+:root[data-theme="atelier"] {
+  --bg: #c7cbcf; --panel: #e6e8ea; --panel-2: #dcdfe2; --border: #a9aeb3; --border-strong: #2e3236;
+  --text: #1f2326; --muted: #4f565c; --faint: #858c92;
+  --accent: #c63d2f; --accent-soft: #f1d6d2; --accent-text: #ffffff; --link: #a52f23;
+  --ok: #2d6a4a; --ok-soft: #d5e5db; --degraded: #9a6a00; --degraded-soft: #f5e1a6;
+  --critical: #c63d2f; --critical-soft: #f1d6d2; --unknown: #5b4f8a; --unknown-soft: #dedaeb;
+  --pending: #5d646a; --pending-soft: #d3d7da; --maint: #285a9c; --maint-soft: #d4e0ef; --empty: #c3c8cc;
+  --shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 1px 0 rgba(0,0,0,.25); --radius: 2px;
+  --bg-image: linear-gradient(180deg, rgba(255,255,255,.18), rgba(0,0,0,.04));
+  --display: "Bahnschrift", "DIN Condensed", "Arial Narrow", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  color-scheme: light;
+}
+[data-theme="atelier"] body { background-size: auto; }
+[data-theme="atelier"] .side { background: #2e3236; border: 0; color: #e6e8ea; backdrop-filter: none; box-shadow: inset -3px 0 0 #f2b705; }
+[data-theme="atelier"] .brand { color: #f2b705; font-family: var(--display); text-transform: uppercase; letter-spacing: .12em; font-size: 16px; }
+[data-theme="atelier"] .nav a { color: #c9cdd1; border-radius: 2px; font-family: var(--display); text-transform: uppercase; letter-spacing: .08em; font-size: 12.5px; }
+[data-theme="atelier"] .nav a:hover { background: rgba(255,255,255,.07); }
+[data-theme="atelier"] .nav a.on { background: #f2b705; color: #1f2326; }
+[data-theme="atelier"] .side .foot { color: #9aa1a7; }
+[data-theme="atelier"] .top { background: var(--panel); border-bottom: 2px solid #2e3236; backdrop-filter: none; }
+[data-theme="atelier"] h1, [data-theme="atelier"] h2, [data-theme="atelier"] .top .crumbs { font-family: var(--display); text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
+[data-theme="atelier"] .card, [data-theme="atelier"] .tile { border-color: #8f959b;
+  background-image: radial-gradient(circle at 8px 8px, #8f959b 2px, transparent 2.6px), radial-gradient(circle at calc(100% - 8px) 8px, #8f959b 2px, transparent 2.6px); background-repeat: no-repeat; }
+[data-theme="atelier"] .card > .hd { border-bottom: 2px solid #2e3236; padding-inline: 22px; }
+[data-theme="atelier"] .tile { border-inline-start-width: 8px; padding-inline-start: 18px; }
+[data-theme="atelier"] .tile b { font-family: var(--display); font-size: 30px; }
+[data-theme="atelier"] .tbl th { background: #d3d7da; font-family: var(--display); color: #1f2326; }
+[data-theme="atelier"] .btn { font-family: var(--display); text-transform: uppercase; letter-spacing: .06em; box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 1px 0 rgba(0,0,0,.2); }
+[data-theme="atelier"] .pill, [data-theme="atelier"] .tag { border-radius: 2px; }
+
+/* ============ Simultané: concentric discs of contrasting colour ============ */
+:root[data-theme="simultane"] {
+  --bg: #f5f3ef; --panel: #ffffff; --panel-2: #f3f0ea; --border: #e2ddd3; --border-strong: #1d1c22;
+  --text: #1d1c22; --muted: #5c5a63; --faint: #9a979f;
+  --accent: #d6402b; --accent-soft: #fbe1dc; --accent-text: #ffffff; --link: #1f4fb0;
+  --ok: #17845d; --ok-soft: #d6efe4; --degraded: #a36a00; --degraded-soft: #fbe7b5;
+  --critical: #d6402b; --critical-soft: #fbe1dc; --unknown: #7c4fb8; --unknown-soft: #ebe1f6;
+  --pending: #66646c; --pending-soft: #e8e5df; --maint: #1f4fb0; --maint-soft: #dde6f7; --empty: #e5e1d9;
+  --shadow: none; --radius: 14px; --bg-image: none;
+  --display: "Futura", "Avenir Next", "Century Gothic", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  color-scheme: light;
+}
+[data-theme="simultane"] .side { background-color: #1d1c22; color: #f5f3ef; border: 0; backdrop-filter: none; background-repeat: no-repeat;
+  background-image: radial-gradient(circle at 100% 100%, #d6402b 0 34px, #f2b632 34px 62px, #1f4fb0 62px 92px, #17845d 92px 120px, #e88fb0 120px 146px, transparent 146px); }
+[data-theme="simultane"] .brand { color: #f5f3ef; font-family: var(--display); font-weight: 700; }
+[data-theme="simultane"] .nav a { color: #dcd8d0; border-radius: 999px; }
+[data-theme="simultane"] .nav a:hover { background: rgba(255,255,255,.08); }
+[data-theme="simultane"] .nav a.on { background: #f2b632; color: #1d1c22; }
+[data-theme="simultane"] .side .foot { color: #b8b4ac; }
+[data-theme="simultane"] .top { background: var(--panel); backdrop-filter: none; }
+[data-theme="simultane"] h1, [data-theme="simultane"] h2, [data-theme="simultane"] .top .crumbs { font-family: var(--display); font-weight: 700; }
+[data-theme="simultane"] .tile { border: 1px solid var(--border); border-inline-start-width: 1px; padding-inline-start: 56px; position: relative; }
+[data-theme="simultane"] .tile::before { content: ""; position: absolute; inset-inline-start: 12px; top: 50%; translate: 0 -50%; width: 32px; height: 32px; border-radius: 50%;
+  background: radial-gradient(circle, var(--panel) 0 5px, var(--pending) 5px 10px, var(--panel) 10px 11px, var(--pending-soft) 11px); }
+[data-theme="simultane"] .tile.ok::before { background: radial-gradient(circle, #f2b632 0 5px, #17845d 5px 10px, #e88fb0 10px 13px, #d6efe4 13px); }
+[data-theme="simultane"] .tile.critical::before { background: radial-gradient(circle, #1f4fb0 0 5px, #d6402b 5px 10px, #f2b632 10px 13px, #fbe1dc 13px); }
+[data-theme="simultane"] .tile.degraded::before { background: radial-gradient(circle, #d6402b 0 5px, #f2b632 5px 10px, #1f4fb0 10px 13px, #fbe7b5 13px); }
+[data-theme="simultane"] .tile.maintenance::before { background: radial-gradient(circle, #f2b632 0 5px, #1f4fb0 5px 10px, #17845d 10px 13px, #dde6f7 13px); }
+[data-theme="simultane"] .tile b { font-family: var(--display); }
+[data-theme="simultane"] .btn, [data-theme="simultane"] .seg, [data-theme="simultane"] .search { border-radius: 999px; }
+[data-theme="simultane"] .beats i { border-radius: 999px; }
+[data-theme="simultane"] .tbl th { background: transparent; }

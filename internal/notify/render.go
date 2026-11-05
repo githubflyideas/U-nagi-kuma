@@ -53,7 +53,9 @@ func Render(m *Message) (title, body string) {
 	if m.DryRun {
 		prefix = append(prefix, i18n.T(lang, "msg.drill"))
 	}
-	if m.Site != "" && m.Kind != "STATUS" {
+	// The master's default site name is the product's own name, which the
+	// title already carries: "[unagikuma] [Unagikuma] …" says it twice.
+	if m.Site != "" && m.Kind != "STATUS" && !strings.EqualFold(m.Site, "unagikuma") {
 		prefix = append(prefix, "["+sanitize(m.Site, 60)+"]")
 	}
 	if m.Kind == "STATUS" {

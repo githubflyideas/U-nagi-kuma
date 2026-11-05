@@ -1,0 +1,85 @@
+/* Tactical skin: the console as an operations overview. Five palettes run
+   from light to near-black; each sets the same colour tokens app.css reads,
+   so every page follows the palette without its own rules. Layout rules
+   apply only under data-layout="tactical" and only on wide screens. */
+
+:root[data-theme="tac-1"] {
+  --bg: #F4F6F8; --panel: #FBFCFD; --panel-2: #F4F6F9; --border: #E6EAF0; --border-strong: #D3D9E2;
+  --text: #111827; --muted: #5B6676; --faint: #97A1AF; --accent: #2B59C3; --accent-soft: #E7EEFB; --accent-text: #FFFFFF; --link: #2B59C3;
+  --ok: #2D8A60; --ok-soft: #EBF5EF; --degraded: #A9742A; --degraded-soft: #F8F1E2; --critical: #C9494E; --critical-soft: #F9ECED;
+  --unknown: #7C5CD6; --unknown-soft: #EEE9FB; --pending: #6B7685; --pending-soft: #ECEFF3; --maint: #3D6FD1; --maint-soft: #E4ECFB; --empty: #E4E8EE;
+  --shadow: 0 1px 2px rgba(17,24,39,.06); --radius: 8px; --bg-image: none; color-scheme: light;
+}
+:root[data-theme="tac-2"] {
+  --bg: #EEF1F5; --panel: #F6F8FA; --panel-2: #EEF2F6; --border: #DDE3EB; --border-strong: #C8D0DB;
+  --text: #121A26; --muted: #55606F; --faint: #8A95A4; --accent: #2B59C3; --accent-soft: #DCE6F8; --accent-text: #FFFFFF; --link: #2452B3;
+  --ok: #2A7C57; --ok-soft: #E2F0E7; --degraded: #98702A; --degraded-soft: #F4EBD8; --critical: #B9484C; --critical-soft: #F5E0E1;
+  --unknown: #6D4FC4; --unknown-soft: #E5DDF7; --pending: #5F6B7B; --pending-soft: #DDE3EA; --maint: #2F62C4; --maint-soft: #D8E3F7; --empty: #D5DCE5;
+  --shadow: 0 1px 2px rgba(17,24,39,.08); --radius: 8px; --bg-image: none; color-scheme: light;
+}
+:root[data-theme="tac-3"] {
+  --bg: #30363F; --panel: #373E49; --panel-2: #323943; --border: #444D5A; --border-strong: #515C6B;
+  --text: #E8ECF1; --muted: #A4AEBB; --faint: #6F7A88; --accent: #6E9BF0; --accent-soft: #2A3A57; --accent-text: #0E1420; --link: #8DB0F5;
+  --ok: #5DB787; --ok-soft: #2D3F36; --degraded: #D9A94F; --degraded-soft: #3F3728; --critical: #D9737A; --critical-soft: #413034;
+  --unknown: #A98DF0; --unknown-soft: #2E2845; --pending: #8E99A8; --pending-soft: #343B46; --maint: #7DA6F5; --maint-soft: #263651; --empty: #3A4250;
+  --shadow: none; --radius: 8px; --bg-image: none; color-scheme: dark;
+}
+:root[data-theme="tac-4"] {
+  --bg: #1B2028; --panel: #212830; --panel-2: #252D37; --border: #2D3641; --border-strong: #3B4655;
+  --text: #E6EBF2; --muted: #98A4B3; --faint: #5F6B7A; --accent: #6E9BF0; --accent-soft: #1F2D45; --accent-text: #0A1020; --link: #8DB0F5;
+  --ok: #52B98A; --ok-soft: #22332B; --degraded: #D8A252; --degraded-soft: #3A3025; --critical: #DC7277; --critical-soft: #3A2A2D;
+  --unknown: #9F80EC; --unknown-soft: #261F3B; --pending: #7D8898; --pending-soft: #252D38; --maint: #6EA0F2; --maint-soft: #1D2B45; --empty: #2A323E;
+  --shadow: none; --radius: 8px; --bg-image: none; color-scheme: dark;
+}
+:root[data-theme="tac-5"] {
+  --bg: #12161C; --panel: #171C24; --panel-2: #1B2129; --border: #242C37; --border-strong: #303A47;
+  --text: #DDE4EC; --muted: #8C98A7; --faint: #55606E; --accent: #5E8FF0; --accent-soft: #15223A; --accent-text: #061022; --link: #7FA6F5;
+  --ok: #4AA87A; --ok-soft: #1F2D27; --degraded: #CFA050; --degraded-soft: #302A20; --critical: #D96A6F; --critical-soft: #322428;
+  --unknown: #9676E6; --unknown-soft: #1E1834; --pending: #6E7A89; --pending-soft: #1A212B; --maint: #5E90EA; --maint-soft: #142237; --empty: #1E2630;
+  --shadow: none; --radius: 8px; --bg-image: none; color-scheme: dark;
+}
+
+/* ---------- tactical layout (wide screens) ---------- */
+@media (min-width: 861px) {
+html[data-layout="tactical"] .shell { grid-template-columns: 232px minmax(0, 1fr); }
+html[data-layout="tactical"] .side { background: var(--panel); border-inline-end: 1px solid var(--border); padding: 16px 12px; backdrop-filter: none; }
+html[data-layout="tactical"] .brand { flex-direction: row; justify-content: flex-start; padding: 4px 8px 18px; font-size: 16px; gap: 10px; }
+html[data-layout="tactical"] .brand img { width: 30px; height: 30px; }
+html[data-layout="tactical"] .nav { gap: 2px; }
+html[data-layout="tactical"] .nav a { padding: 8px 10px; border-radius: 6px; font-weight: 500; position: relative; }
+html[data-layout="tactical"] .nav a.on { background: var(--panel-2); color: var(--accent); font-weight: 600; }
+html[data-layout="tactical"] .nav a.on::before { content: ""; position: absolute; inset-inline-start: -12px; top: 8px; bottom: 8px; width: 2px; border-radius: 2px; background: var(--accent); }
+html[data-layout="tactical"] .top { background: var(--panel); backdrop-filter: none; border-bottom: 1px solid var(--border); padding: 10px 22px; box-shadow: none; }
+html[data-layout="tactical"] .top .crumbs { font-size: 15px; font-weight: 650; }
+html[data-layout="tactical"] .page { padding: 18px 22px 36px; gap: 14px; max-width: 1560px; }
+html[data-layout="tactical"] .card { border-radius: var(--radius); box-shadow: none; }
+html[data-layout="tactical"] .card > .hd { padding: 10px 14px; background: transparent; border-bottom: 1px solid var(--border); }
+html[data-layout="tactical"] .card > .hd h2 { font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+
+/* Overview: the operations grid. Fault path and status hive on the left,
+   the to-do list on the right; health, saved value and channels below. */
+html[data-layout="tactical"] .ov { display: grid; gap: 14px; align-items: stretch;
+  grid-template-columns: minmax(0, 2.1fr) minmax(0, 1fr);
+  grid-template-areas: "paths todo" "monitors health" "saved health" "channels expiring" "channels nodes"; }
+html[data-layout="tactical"] .ov > .ov-cols, html[data-layout="tactical"] .ov-col { display: contents; }
+html[data-layout="tactical"] .ov [data-slot="paths"] { grid-area: paths; }
+html[data-layout="tactical"] .ov [data-slot="monitors"] { grid-area: monitors; }
+html[data-layout="tactical"] .ov [data-slot="todo"] { grid-area: todo; }
+html[data-layout="tactical"] .ov [data-slot="health"] { grid-area: health; }
+html[data-layout="tactical"] .ov [data-slot="saved"] { grid-area: saved; }
+html[data-layout="tactical"] .ov [data-slot="expiring"] { grid-area: expiring; }
+html[data-layout="tactical"] .ov [data-slot="channels"] { grid-area: channels; }
+html[data-layout="tactical"] .ov [data-slot="nodes"] { grid-area: nodes; }
+html[data-layout="tactical"] .ov [data-slot="start"] { grid-column: 1 / -1; }
+html[data-layout="tactical"] .ov [data-slot="todo"] .bd { padding: 0; }
+html[data-layout="tactical"] .ov [data-slot="monitors"] .bd { padding: 8px 6px 10px; }
+html[data-layout="tactical"] .ov .hive { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px 22px; padding: 4px 12px 12px; }
+html[data-layout="tactical"] .ov .hive h4 { font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+
+/* Monitor list: dense rows with a status rail on the left. */
+html[data-layout="tactical"] .mon-tbl th { font-size: 11px; }
+html[data-layout="tactical"] .mon-tbl td { padding: 9px 12px; }
+html[data-layout="tactical"] .mon-tbl tr.critical td:first-child { box-shadow: inset 2px 0 0 var(--critical); }
+html[data-layout="tactical"] .mon-tbl tr.warn td:first-child { box-shadow: inset 2px 0 0 var(--degraded); }
+html[data-layout="tactical"] .mon-tbl tbody tr:hover td { background: var(--panel-2); }
+}

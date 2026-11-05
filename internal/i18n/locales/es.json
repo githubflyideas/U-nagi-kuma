@@ -1498,5 +1498,6 @@
 "ui.field.via": "Enviar mediante",
 "ui.field.program": "Comando sendmail",
 "ui.ch.program_hint": "Se encuentra solo (/usr/sbin/sendmail y las rutas habituales); postfix, sendmail, exim, msmtp y similares lo incluyen. Indíquelo solo si está en un lugar poco común.",
-"ui.ch.from_sendmail_hint": "Puede quedar vacío: el sistema de correo enviará como esta máquina, igual que con Nagios."
+"ui.ch.from_sendmail_hint": "Puede quedar vacío: el sistema de correo enviará como esta máquina, igual que con Nagios.",
+"ui.layout": "Diseño"
 }

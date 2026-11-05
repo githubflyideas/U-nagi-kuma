@@ -1,0 +1,204 @@
+/* Layouts: how the console is arranged, independent of its palette.
+   A layout moves the navigation, places the overview's cards by their
+   role (data-slot) and reshapes lists; nothing here runs code. Phones keep
+   the standard drawer layout, so everything is for wide screens only. */
+
+@media (min-width: 861px) {
+
+/* ---------- shared: navigation as a bar instead of a sidebar ---------- */
+html:is([data-layout="gazette"], [data-layout="wall"], [data-layout="terminal"]) .shell,
+html:is([data-layout="gazette"], [data-layout="wall"], [data-layout="terminal"]) .shell.mini { grid-template-columns: minmax(0, 1fr); }
+html:is([data-layout="gazette"], [data-layout="wall"], [data-layout="terminal"]) .side {
+  position: sticky; top: 0; z-index: 10; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center;
+  gap: 6px 16px; padding: 8px 22px; border-inline-end: 0; border-bottom: 1px solid var(--border); }
+html:is([data-layout="gazette"], [data-layout="wall"], [data-layout="terminal"]) .side .brand { flex-direction: row; margin: 0; padding: 0; gap: 10px; }
+html:is([data-layout="gazette"], [data-layout="wall"], [data-layout="terminal"]) .side .brand img { width: 30px; height: 30px; }
+html:is([data-layout="gazette"], [data-layout="wall"], [data-layout="terminal"]) .nav { display: flex; flex-direction: row; flex-wrap: wrap; gap: 2px; }
+html:is([data-layout="gazette"], [data-layout="wall"], [data-layout="terminal"]) .shell.mini .nav .lbl,
+html:is([data-layout="gazette"], [data-layout="wall"], [data-layout="terminal"]) .shell.mini .brand > div,
+html:is([data-layout="gazette"], [data-layout="wall"], [data-layout="terminal"]) .shell.mini .side .foot { display: revert; }
+html:is([data-layout="gazette"], [data-layout="wall"], [data-layout="terminal"]) .side .foot { margin: 0; margin-inline-start: auto; padding: 0; flex-direction: row; align-items: center; gap: 8px; }
+html:is([data-layout="gazette"], [data-layout="wall"], [data-layout="terminal"]) .side .foot select { width: auto; max-width: 160px; }
+html:is([data-layout="gazette"], [data-layout="wall"], [data-layout="terminal"], [data-layout="dock"], [data-layout="folio"]) .side .foot .host { display: none; }
+html:is([data-layout="gazette"], [data-layout="wall"], [data-layout="terminal"], [data-layout="dock"], [data-layout="folio"]) .top > .btn:first-child { display: none; }
+html:is([data-layout="gazette"], [data-layout="wall"], [data-layout="terminal"]) .top { position: static; }
+
+/* The overview becomes one grid whose cells are its cards, placed by role. */
+html[data-layout] .ov { display: grid; gap: 16px; align-items: start; }
+html[data-layout] .ov > .ov-cols, html[data-layout] .ov-col { display: contents; }
+html[data-layout] .ov > .card, html[data-layout] .ov .ov-col > * { min-width: 0; }
+html[data-layout] .ov [data-slot="start"] { grid-column: 1 / -1; }
+
+/* ================= Gazette: a newspaper front page ================= */
+html[data-layout="gazette"] .side { flex-direction: column; align-items: stretch; gap: 0; padding: 18px 40px 0; background: var(--panel); }
+html[data-layout="gazette"] .side .brand { justify-content: center; font: 700 52px/1 Georgia, "Times New Roman", "Songti SC", "SimSun", serif;
+  letter-spacing: -.02em; text-transform: none; color: var(--text); background: none; padding: 6px 0 12px; border-bottom: 4px double var(--text); }
+html[data-layout="gazette"] .side .brand img { width: 44px; height: 44px; }
+html[data-layout="gazette"] .nav { justify-content: center; padding: 6px 0; border-bottom: 1px solid var(--text); }
+html[data-layout="gazette"] .nav a { border-radius: 0; background: none; text-transform: uppercase; letter-spacing: .12em; font-size: 12px; font-weight: 700; padding: 4px 12px; }
+html[data-layout="gazette"] .nav a + a { box-shadow: inset 1px 0 0 var(--border-strong); }
+html[data-layout="gazette"] .nav a.on { background: none; color: var(--critical); text-decoration: underline; text-underline-offset: 6px; }
+html[data-layout="gazette"] .nav .ico { display: none; }
+html[data-layout="gazette"] .side .foot { position: absolute; top: 14px; inset-inline-end: 24px; }
+html[data-layout="gazette"] .side .foot .row { display: none; }
+html[data-layout="gazette"] .top { justify-content: center; background: transparent; border-bottom: 0; padding-top: 10px; }
+html[data-layout="gazette"] .top .crumbs, html[data-layout="gazette"] .top .search { display: none; }
+html[data-layout="gazette"] .page { max-width: 1240px; margin-inline: auto; }
+html[data-layout="gazette"] .ov { grid-template-columns: 2fr 1fr 1fr; column-gap: 0; row-gap: 26px;
+  grid-template-areas: "todo todo monitors" "paths paths monitors" "saved health channels" "expiring nodes nodes"; }
+html[data-layout="gazette"] .ov .card { border: 0; border-radius: 0; box-shadow: none; background: transparent; padding-inline: 18px; }
+html[data-layout="gazette"] .ov .card + .card, html[data-layout="gazette"] .ov [data-slot="monitors"], html[data-layout="gazette"] .ov [data-slot="health"],
+html[data-layout="gazette"] .ov [data-slot="channels"] { border-inline-start: 1px solid var(--border-strong); }
+html[data-layout="gazette"] .ov .card > .hd { border-bottom: 0; border-top: 3px solid var(--text); padding: 6px 0 4px; }
+html[data-layout="gazette"] .ov .card > .hd h2 { text-transform: uppercase; letter-spacing: .14em; font-size: 12px; }
+html[data-layout="gazette"] .ov [data-slot="todo"] .hd h2 { font: 700 34px/1.1 Georgia, "Times New Roman", "Songti SC", serif; letter-spacing: -.01em; text-transform: none; }
+html[data-layout="gazette"] .ov [data-slot="todo"] { font-size: 16px; }
+html[data-layout="gazette"] .ov [data-slot="todo"] { grid-area: todo; } html[data-layout="gazette"] .ov [data-slot="monitors"] { grid-area: monitors; }
+html[data-layout="gazette"] .ov [data-slot="paths"] { grid-area: paths; } html[data-layout="gazette"] .ov [data-slot="saved"] { grid-area: saved; }
+html[data-layout="gazette"] .ov [data-slot="health"] { grid-area: health; } html[data-layout="gazette"] .ov [data-slot="channels"] { grid-area: channels; }
+html[data-layout="gazette"] .ov [data-slot="expiring"] { grid-area: expiring; } html[data-layout="gazette"] .ov [data-slot="nodes"] { grid-area: nodes; }
+html[data-layout="gazette"] .ov .hive { grid-template-columns: minmax(0, 1fr); padding-inline: 0; }
+html[data-layout="gazette"] .mons .card { border-width: 0; border-top: 3px solid var(--text); border-radius: 0; box-shadow: none; }
+html[data-layout="gazette"] .mons .tbl th { background: transparent; }
+
+/* ================= Wall: a wallboard of colour planes ================= */
+html[data-layout="wall"] .side { padding: 0; gap: 0; border-bottom: 4px solid var(--text); }
+html[data-layout="wall"] .side .brand { align-self: stretch; padding: 10px 22px; border: 0; border-inline-end: 4px solid var(--text); }
+html[data-layout="wall"] .nav { gap: 0; align-self: stretch; }
+html[data-layout="wall"] .nav a { border-radius: 0; padding: 14px 18px; border-inline-end: 4px solid var(--text); }
+html[data-layout="wall"] .side .foot { padding-inline: 16px; }
+html[data-layout="wall"] .top { border-bottom: 4px solid var(--text); }
+html[data-layout="wall"] .page { max-width: none; }
+html[data-layout="wall"] .page.ov { padding: 0; max-width: none; }
+html[data-layout="wall"] .ov { grid-template-columns: 3fr 1fr; gap: 4px; background: var(--text); padding: 4px;
+  grid-template-areas: "monitors todo" "monitors health" "monitors expiring"; }
+html[data-layout="wall"] .ov .card { border: 0; border-radius: 0; box-shadow: none; }
+html[data-layout="wall"] .ov [data-slot="paths"], html[data-layout="wall"] .ov [data-slot="saved"],
+html[data-layout="wall"] .ov [data-slot="channels"], html[data-layout="wall"] .ov [data-slot="nodes"] { display: none; }
+html[data-layout="wall"] .ov [data-slot="monitors"] { grid-area: monitors; align-self: stretch; }
+html[data-layout="wall"] .ov [data-slot="todo"] { grid-area: todo; } html[data-layout="wall"] .ov [data-slot="health"] { grid-area: health; }
+html[data-layout="wall"] .ov [data-slot="expiring"] { grid-area: expiring; }
+html[data-layout="wall"] .ov .hive { grid-template-columns: minmax(0, 1fr); }
+html[data-layout="wall"] .ov .hive svg { width: 100%; height: auto; }
+html[data-layout="wall"] .ov .hive h4 { font-size: 20px; text-transform: uppercase; letter-spacing: .08em; }
+html[data-layout="wall"] .hex .body { stroke: var(--text); stroke-width: 2.4; stroke-dasharray: none; }
+html[data-layout="wall"] .hex.ok .body { fill: var(--panel); }
+html[data-layout="wall"] .hex.critical .body, html[data-layout="wall"] .hex.acked .body { fill: var(--critical); }
+html[data-layout="wall"] .hex.critical { filter: none; }
+html[data-layout="wall"] .hex.degraded .body { fill: var(--accent-soft); }
+html[data-layout="wall"] .hex:is(.maintenance, .held) .body { fill: var(--maint); }
+html[data-layout="wall"] .hex.idle .body { fill: var(--empty); }
+/* the monitor list as a wall of tiles */
+html[data-layout="wall"] .mon-tbl thead { display: none; }
+html[data-layout="wall"] .mon-tbl, html[data-layout="wall"] .mon-tbl tbody { display: block; }
+html[data-layout="wall"] .mon-tbl tbody { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 4px; background: var(--text); padding: 4px; }
+html[data-layout="wall"] .mon-tbl tr { display: flex; flex-direction: column; gap: 6px; background: var(--panel); padding: 14px 16px; min-height: 150px; }
+html[data-layout="wall"] .mon-tbl td { display: block; padding: 0; border: 0 !important; box-shadow: none !important; max-width: none !important; text-align: start; }
+html[data-layout="wall"] .mon-tbl td.sel { display: none; }
+html[data-layout="wall"] .mon-tbl .name { font-size: 18px; }
+html[data-layout="wall"] .mon-tbl tr.critical { background: var(--critical); color: #fff; }
+html[data-layout="wall"] .mon-tbl tr.critical :is(.name, .sub, .err-text, .muted, a:not(.btn)) { color: #fff; }
+html[data-layout="wall"] .mon-tbl tr.degraded { background: var(--accent-soft); }
+html[data-layout="wall"] .mons > .card { border: 0; }
+
+/* ================= Folio: a narrow rail and one reading column ================= */
+html[data-layout="folio"] .shell, html[data-layout="folio"] .shell.mini { grid-template-columns: 76px minmax(0, 1fr); }
+html[data-layout="folio"] .side { padding-inline: 8px; align-items: center; }
+html[data-layout="folio"] .side .brand { padding-inline: 0; margin: 0 0 10px; border: 0; }
+html[data-layout="folio"] .side .brand > div, html[data-layout="folio"] .nav .lbl { display: none; }
+html[data-layout="folio"] .side .brand img { width: 44px; height: 44px; }
+html[data-layout="folio"] .nav a { justify-content: center; padding-inline: 0; position: relative; width: 52px; height: 44px; }
+html[data-layout="folio"] .nav .ico { font-size: 18px; width: auto; }
+html[data-layout="folio"] .nav .count { position: absolute; inset-block-start: 2px; inset-inline-end: 0; margin: 0; font-size: 10px; padding: 0 5px; min-width: 0; }
+html[data-layout="folio"] .nav .rdot { position: absolute; inset-block-start: 4px; inset-inline-start: 4px; }
+html[data-layout="folio"] .side .foot { position: fixed; z-index: 20; bottom: 14px; inset-inline-start: 92px; flex-direction: row; align-items: center; gap: 8px;
+  padding: 6px 8px; background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); }
+html[data-layout="folio"] .side .foot select { width: auto; }
+html[data-layout="folio"] .top { justify-content: center; }
+html[data-layout="folio"] .top .spacer { display: none; }
+html[data-layout="folio"] .page { max-width: 880px; margin-inline: auto; padding-top: 34px; gap: 28px; }
+html[data-layout="folio"] .ov { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+html[data-layout="folio"] .ov [data-slot="todo"] { order: 1; } html[data-layout="folio"] .ov [data-slot="monitors"] { order: 2; }
+html[data-layout="folio"] .ov [data-slot="paths"] { order: 3; } html[data-layout="folio"] .ov [data-slot="health"] { order: 4; }
+html[data-layout="folio"] .ov [data-slot="saved"] { order: 5; } html[data-layout="folio"] .ov [data-slot="channels"] { order: 6; }
+html[data-layout="folio"] .ov [data-slot="expiring"] { order: 7; } html[data-layout="folio"] .ov [data-slot="nodes"] { order: 8; }
+html[data-layout="folio"] .ov .card > .hd { padding: 16px 24px; }
+html[data-layout="folio"] .ov .card > .hd h2 { font-size: 21px; }
+html[data-layout="folio"] .ov .card > .bd:not(.flush) { padding: 18px 24px; }
+html[data-layout="folio"] .mons { max-width: 1100px; }
+
+/* ================= Dock: a floating dock at the bottom, big soft cards ================= */
+html[data-layout="dock"] .shell, html[data-layout="dock"] .shell.mini { grid-template-columns: minmax(0, 1fr); }
+html[data-layout="dock"] .side { position: fixed; z-index: 30; top: auto; bottom: 18px; left: 50%; transform: translateX(-50%); height: auto; width: auto;
+  flex-direction: row; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; border: 0; box-shadow: 0 14px 40px rgba(19,24,58,.28); }
+[dir="rtl"] html[data-layout="dock"] .side, html[dir="rtl"][data-layout="dock"] .side { transform: translateX(50%); left: auto; right: 50%; }
+html[data-layout="dock"] .side::after { display: none; }
+html[data-layout="dock"] .side .brand { display: none; }
+html[data-layout="dock"] .nav { display: flex; flex-direction: row; gap: 2px; }
+html[data-layout="dock"] .nav a { flex-direction: column; gap: 2px; padding: 6px 10px; border-radius: 22px; font-size: 11.5px; position: relative; white-space: nowrap; }
+html[data-layout="dock"] .shell.mini .nav .lbl { display: revert; }
+html[data-layout="dock"] .nav .ico { font-size: 18px; width: auto; }
+html[data-layout="dock"] .nav .count { position: absolute; top: 0; inset-inline-end: 4px; margin: 0; }
+html[data-layout="dock"] .nav .rdot { position: absolute; top: 4px; inset-inline-start: 8px; }
+html[data-layout="dock"] .side .foot, html[data-layout="dock"] .shell.mini .side .foot { display: flex; flex-direction: row; align-items: center; margin: 0; padding: 0 4px; gap: 6px; }
+html[data-layout="dock"] .side .foot select { width: 96px; border-radius: 999px; font-size: 12px; }
+html[data-layout="dock"] .side .foot select:first-of-type, html[data-layout="dock"] .side .foot .row { display: none; }
+html[data-layout="dock"] .top { background: transparent; border: 0; padding: 22px 34px 6px; backdrop-filter: none; box-shadow: none; }
+html[data-layout="dock"] .top .crumbs { font-size: 30px; font-weight: 800; }
+html[data-layout="dock"] .page { padding: 12px 34px 130px; max-width: 1400px; }
+html[data-layout="dock"] .ov { grid-template-columns: 1fr 1fr; gap: 22px;
+  grid-template-areas: "todo monitors" "health monitors" "paths paths" "saved channels" "expiring nodes"; }
+html[data-layout="dock"] .ov .card { border: 0; border-radius: 26px; box-shadow: 0 2px 0 var(--border); }
+html[data-layout="dock"] .ov .card > .hd { border: 0; padding: 18px 22px 4px; }
+html[data-layout="dock"] .ov .card > .hd h2 { font-size: 19px; }
+html[data-layout="dock"] .ov [data-slot="todo"] { grid-area: todo; } html[data-layout="dock"] .ov [data-slot="monitors"] { grid-area: monitors; }
+html[data-layout="dock"] .ov [data-slot="paths"] { grid-area: paths; } html[data-layout="dock"] .ov [data-slot="saved"] { grid-area: saved; }
+html[data-layout="dock"] .ov [data-slot="health"] { grid-area: health; } html[data-layout="dock"] .ov [data-slot="channels"] { grid-area: channels; }
+html[data-layout="dock"] .ov [data-slot="expiring"] { grid-area: expiring; } html[data-layout="dock"] .ov [data-slot="nodes"] { grid-area: nodes; }
+html[data-layout="dock"] .ov .hive { grid-template-columns: minmax(0, 1fr); }
+/* the monitor list as soft cards */
+html[data-layout="dock"] .mons > .card { border: 0; background: transparent; box-shadow: none; }
+html[data-layout="dock"] .mon-tbl thead { display: none; }
+html[data-layout="dock"] .mon-tbl, html[data-layout="dock"] .mon-tbl tbody { display: block; }
+html[data-layout="dock"] .mon-tbl tbody { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
+html[data-layout="dock"] .mon-tbl tr { display: grid; grid-template-columns: auto 1fr auto; grid-template-areas: "pill pill edit" "name name name" "beats beats beats" "lat up when";
+  gap: 8px 10px; align-items: center; background: var(--panel); border-radius: 24px; padding: 16px 18px; box-shadow: 0 2px 0 var(--border); }
+html[data-layout="dock"] .mon-tbl td { display: block; padding: 0; border: 0 !important; box-shadow: none !important; max-width: none !important; min-width: 0 !important; }
+html[data-layout="dock"] .mon-tbl td.sel { display: none; }
+html[data-layout="dock"] .mon-tbl td:nth-child(2) { grid-area: pill; } html[data-layout="dock"] .mon-tbl td:nth-child(3) { grid-area: name; }
+html[data-layout="dock"] .mon-tbl td:nth-child(4) { grid-area: beats; } html[data-layout="dock"] .mon-tbl td:nth-child(5) { grid-area: lat; text-align: start; }
+html[data-layout="dock"] .mon-tbl td:nth-child(6) { grid-area: up; } html[data-layout="dock"] .mon-tbl td:nth-child(7) { grid-area: when; text-align: end; }
+html[data-layout="dock"] .mon-tbl td:nth-child(8) { grid-area: edit; }
+html[data-layout="dock"] .mon-tbl .name { font-size: 17px; }
+html[data-layout="dock"] .mon-tbl tr.critical { box-shadow: 0 0 0 3px var(--critical); }
+
+/* ================= Terminal: tabs, monospace and dense panes ================= */
+html[data-layout="terminal"] body, html[data-layout="terminal"] .btn, html[data-layout="terminal"] input, html[data-layout="terminal"] select,
+html[data-layout="terminal"] h1, html[data-layout="terminal"] h2, html[data-layout="terminal"] .top .crumbs, html[data-layout="terminal"] .nav a,
+html[data-layout="terminal"] .tile b { font-family: var(--mono); }
+html[data-layout="terminal"] body { font-size: 13px; }
+html[data-layout="terminal"] .side { padding: 0 14px; gap: 0 18px; }
+html[data-layout="terminal"] .side .brand { font: 600 14px var(--mono); letter-spacing: 0; text-transform: none; border: 0; padding: 0; }
+html[data-layout="terminal"] .side .brand img { display: none; }
+html[data-layout="terminal"] .side .brand::before { content: "\276F"; color: var(--accent); }
+html[data-layout="terminal"] .nav { align-self: stretch; }
+html[data-layout="terminal"] .nav a { border-radius: 0; padding: 10px 14px; font-size: 12.5px; letter-spacing: 0; text-transform: lowercase; box-shadow: none; border-inline-end: 1px solid var(--border); }
+html[data-layout="terminal"] .nav a.on { background: var(--bg); color: var(--accent); box-shadow: inset 0 2px 0 var(--accent); }
+html[data-layout="terminal"] .nav .ico { display: none; }
+html[data-layout="terminal"] .top { padding-block: 6px; }
+html[data-layout="terminal"] .page { max-width: none; padding: 12px 14px 30px; gap: 10px; }
+html[data-layout="terminal"] .ov { grid-template-columns: 1.1fr 1.4fr 1fr; gap: 10px;
+  grid-template-areas: "todo monitors health" "paths paths saved" "channels expiring nodes"; }
+html[data-layout="terminal"] .ov .card { border: 1px solid var(--border-strong); border-radius: 0; }
+html[data-layout="terminal"] .card > .hd { padding: 4px 10px; background: var(--panel-2); border-bottom: 1px solid var(--border-strong); }
+html[data-layout="terminal"] .card > .hd h2 { font-size: 12px; letter-spacing: .04em; text-transform: lowercase; }
+html[data-layout="terminal"] .card > .hd h2::before { content: "\25A0  "; color: var(--accent); }
+html[data-layout="terminal"] .ov [data-slot="todo"] { grid-area: todo; } html[data-layout="terminal"] .ov [data-slot="monitors"] { grid-area: monitors; }
+html[data-layout="terminal"] .ov [data-slot="paths"] { grid-area: paths; } html[data-layout="terminal"] .ov [data-slot="saved"] { grid-area: saved; }
+html[data-layout="terminal"] .ov [data-slot="health"] { grid-area: health; } html[data-layout="terminal"] .ov [data-slot="channels"] { grid-area: channels; }
+html[data-layout="terminal"] .ov [data-slot="expiring"] { grid-area: expiring; } html[data-layout="terminal"] .ov [data-slot="nodes"] { grid-area: nodes; }
+html[data-layout="terminal"] .ov .hive { grid-template-columns: minmax(0, 1fr); }
+html[data-layout="terminal"] .tbl td, html[data-layout="terminal"] .tbl th { padding: 3px 10px; }
+html[data-layout="terminal"] .mon-tbl tr.critical td { background: var(--critical-soft); }
+
+}

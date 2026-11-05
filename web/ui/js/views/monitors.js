@@ -126,7 +126,7 @@ export function Monitors({ query }) {
   };
 
   const total = list.data ? list.data.items.length : 0;
-  return html`<div class="page">
+  return html`<div class="page mons">
     <div class="row">
       <input type="search" style=${{ flex: '1 1 180px', maxWidth: '360px', minWidth: '160px' }} placeholder=${t('ui.mon.search')} value=${q}
         onInput=${(e) => setQ(e.target.value)} aria-label=${t('ui.mon.search')} />
@@ -152,7 +152,7 @@ export function Monitors({ query }) {
       ${!list.data ? html`<${Loading} />` : !total ? html`<${Empty} title=${t('ui.mon.none')}><p>${t('ui.mon.none_hint')}</p><a class="btn primary" href="#/monitors/new">${t('ui.mon.add')}</a><//>` :
         !rows.length ? html`<${Empty} title=${t('ui.mon.no_match')} /> ` :
         view === 'hive' ? html`<div class="row" style=${{ padding: '12px 16px 0' }}><${Legend} /></div><${Hive} rows=${rows} />` :
-        html`<table class="tbl">
+        html`<table class="tbl mon-tbl">
           <thead><tr>
             <th class="sel"><input type="checkbox" checked=${allPicked} onChange=${toggleAll} aria-label=${t('ui.mon.select_all')} title=${t('ui.mon.select_all')} /></th>
             <th>${t('ui.status')}</th><th>${t('ui.monitor')}</th><th class="hide-sm">${t('ui.mon.last24h')}</th>
