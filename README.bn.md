@@ -40,14 +40,6 @@ Windows-এ `unagikuma.exe` চালান।
 
 > অন্য কম্পিউটার থেকে খুলছেন? `http://<সার্ভারের-ঠিকানা>:8077`-এ যান এবং প্রোগ্রামটি প্রথমবার চালুর সময় যে **সেটআপ টোকেন** দেখিয়েছিল সেটি দিন।
 
-## Docker পছন্দ?
-
-```sh
-docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/githubflyideas/unagikuma:latest
-```
-
-তারপর http://localhost:8077 খুলুন। **সেটআপ টোকেন** পাবেন `docker logs unagikuma` দিয়ে।
-
 ## Uptime Kuma থেকে আসা
 
 Uptime Kuma বন্ধ করুন, তারপর আগে দেখে নিন (কিছুই বদলানো হয় না):
@@ -88,11 +80,7 @@ Uptime Kuma বন্ধ করুন, তারপর আগে দেখে �
 ./unagikuma reset-password admin
 ```
 
-নতুন পাসওয়ার্ড দুবার লিখুন (এটি দেখা যাবে না)। এর বদলে একটি র‍্যান্ডম পাসওয়ার্ড পেতে `--generate` যোগ করুন। Docker দিয়ে:
-
-```sh
-docker exec -it unagikuma /unagikuma reset-password admin
-```
+নতুন পাসওয়ার্ড দুবার লিখুন (এটি দেখা যাবে না)। এর বদলে একটি র‍্যান্ডম পাসওয়ার্ড পেতে `--generate` যোগ করুন।
 
 ## আরও জানুন
 

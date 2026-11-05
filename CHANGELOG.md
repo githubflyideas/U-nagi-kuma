@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+**Removed**
+- The container image is no longer built or published, and Docker is no longer offered as a way to run Unagikuma or its agents (the agent install dialog keeps the shell, systemd and Windows commands). Run the single binary directly or as a service. The DOCKER monitor type, which checks containers on a host, is unchanged.
+
 ## v2.1.1 — 2026-11-05
 
 **New**

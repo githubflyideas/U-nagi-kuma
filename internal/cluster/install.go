@@ -16,12 +16,7 @@ type Install struct {
 	Systemd string `json:"systemd"`
 	// Windows starts it from PowerShell, as a service.
 	Windows string `json:"windows"`
-	// Docker runs it in a container.
-	Docker string `json:"docker"`
 }
-
-// Image is the container image of unagikuma.
-const Image = "ghcr.io/githubflyideas/unagikuma:latest"
 
 // InstallCommands renders the install commands. The token goes into a file
 // readable only by its owner, never onto a command line.
@@ -64,18 +59,7 @@ func InstallCommands(server, node, token, fingerprint string) Install {
 		`.\unagikuma.exe service install --name unagikuma-agent -- agent --server ` + psq(server) + ` --node ` + psq(node) +
 			` --ca-fingerprint ` + fingerprint + ` --token-file "$env:ProgramData\unagikuma\agent.token" --log-file "$env:ProgramData\unagikuma\agent.log"`,
 	}, "\n")
-	docker := strings.Join([]string{
-		"sudo install -d -m 0755 /etc/unagikuma",
-		"printf '%s\\n' " + shq(token) + " | sudo tee /etc/unagikuma/agent.token >/dev/null",
-		"sudo chmod 0400 /etc/unagikuma/agent.token",
-		// Host networking lets the agent see the node's real gateway; ping
-		// needs NET_RAW, the only capability it keeps.
-		"docker run -d --name unagikuma-agent --restart unless-stopped --network host \\",
-		"  --user 0 --cap-drop ALL --cap-add NET_RAW \\",
-		"  -v /etc/unagikuma/agent.token:/run/agent.token:ro \\",
-		"  " + Image + " agent " + args + " --token-file /run/agent.token",
-	}, "\n")
-	return Install{Server: server, Node: node, Fingerprint: fingerprint, Shell: shell, Systemd: systemd, Windows: windows, Docker: docker}
+	return Install{Server: server, Node: node, Fingerprint: fingerprint, Shell: shell, Systemd: systemd, Windows: windows}
 }
 
 // shq quotes for POSIX shells.

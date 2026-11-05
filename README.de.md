@@ -40,14 +40,6 @@ Unter Windows starten Sie `unagikuma.exe`.
 
 > Sie öffnen es von einem anderen Rechner aus? Rufen Sie `http://<Server-Adresse>:8077` auf und geben Sie das **Einrichtungstoken** ein, das das Programm beim ersten Start angezeigt hat.
 
-## Lieber mit Docker?
-
-```sh
-docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/githubflyideas/unagikuma:latest
-```
-
-Öffnen Sie dann http://localhost:8077. Das **Einrichtungstoken** finden Sie mit `docker logs unagikuma`.
-
 ## Umstieg von Uptime Kuma
 
 Uptime Kuma beenden und zuerst ansehen (es wird nichts geändert):
@@ -88,11 +80,7 @@ Auf dem Rechner, auf dem Unagikuma läuft:
 ./unagikuma reset-password admin
 ```
 
-Geben Sie das neue Passwort zweimal ein (es wird nicht angezeigt). Mit `--generate` bekommen Sie stattdessen ein zufälliges. Mit Docker:
-
-```sh
-docker exec -it unagikuma /unagikuma reset-password admin
-```
+Geben Sie das neue Passwort zweimal ein (es wird nicht angezeigt). Mit `--generate` bekommen Sie stattdessen ein zufälliges.
 
 ## Mehr erfahren
 

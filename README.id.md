@@ -40,14 +40,6 @@ Di Windows, jalankan `unagikuma.exe`.
 
 > Membukanya dari komputer lain? Buka `http://<alamat-server>:8077` dan masukkan **Token penyiapan** yang ditampilkan program saat pertama kali dijalankan.
 
-## Lebih suka Docker?
-
-```sh
-docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/githubflyideas/unagikuma:latest
-```
-
-Lalu buka http://localhost:8077. **Token penyiapan** bisa dilihat dengan `docker logs unagikuma`.
-
 ## Pindah dari Uptime Kuma
 
 Hentikan Uptime Kuma, lalu lihat dulu (tidak ada yang diubah):
@@ -88,11 +80,7 @@ Di mesin tempat Unagikuma berjalan:
 ./unagikuma reset-password admin
 ```
 
-Ketik kata sandi baru dua kali (tidak ditampilkan). Tambahkan `--generate` untuk mendapatkan kata sandi acak. Dengan Docker:
-
-```sh
-docker exec -it unagikuma /unagikuma reset-password admin
-```
+Ketik kata sandi baru dua kali (tidak ditampilkan). Tambahkan `--generate` untuk mendapatkan kata sandi acak.
 
 ## Pelajari lebih lanjut
 

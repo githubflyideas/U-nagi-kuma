@@ -31,14 +31,6 @@ On macOS the binaries are not notarized yet, so the first start is blocked: run 
 
 Add a monitor in the UI, use **Quick add monitors** to paste a list of targets, or edit `data/monitors.bind`.
 
-### In a container
-
-```sh
-docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/githubflyideas/unagikuma:latest
-```
-
-The image holds only the static binary; data lives in `/data`. For ICMP checks the host must allow unprivileged ping (`net.ipv4.ping_group_range`, Docker's default inside containers), or add `--cap-add NET_RAW --user 0`.
-
 ### As a service (Linux, systemd)
 
 ```ini

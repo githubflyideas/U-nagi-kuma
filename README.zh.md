@@ -40,14 +40,6 @@ Windows 上运行 `unagikuma.exe`。
 
 > 从另一台电脑打开?访问 `http://<服务器地址>:8077`,并输入程序首次启动时显示的 **初始化令牌**。
 
-## 想用 Docker?
-
-```sh
-docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/githubflyideas/unagikuma:latest
-```
-
-然后打开 http://localhost:8077。**初始化令牌** 可以用 `docker logs unagikuma` 查看。
-
 ## 从 Uptime Kuma 迁移
 
 先停止 Uptime Kuma，然后预览一下（不会做任何更改）：
@@ -88,11 +80,7 @@ docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/gith
 ./unagikuma reset-password admin
 ```
 
-输入两次新密码（不会显示）。加上 `--generate` 可以改为自动生成一个随机密码。使用 Docker 时：
-
-```sh
-docker exec -it unagikuma /unagikuma reset-password admin
-```
+输入两次新密码（不会显示）。加上 `--generate` 可以改为自动生成一个随机密码。
 
 ## 了解更多
 
