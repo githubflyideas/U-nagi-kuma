@@ -1494,5 +1494,9 @@
 "ui.dir.reach.no_channel": "Aucun moyen de la joindre choisi",
 "ui.dir.reach.no_address": "Il manque l’adresse dont le canal a besoin",
 "ui.dir.reach.channel_gone": "Le canal choisi n’existe plus",
-"ui.team.unreachable": "Ne peut pas être prévenu des pannes de l’infrastructure partagée : {names} (liez un contact à son identifiant et choisissez « Prévenir via » dans Alertes › Contacts)"
+"ui.team.unreachable": "Ne peut pas être prévenu des pannes de l’infrastructure partagée : {names} (liez un contact à son identifiant et choisissez « Prévenir via » dans Alertes › Contacts)",
+"ui.field.via": "Envoyer via",
+"ui.field.program": "Commande sendmail",
+"ui.ch.program_hint": "Trouvée automatiquement (/usr/sbin/sendmail et les emplacements habituels) ; postfix, sendmail, exim, msmtp et autres la fournissent. À renseigner seulement pour un emplacement inhabituel.",
+"ui.ch.from_sendmail_hint": "Peut rester vide : le système de messagerie envoie alors au nom de cette machine, comme pour Nagios."
 }

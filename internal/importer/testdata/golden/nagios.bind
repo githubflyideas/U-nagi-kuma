@@ -13,10 +13,10 @@ nights    IN PERIOD "mon-fri 00:00-08:00; mon-fri 18:00-24:00; sat-sun 00:00-24:
 workhours IN PERIOD "mon-fri 09:00-17:00"
 
 ; --- Notification channels (from Nagios contacts and contact groups)
-alice       IN CHANNEL email host=localhost port=25 tls=none from=unagikuma@localhost to=alice@example.com
-bob         IN CHANNEL email host=localhost port=25 tls=none from=unagikuma@localhost to=bob@example.com period=workhours
-dave        IN CHANNEL email host=localhost port=25 tls=none from=unagikuma@localhost to=dave@example.com period=nights
-nagiosadmin IN CHANNEL email host=localhost port=25 tls=none from=unagikuma@localhost to=nagios@localhost
+alice       IN CHANNEL email via=sendmail to=alice@example.com
+bob         IN CHANNEL email via=sendmail to=bob@example.com period=workhours
+dave        IN CHANNEL email via=sendmail to=dave@example.com period=nights
+nagiosadmin IN CHANNEL email via=sendmail to=nagios@localhost
 oncall      IN CHANNEL group members=alice,dave
 
 ; --- Notification policies: who each monitor notifies, and how often

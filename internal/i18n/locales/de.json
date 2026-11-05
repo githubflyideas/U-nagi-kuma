@@ -1494,5 +1494,9 @@
 "ui.dir.reach.no_channel": "Kein Weg der Erreichbarkeit gewählt",
 "ui.dir.reach.no_address": "Die Adresse, die der Kanal braucht, fehlt",
 "ui.dir.reach.channel_gone": "Der gewählte Kanal existiert nicht mehr",
-"ui.team.unreachable": "Kann bei Ausfällen der gemeinsamen Infrastruktur nicht benachrichtigt werden: {names} (unter Alarmierung › Kontakte einen Kontakt mit dem Login verknüpfen und „Benachrichtigen über“ wählen)"
+"ui.team.unreachable": "Kann bei Ausfällen der gemeinsamen Infrastruktur nicht benachrichtigt werden: {names} (unter Alarmierung › Kontakte einen Kontakt mit dem Login verknüpfen und „Benachrichtigen über“ wählen)",
+"ui.field.via": "Versand über",
+"ui.field.program": "sendmail-Befehl",
+"ui.ch.program_hint": "Wird selbst gefunden (/usr/sbin/sendmail und die üblichen Orte); postfix, sendmail, exim, msmtp und ähnliche bringen ihn mit. Nur für einen ungewöhnlichen Ort angeben.",
+"ui.ch.from_sendmail_hint": "Darf leer bleiben: Das Mailsystem sendet dann als dieser Rechner, wie bei Nagios."
 }

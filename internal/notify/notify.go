@@ -128,7 +128,7 @@ var nativeKinds = []KindInfo{
 	{Kind: "telegram", Label: "Telegram", Fields: []Field{{Key: "token", Type: "secret", Required: true}, {Key: "chat", Type: "text", Required: true}, {Key: "api", Type: "url", Default: "https://api.telegram.org"}}},
 	{Kind: "slack", Label: "Slack", Fields: []Field{{Key: "url", Type: "secret", Required: true, Placeholder: "https://hooks.slack.com/services/…"}}},
 	{Kind: "discord", Label: "Discord", Fields: []Field{{Key: "url", Type: "secret", Required: true, Placeholder: "https://discord.com/api/webhooks/…"}}},
-	{Kind: "email", Label: "Email (SMTP)", Fields: []Field{{Key: "host", Type: "text", Required: true}, {Key: "port", Type: "number", Default: "587"}, {Key: "username", Type: "text"}, {Key: "password", Type: "secret"}, {Key: "from", Type: "text", Required: true}, {Key: "to", Type: "email-list", Required: true}, {Key: "tls", Type: "select", Options: []string{"starttls", "tls", "none"}}}},
+	{Kind: "email", Label: "Email", Fields: []Field{{Key: "via", Type: "select", Options: []string{"smtp", "sendmail"}, Default: "smtp"}, {Key: "host", Type: "text"}, {Key: "port", Type: "number", Default: "587"}, {Key: "username", Type: "text"}, {Key: "password", Type: "secret"}, {Key: "tls", Type: "select", Options: []string{"starttls", "tls", "none"}}, {Key: "program", Type: "text", Placeholder: "/usr/sbin/sendmail"}, {Key: "from", Type: "text"}, {Key: "to", Type: "email-list", Required: true}}},
 	{Kind: "webhook", Label: "Webhook", Fields: []Field{{Key: "url", Type: "url", Required: true}, {Key: "method", Type: "select", Options: []string{"POST", "PUT", "GET"}, Default: "POST"}, {Key: "content-type", Type: "select", Options: []string{"json", "form", "text"}, Default: "json"}, {Key: "body", Type: "textarea"}, {Key: "success-match", Type: "text"}}},
 	{Kind: "log", Label: "Log only", Fields: nil},
 }
@@ -199,7 +199,42 @@ func ValidateChannel(kind string, opts map[string]string) error {
 			}
 		}
 	}
-	return validateFields(info.Fields, opts, extra)
+	if err := validateFields(info.Fields, opts, extra); err != nil {
+		return err
+	}
+	if kind == "email" {
+		return validateEmail(opts)
+	}
+	return nil
+}
+
+// smtpOnly are the e-mail options that mean nothing to the local
+// sendmail command, and programOnly the reverse.
+var smtpOnly, programOnly = []string{"host", "port", "username", "password", "tls"}, []string{"program"}
+
+// validateEmail checks the options of one way of sending: an SMTP server
+// needs host and from; the local sendmail command needs neither (the mail
+// system knows where to relay and whom to send as).
+func validateEmail(o map[string]string) error {
+	if strings.EqualFold(o["via"], "sendmail") {
+		for _, k := range smtpOnly {
+			if o[k] != "" {
+				return fmt.Errorf("%s is for via=smtp; the sendmail command uses the mail system's own settings", k)
+			}
+		}
+		return checkSendmailProgram(o["program"])
+	}
+	for _, k := range programOnly {
+		if o[k] != "" {
+			return fmt.Errorf("%s is for via=sendmail", k)
+		}
+	}
+	for _, k := range []string{"host", "from"} {
+		if o[k] == "" {
+			return fmt.Errorf("%s is required", k)
+		}
+	}
+	return nil
 }
 
 func validateFields(fields []Field, opts map[string]string, extra map[string]bool) error {

@@ -104,3 +104,7 @@ func reportWidth(t *testing.T, report string, width int) {
 		}
 	}
 }
+
+// The golden files describe an import on a machine with a sendmail
+// command, as a Nagios machine has; tests do not depend on this one.
+func init() { haveSendmail = func() bool { return true } }

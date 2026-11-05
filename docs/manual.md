@@ -141,6 +141,13 @@ night-sms IN CHANNEL aliyun-sms … period=!office
 default   IN POLICY chain=team,night-sms mode=all repeat=30m max=3 escalate=30m:manager,2h:manager+oncall
 ```
 
+- **E-mail.** An `email` channel sends either to an SMTP server (`host=`, `port=`, `tls=starttls|tls|none`, `username=`, `password=`, `from=`) or, with `via=sendmail`, through this machine's own mail system, the way Nagios and cron do:
+
+  ```text
+  ops-mail  IN CHANNEL email via=sendmail to=ops@example.com,dba@example.com
+  ```
+
+  Nothing else is needed: whatever mail system the machine runs (postfix, sendmail, exim, OpenSMTPD, msmtp, ssmtp, nullmailer, dma) installs a `sendmail` command, and that is used, with its own relay, queue and retries. It is looked for in `/usr/sbin`, `/usr/lib`, `/usr/bin`, `/usr/local/sbin` and `/usr/local/bin`; `program=` names another place (only a mail system's own command, such as `/usr/bin/msmtp`, is accepted). Without `from=` the mail system chooses the sender, as it does for Nagios. The message counts as sent once the mail system has accepted it; whether it then reaches the mailbox depends on that mail system, so try **Test** once after setting it up. Not available on Windows.
 - **Policies.** `chain=` lists channels; `mode=fallback` (default) tries them in order until one succeeds, `mode=all` sends to all. `repeat=`, `max=`, `delay=`, `reopen-window=`, `ack-expire=`, `recovery=no` and `notify-degraded=yes` shape what is sent. A monitor uses `policy=NAME`, or the `default` policy.
 - **Time periods.** `PERIOD` records are weekly rules (`mon-fri 09:00-18:00`, ranges past midnight such as `22:00-07:00`, `24:00` for end of day). `period=office` on a channel uses it only inside the period, `period=!office` only outside it. A skipped channel is not a failure: the next one in a fallback chain is tried.
 - **Contact groups.** A `group` channel notifies all its `members=` at once; it succeeds if any member does. Members keep their own time periods.
@@ -361,7 +368,7 @@ unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
 unagikuma import nagios /etc/nagios4/nagios.cfg
 ```
 
-A folder or single `.cfg` files work too. Templates are resolved; hosts become ping checks that their services depend on (`parent=`); `check_http`, `check_tcp`, `check_ssh`, `check_dns`, `check_dig`, `check_ntp`, `check_snmp` (uptime), `check_mysql`, `check_pgsql` and similar plugins become built-in checks; other plugins become script checks that start paused until you copy the plugin into the check-scripts directory. `$USERn$` values from `resource.cfg` become secrets, passive-only services become push monitors, contacts with an e-mail address become e-mail channels, contact groups become group channels, and time periods become `PERIOD` records.
+A folder or single `.cfg` files work too. Templates are resolved; hosts become ping checks that their services depend on (`parent=`); `check_http`, `check_tcp`, `check_ssh`, `check_dns`, `check_dig`, `check_ntp`, `check_snmp` (uptime), `check_mysql`, `check_pgsql` and similar plugins become built-in checks; other plugins become script checks that start paused until you copy the plugin into the check-scripts directory. `$USERn$` values from `resource.cfg` become secrets, passive-only services become push monitors, contacts with an e-mail address become e-mail channels (sent through this machine's sendmail command, as Nagios sent them; on a machine without one, to its SMTP port on localhost, which the report points out), contact groups become group channels, and time periods become `PERIOD` records.
 
 **The report.** Both print a summary (imported / needs a look / not imported), a table of what was imported, and for each item that needs a look or was not imported the reason and what to do. The same report is saved as text and Markdown in `<data>/import-reports/`. The new records go in one block at the end of `monitors.bind`, in sections headed by where they came from; `title=` keeps the original names. The web UI does the same under **Configuration › Import**. Options: `--area SECTION` puts the monitors in a section, `--role` sets the role of imported accounts, `--report DIR` saves the report elsewhere. Exit status: 0 done (or nothing new), 1 failed (nothing changed), 2 wrong usage.
 

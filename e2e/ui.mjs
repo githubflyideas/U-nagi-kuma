@@ -224,6 +224,19 @@ await step('a channel is added', async () => {
   await page.waitForSelector('td:has-text("ops-log")');
 });
 
+await step('an e-mail channel shows the fields of its way of sending', async () => {
+  await page.goto(base + '/#/alerts/channels');
+  await page.click('button:has-text("Add channel")');
+  await page.selectOption('.modal select', 'email');
+  const labels = async () => (await page.$$eval('.modal .field > label', (ls) => ls.map((l) => l.textContent))).join('|');
+  let l = await labels();
+  if (!l.includes('SMTP server *') || l.includes('sendmail command')) throw new Error('SMTP form: ' + l);
+  await page.selectOption('.modal .field:has(label:text-is("Send through")) select', 'sendmail');
+  l = await labels();
+  if (l.includes('SMTP server') || !l.includes('sendmail command') || l.includes('From *')) throw new Error('sendmail form: ' + l);
+  await page.click('.modal button:has-text("Cancel")');
+});
+
 await step('a new e-mail address is offered for the contact directory', async () => {
   await page.goto(base + '/#/alerts/channels');
   await page.click('button:has-text("Add channel")');
