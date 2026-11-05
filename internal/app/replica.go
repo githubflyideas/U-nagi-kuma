@@ -9,6 +9,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -108,6 +109,12 @@ func (a *App) keepReplicaCopy(archive, key string) error {
 	}
 	if err := a.copySecrets(tmp); err != nil {
 		a.log.Warn("could not copy the master's secrets", "err", err)
+	}
+	if c, err := readCarry(tmp, a.now()); err != nil {
+		a.log.Warn("could not read silences and changes from the master's state", "err", err)
+	} else if cb, err := json.Marshal(c); err == nil {
+		_ = os.MkdirAll(a.dataPath(replicaDir), 0o700)
+		_ = os.WriteFile(a.dataPath(replicaDir, replicaCarryFile), cb, 0o600)
 	}
 	b, err := os.ReadFile(cfgPath)
 	if err != nil {
@@ -248,6 +255,13 @@ func (a *App) localEngineConfig() (engine.Config, bool) {
 		keep = append(keep, m)
 	}
 	ec.Monitors = keep
+	// The change windows open on the master and its silences hold here
+	// too (this node's own change list is not the master's).
+	ec.Maints = ec.Maints[:0:0]
+	for _, mt := range cfg.Maints {
+		ec.Maints = append(ec.Maints, engine.MaintSpec{Name: mt.Name, Title: mt.Title, Monitors: mt.Monitors, Schedule: mt.Schedule, Notify: mt.Notify})
+	}
+	ec.Maints = append(ec.Maints, a.carryWindows(func(sel string) []string { return changeMonitors(cfg, sel) })...)
 	ec.Anchors, ec.LocalDetect = nil, true
 	for _, n := range cfg.Nodes {
 		if n.Name != self {
