@@ -272,6 +272,16 @@ func (e *Engine) NodeState(s NodeStatus) {
 	e.do(func() { e.onNodeState(s) })
 }
 
+// nodeLabel names a node in messages: "title (name)", or the name.
+func (e *Engine) nodeLabel(name string) string {
+	for _, n := range e.cfg.Nodes {
+		if n.Name == name && n.Title != "" {
+			return n.Title + " (" + n.Name + ")"
+		}
+	}
+	return name
+}
+
 func (e *Engine) onNodeState(s NodeStatus) {
 	nr := e.nodes[s.Node]
 	if nr == nil {
@@ -286,7 +296,7 @@ func (e *Engine) onNodeState(s NodeStatus) {
 	case s.Online && !was:
 		nr.offlineSince = time.Time{}
 		e.event(Event{Type: EventSystem, Severity: "info", Message: "node " + s.Node + " connected", Data: map[string]any{"msg": "node_connected", "node": s.Node, "version": s.Version}})
-		e.resolveSystem(nodeOfflineKey(s.Node), now, e.text("node_back", s.Node))
+		e.resolveSystem(nodeOfflineKey(s.Node), now, e.text("node_back", e.nodeLabel(s.Node)))
 	case !s.Online && was:
 		nr.offlineSince = now
 		e.event(Event{Type: EventSystem, Severity: "warning", Message: "node " + s.Node + " disconnected", Data: map[string]any{"msg": "node_disconnected", "node": s.Node}})
@@ -354,10 +364,7 @@ func (e *Engine) checkNodes(now time.Time) {
 			nr.status.Verdict = NodeUnreachable
 			continue
 		}
-		title := n.Name
-		if n.Title != "" {
-			title = n.Title + " (" + n.Name + ")"
-		}
+		title := e.nodeLabel(n.Name)
 		away = append(away, title)
 		against, witnessable := e.witnesses(n.Name)
 		nr.status.Witnesses = against

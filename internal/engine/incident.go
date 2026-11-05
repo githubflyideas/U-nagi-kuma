@@ -348,7 +348,7 @@ func (e *Engine) message(inc *Incident, n PlannedNotice, now time.Time) notify.M
 // resolvedTitle is the title of a system incident's recovery notice.
 func (e *Engine) resolvedTitle(inc *Incident) string {
 	if node, ok := strings.CutPrefix(inc.System, SystemNodeOffline+":"); ok {
-		return e.text("node_back", node)
+		return e.text("node_back", e.nodeLabel(node))
 	}
 	switch inc.System {
 	case SystemLocalNetwork, SystemOverload, SystemAllFailed, SystemStorage:

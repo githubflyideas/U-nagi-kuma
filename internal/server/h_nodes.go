@@ -87,6 +87,14 @@ func (s *Server) nodeViews() []nodeView {
 		}
 		out = append(out, v)
 	}
+	if m := s.app.Agent().Member; m != nil {
+		// On a node of a cluster the own configuration's name is not this
+		// node's: name the row as the cluster knows it.
+		self.Name, self.Title = m.Node, s.app.ReplicaStatus().Site
+		if self.Title == m.Node {
+			self.Title = ""
+		}
+	}
 	self.Gateway, self.Verdict = s.app.GatewayStates(), engine.NodeOK
 	_, self.Reach = s.app.ReachView()
 	return append([]nodeView{self}, out...)
