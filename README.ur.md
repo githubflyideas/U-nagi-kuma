@@ -58,22 +58,6 @@ Windows پر `unagikuma.exe` چلائیں۔
 
 <div dir="rtl">
 
-## Docker پسند ہے؟
-
-</div>
-
-```sh
-docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/githubflyideas/unagikuma:latest
-```
-
-<div dir="rtl">
-
-پھر http://localhost:8077 کھولیں۔ **سیٹ اپ ٹوکن** آپ کو `docker logs unagikuma` سے مل جائے گا۔
-
-</div>
-
-<div dir="rtl">
-
 ## Uptime Kuma سے منتقلی
 
 Uptime Kuma بند کریں، پھر پہلے دیکھ لیں (کچھ نہیں بدلتا):
@@ -142,13 +126,9 @@ Uptime Kuma بند کریں، پھر پہلے دیکھ لیں (کچھ نہیں �
 
 <div dir="rtl">
 
-نیا پاس ورڈ دو بار لکھیں (یہ دکھائی نہیں دے گا)۔ اس کی جگہ ایک بے ترتیب پاس ورڈ کے لیے `--generate` شامل کریں۔ Docker کے ساتھ:
+نیا پاس ورڈ دو بار لکھیں (یہ دکھائی نہیں دے گا)۔ اس کی جگہ ایک بے ترتیب پاس ورڈ کے لیے `--generate` شامل کریں۔
 
 </div>
-
-```sh
-docker exec -it unagikuma /unagikuma reset-password admin
-```
 
 <div dir="rtl">
 

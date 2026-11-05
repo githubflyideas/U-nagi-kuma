@@ -289,7 +289,7 @@ function Install({ issued, server, onClose }) {
       <${Field} label=${t('ui.node.server')} hint=${t('ui.node.server_hint')}>
         <input type="url" class="ltr" value=${addr} onInput=${(e) => setAddr(e.target.value.trim())} /><//>
       <div class="row">
-        <${Seg} value=${kind} onChange=${setKind} options=${[['shell', t('ui.node.shell')], ['systemd', 'systemd'], ['docker', 'Docker'], ['windows', 'Windows']]} />
+        <${Seg} value=${kind} onChange=${setKind} options=${[['shell', t('ui.node.shell')], ['systemd', 'systemd'], ['windows', 'Windows']]} />
         <div class="spacer"></div><${Copy} text=${cmd} />
       </div>
       <pre class="code">${cmd}</pre>

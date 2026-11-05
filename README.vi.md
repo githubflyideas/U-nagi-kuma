@@ -40,14 +40,6 @@ Trên Windows, chạy `unagikuma.exe`.
 
 > Mở từ máy tính khác? Truy cập `http://<địa-chỉ-máy-chủ>:8077` và nhập **Mã thiết lập** mà chương trình hiển thị khi khởi động lần đầu.
 
-## Thích dùng Docker?
-
-```sh
-docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/githubflyideas/unagikuma:latest
-```
-
-Sau đó mở http://localhost:8077. Xem **Mã thiết lập** bằng lệnh `docker logs unagikuma`.
-
 ## Chuyển từ Uptime Kuma
 
 Dừng Uptime Kuma, rồi xem trước (không thay đổi gì):
@@ -88,11 +80,7 @@ Trên máy đang chạy Unagikuma:
 ./unagikuma reset-password admin
 ```
 
-Nhập mật khẩu mới hai lần (không hiển thị). Thêm `--generate` để nhận một mật khẩu ngẫu nhiên. Với Docker:
-
-```sh
-docker exec -it unagikuma /unagikuma reset-password admin
-```
+Nhập mật khẩu mới hai lần (không hiển thị). Thêm `--generate` để nhận một mật khẩu ngẫu nhiên.
 
 ## Tìm hiểu thêm
 

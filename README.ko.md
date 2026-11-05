@@ -40,14 +40,6 @@ Windows에서는 `unagikuma.exe`를 실행합니다.
 
 > 다른 컴퓨터에서 여나요? `http://<서버-주소>:8077`에 접속해 프로그램이 처음 시작할 때 보여 준 **설정 토큰**을 입력하세요.
 
-## Docker가 편하다면
-
-```sh
-docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/githubflyideas/unagikuma:latest
-```
-
-그다음 http://localhost:8077 을 엽니다. **설정 토큰**은 `docker logs unagikuma`로 확인할 수 있습니다.
-
 ## Uptime Kuma에서 옮겨 오기
 
 Uptime Kuma를 멈춘 뒤 먼저 확인합니다(아무것도 바뀌지 않음):
@@ -88,11 +80,7 @@ Unagikuma가 실행 중인 컴퓨터에서:
 ./unagikuma reset-password admin
 ```
 
-새 비밀번호를 두 번 입력합니다(화면에 표시되지 않음). 대신 무작위 비밀번호를 받으려면 `--generate`를 붙이세요. Docker에서는:
-
-```sh
-docker exec -it unagikuma /unagikuma reset-password admin
-```
+새 비밀번호를 두 번 입력합니다(화면에 표시되지 않음). 대신 무작위 비밀번호를 받으려면 `--generate`를 붙이세요.
 
 ## 더 알아보기
 

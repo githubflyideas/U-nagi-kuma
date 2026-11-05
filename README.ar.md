@@ -58,22 +58,6 @@
 
 <div dir="rtl">
 
-## تفضّل Docker؟
-
-</div>
-
-```sh
-docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/githubflyideas/unagikuma:latest
-```
-
-<div dir="rtl">
-
-ثم افتح http://localhost:8077. ستجد **رمز الإعداد** عبر الأمر `docker logs unagikuma`.
-
-</div>
-
-<div dir="rtl">
-
 ## الانتقال من Uptime Kuma
 
 أوقف Uptime Kuma، ثم ألقِ نظرة أولًا (لن يتغير شيء):
@@ -142,13 +126,9 @@ docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/gith
 
 <div dir="rtl">
 
-اكتب كلمة المرور الجديدة مرتين (لن تظهر). أضف `--generate` للحصول على كلمة مرور عشوائية بدلًا من ذلك. مع Docker:
+اكتب كلمة المرور الجديدة مرتين (لن تظهر). أضف `--generate` للحصول على كلمة مرور عشوائية بدلًا من ذلك.
 
 </div>
-
-```sh
-docker exec -it unagikuma /unagikuma reset-password admin
-```
 
 <div dir="rtl">
 

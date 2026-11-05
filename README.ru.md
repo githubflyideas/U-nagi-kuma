@@ -40,14 +40,6 @@
 
 > Открываете с другого компьютера? Перейдите на `http://<адрес-сервера>:8077` и введите **Токен настройки**, который программа показала при первом запуске.
 
-## Удобнее через Docker?
-
-```sh
-docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/githubflyideas/unagikuma:latest
-```
-
-Затем откройте http://localhost:8077. **Токен настройки** можно посмотреть командой `docker logs unagikuma`.
-
 ## Переезд с Uptime Kuma
 
 Остановите Uptime Kuma и сначала посмотрите (ничего не меняется):
@@ -88,11 +80,7 @@ docker run -d --name unagikuma -p 8077:8077 -v unagikuma-data:/data ghcr.io/gith
 ./unagikuma reset-password admin
 ```
 
-Введите новый пароль дважды (он не отображается). Добавьте `--generate`, чтобы получить случайный пароль. С Docker:
-
-```sh
-docker exec -it unagikuma /unagikuma reset-password admin
-```
+Введите новый пароль дважды (он не отображается). Добавьте `--generate`, чтобы получить случайный пароль.
 
 ## Подробнее
 
