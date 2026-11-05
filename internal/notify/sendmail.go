@@ -8,6 +8,7 @@ import (
 	"net/mail"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -45,10 +46,12 @@ func checkSendmailProgram(p string) error {
 	if p == "" || strings.Contains(p, "${") {
 		return nil
 	}
-	if !filepath.IsAbs(p) {
+	// Checked as a Unix path on every system: a configuration may be
+	// checked on a Windows machine for the Unix nodes that send.
+	if !path.IsAbs(filepath.ToSlash(p)) && !filepath.IsAbs(p) {
 		return errors.New("program must be an absolute path, such as /usr/sbin/sendmail")
 	}
-	base := strings.TrimSuffix(filepath.Base(p), ".exe")
+	base := strings.TrimSuffix(path.Base(filepath.ToSlash(p)), ".exe")
 	if !sendmailNames[base] {
 		return fmt.Errorf("program must be the mail system's sendmail command (sendmail, exim, msmtp, ssmtp, …), not %s", base)
 	}
