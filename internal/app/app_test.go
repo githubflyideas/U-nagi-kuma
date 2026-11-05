@@ -404,6 +404,7 @@ $SCOPE *
 // would never be checked, so they are refused.
 func TestMemberRefusesConfigEdits(t *testing.T) {
 	a, _, _, _ := newApp(t, testConfig)
+	defer a.Store().Close()
 	a.am.mu.Lock()
 	a.am.member = &Membership{Server: "https://master:19110", Node: "b"}
 	a.am.mu.Unlock()
