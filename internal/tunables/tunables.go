@@ -169,6 +169,8 @@ var defs = []Def{
 	{Key: "api.rate", Kind: Rate, Default: "20/s", Desc: "API requests per token or client IP", DescZH: "每个令牌或来源 IP 的 API 请求速率"},
 	{Key: "api.login-rate", Kind: Rate, Default: "5/m", Desc: "login attempts per client IP", DescZH: "每个来源 IP 的登录尝试速率"},
 	{Key: "api.push-rate", Kind: Rate, Default: "60/m", Desc: "push endpoint calls per token", DescZH: "每个 PUSH 令牌的调用速率"},
+	{Key: "cluster.join-rate", Kind: Rate, Default: "10/m", Desc: "join attempts per client IP (a join code is single-use; this only slows guessing)", DescZH: "每个来源 IP 的加入尝试速率（加入码只能用一次，这里只是减缓猜测）"},
+	{Key: "cluster.agent-rate", Kind: Rate, Default: "120/m", Desc: "connections and state copies per client IP between nodes and the master", DescZH: "节点与主节点之间，每个来源 IP 的连接和状态拉取速率"},
 	{Key: "statuspage.subscribe-rate", Kind: Rate, Default: "5/h", Desc: "status page subscription requests per client IP", DescZH: "每个来源 IP 订阅状态页的请求速率"},
 	{Key: "statuspage.max-pending", Kind: Int, Default: "500", Min: "10", Max: "100000", Desc: "unconfirmed subscriptions a status page keeps before refusing more", DescZH: "状态页未确认订阅的上限，超过后拒绝新订阅"},
 	{Key: "statuspage.resolved-shown", Kind: Duration, Default: "7d", Min: "0s", Max: "90d", Desc: "how long resolved announcements stay on a status page", DescZH: "已解决的公告在状态页上保留多久"},

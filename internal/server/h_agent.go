@@ -8,10 +8,10 @@ import (
 )
 
 // agentConnect upgrades a probe agent's connection. Attempts share the
-// login limiter: a token is a credential and must not be guessable at
+// node limiter: a token is a credential and must not be guessable at
 // network speed.
 func (s *Server) agentConnect(w http.ResponseWriter, r *http.Request) {
-	if ok, wait := s.login.Allow(s.ip(r), s.now()); !ok {
+	if ok, wait := s.agentRL.Allow(s.ip(r), s.now()); !ok {
 		writeError(w, rateLimited(wait))
 		return
 	}
@@ -20,7 +20,7 @@ func (s *Server) agentConnect(w http.ResponseWriter, r *http.Request) {
 
 // agentState serves the master's state to a standby node.
 func (s *Server) agentState(w http.ResponseWriter, r *http.Request) {
-	if ok, wait := s.login.Allow(s.ip(r), s.now()); !ok {
+	if ok, wait := s.agentRL.Allow(s.ip(r), s.now()); !ok {
 		writeError(w, rateLimited(wait))
 		return
 	}
@@ -30,7 +30,7 @@ func (s *Server) agentState(w http.ResponseWriter, r *http.Request) {
 // agentRetire takes the signed notice of the master that replaced this
 // one: it steps down.
 func (s *Server) agentRetire(w http.ResponseWriter, r *http.Request) {
-	if ok, wait := s.login.Allow(s.ip(r), s.now()); !ok {
+	if ok, wait := s.agentRL.Allow(s.ip(r), s.now()); !ok {
 		writeError(w, rateLimited(wait))
 		return
 	}

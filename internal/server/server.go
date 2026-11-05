@@ -46,6 +46,8 @@ type Server struct {
 	now       func() time.Time
 	api       *ratelimit.Keyed
 	login     *ratelimit.Keyed
+	join      *ratelimit.Keyed // node joins, separate from logins
+	agentRL   *ratelimit.Keyed // node connections and state copies
 	push      *ratelimit.Keyed
 	subs      *ratelimit.Keyed // public status page subscriptions, per IP
 
@@ -112,6 +114,10 @@ func New(a *app.App, o Options) *Server {
 	pr, pb := rate("api.push-rate")
 	s.api = ratelimit.NewKeyed(ar, ab, 0)
 	s.login = ratelimit.NewKeyed(lr, 3, 0)
+	jr, _ := rate("cluster.join-rate")
+	s.join = ratelimit.NewKeyed(jr, max(1, int(jr*10)), 0)
+	cr, _ := rate("cluster.agent-rate")
+	s.agentRL = ratelimit.NewKeyed(cr, max(1, int(cr*10)), 0)
 	s.push = ratelimit.NewKeyed(pr, pb, 0)
 	sr, _ := rate("statuspage.subscribe-rate")
 	s.subs = ratelimit.NewKeyed(sr, 3, 0)
