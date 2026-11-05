@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v2.1.1 — 2026-11-05
 
 **New**
 - E-mail channels can send through the machine's own mail system (`via=sendmail`), the way Nagios and cron do: no server, port or password to set, whatever runs behind the `sendmail` command (postfix, sendmail, exim, OpenSMTPD, msmtp, ssmtp, nullmailer, dma). `program=` names a sendmail command in an unusual place. Nagios contacts are imported this way when the machine has one.
