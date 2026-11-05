@@ -232,8 +232,10 @@ func (a *Agent) followPeerMaster() {
 		return
 	}
 	u := "https://" + cand.Addr
+	if hostOf(a.Server()) == cand.Addr {
+		return // already on that master
+	}
 	a.log.Warn("following a peer that took over as master", "peer", cand.Name, "term", cand.Term, "server", u)
-	a.follow([]string{u})
 	if cand.Term > known {
 		a.smu.Lock()
 		a.term = cand.Term
@@ -242,4 +244,5 @@ func (a *Agent) followPeerMaster() {
 			a.o.OnTerm(cand.Term)
 		}
 	}
+	a.switchMaster(u)
 }

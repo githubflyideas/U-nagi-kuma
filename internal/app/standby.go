@@ -98,6 +98,7 @@ func (a *App) supersede(term uint64, by string) {
 	if c := a.applied.Load(); c != nil {
 		a.applyConfig(c)
 	}
+	a.engine.ClearClusterRoleIncidents()
 	a.master.Retire(fmt.Sprintf("this master was replaced (term %d)", term))
 	a.emit("banner", nil)
 }

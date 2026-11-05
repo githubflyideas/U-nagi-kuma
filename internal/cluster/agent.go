@@ -108,8 +108,10 @@ type Agent struct {
 	sem      chan struct{}
 	conn     AgentStatus
 
-	peers    peerSet
-	peersKick chan struct{}
+	peers      peerSet
+	peersKick  chan struct{}
+	sessMu     sync.Mutex
+	sessCancel context.CancelFunc
 }
 
 // AgentStatus is the agent's view of its connection, for its local UI.
@@ -302,7 +304,18 @@ func (a *Agent) session(ctx context.Context) error {
 	}
 	defer conn.Close()
 	sctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	a.sessMu.Lock()
+	a.sessCancel = cancel
+	a.sessMu.Unlock()
+	defer func() {
+		cancel()
+		a.sessMu.Lock()
+		if a.sessCancel != nil {
+			// only clear if we still own it
+			a.sessCancel = nil
+		}
+		a.sessMu.Unlock()
+	}()
 	go func() { <-sctx.Done(); conn.Close() }()
 
 	_ = conn.SetDeadline(time.Now().Add(handshakeTimeout))
@@ -806,3 +819,35 @@ func (a *Agent) follow(servers []string) {
 	a.smu.Unlock()
 	a.setMasters(append(cur, servers...))
 }
+
+// switchMaster puts server first and drops the current session so Run
+// reconnects to it (used when a peer took over as master).
+func (a *Agent) switchMaster(server string) {
+	u, err := NormalizeServer(server)
+	if err != nil {
+		return
+	}
+	a.smu.Lock()
+	rest := make([]string, 0, len(a.servers))
+	for _, s := range a.servers {
+		if s != u {
+			rest = append(rest, s)
+		}
+	}
+	a.servers, a.cur = append([]string{u}, rest...), 0
+	a.smu.Unlock()
+	if a.o.OnMasters != nil {
+		a.o.OnMasters(a.Servers())
+	}
+	a.cancelSession()
+}
+
+func (a *Agent) cancelSession() {
+	a.sessMu.Lock()
+	c := a.sessCancel
+	a.sessMu.Unlock()
+	if c != nil {
+		c()
+	}
+}
+
