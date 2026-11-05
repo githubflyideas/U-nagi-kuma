@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -396,5 +397,20 @@ $SCOPE *
 	}
 	if !has("bj", "bj-core") || has("sh", "bj-core") || !has("sh", "web") {
 		t.Fatal("regional monitors must reach only their region's agents")
+	}
+}
+
+// A node of a cluster runs its master's configuration: edits made on it
+// would never be checked, so they are refused.
+func TestMemberRefusesConfigEdits(t *testing.T) {
+	a, _, _, _ := newApp(t, testConfig)
+	a.am.mu.Lock()
+	a.am.member = &Membership{Server: "https://master:19110", Node: "b"}
+	a.am.mu.Unlock()
+	if _, err := a.SaveConfig([]byte(testConfig), "", "admin", ""); !errors.Is(err, ErrMember) {
+		t.Fatalf("save: %v", err)
+	}
+	if _, err := a.BumpSerial("admin"); !errors.Is(err, ErrMember) {
+		t.Fatalf("bump: %v", err)
 	}
 }

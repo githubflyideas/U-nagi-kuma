@@ -443,8 +443,8 @@ func (a *App) Banner() *Banner {
 
 // SaveConfig validates and applies a new text.
 func (a *App) SaveConfig(text []byte, ifMatch, author, message string) (ConfigState, error) {
-	if a.SupersededBy() != nil {
-		return a.Config(), ErrSuperseded
+	if err := a.editable(); err != nil {
+		return a.Config(), err
 	}
 	return a.cfg.save(text, ifMatch, author, message)
 }
@@ -457,19 +457,42 @@ func (a *App) ValidateConfig(text []byte) (*config.Config, []config.Diagnostic) 
 
 // EditConfig applies a structured change (record upsert, delete, tunables).
 func (a *App) EditConfig(author, message string, change func(f *config.File) error) (ConfigState, error) {
-	if a.SupersededBy() != nil {
-		return a.Config(), ErrSuperseded
+	if err := a.editable(); err != nil {
+		return a.Config(), err
 	}
 	return a.cfg.edit(author, message, change)
 }
 
 // BumpSerial applies the file on disk with an increased serial.
-func (a *App) BumpSerial(author string) (ConfigState, error) { return a.cfg.bumpAndApply(author) }
+func (a *App) BumpSerial(author string) (ConfigState, error) {
+	if err := a.editable(); err != nil {
+		return a.Config(), err
+	}
+	return a.cfg.bumpAndApply(author)
+}
+
+// ErrMember refuses configuration changes on a node of a cluster: it runs
+// its master's configuration, so an edit here would never be checked.
+var ErrMember = errors.New("this server is a node of a cluster and runs its master's configuration; change it on the master (this site's own monitors go in the site-local configuration)")
+
+// editable says whether this server's configuration may be changed.
+func (a *App) editable() error {
+	if a.SupersededBy() != nil {
+		return ErrSuperseded
+	}
+	a.am.mu.Lock()
+	member := a.am.member != nil
+	a.am.mu.Unlock()
+	if member {
+		return ErrMember
+	}
+	return nil
+}
 
 // Rollback re-applies a previous version.
 func (a *App) Rollback(serial uint32, author string) (ConfigState, error) {
-	if a.SupersededBy() != nil {
-		return a.Config(), ErrSuperseded
+	if err := a.editable(); err != nil {
+		return a.Config(), err
 	}
 	return a.cfg.rollback(serial, author)
 }

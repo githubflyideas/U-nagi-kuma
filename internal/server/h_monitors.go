@@ -607,7 +607,7 @@ func (s *Server) configError(err error) error {
 		return e
 	case errors.Is(err, app.ErrConflict):
 		return &APIError{Status: http.StatusPreconditionFailed, Code: CodeConflict, Message: err.Error(), Extra: map[string]any{"etag": s.app.Config().ETag()}}
-	case errors.Is(err, app.ErrSuperseded):
+	case errors.Is(err, app.ErrSuperseded), errors.Is(err, app.ErrMember):
 		return &APIError{Status: http.StatusConflict, Code: CodeConflict, Message: err.Error()}
 	case errors.Is(err, config.ErrNameTaken):
 		return &APIError{Status: http.StatusConflict, Code: CodeConflict, Message: err.Error()}
