@@ -109,14 +109,21 @@ func absDuration(d time.Duration) time.Duration {
 
 func (s *Server) nodesList(w http.ResponseWriter, r *http.Request) (any, error) {
 	views := s.nodeViews()
+	rep := s.app.ReplicaStatus()
 	layout := "single"
-	if len(views) > 1 {
+	switch {
+	case rep.Replica:
+		layout = "replica"
+	case len(views) > 1:
 		layout = "cluster"
 	}
 	monitors := len(s.app.Config().Config.Monitors)
+	if rep.Replica && rep.Monitors > monitors {
+		monitors = rep.Monitors
+	}
 	return map[string]any{"layout": layout, "nodes": views, "fingerprint": s.app.PKI().Fingerprint(), "server": agentServerURL(r),
 		"agent": s.app.Agent(), "instance": s.app.Instance(), "monitors": monitors,
-		"replica": s.app.ReplicaStatus(), "peers": s.app.Peers(), "local_nodes": s.localNodes(), "gateway": s.app.GatewayStates()}, nil
+		"replica": rep, "peers": s.app.Peers(), "local_nodes": s.localNodes(), "gateway": s.app.GatewayStates()}, nil
 }
 
 var hostRe = regexp.MustCompile(`^(\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9.-]+)(:[0-9]{1,5})?$`)

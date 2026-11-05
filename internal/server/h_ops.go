@@ -153,9 +153,13 @@ func (s *Server) overview(w http.ResponseWriter, r *http.Request) (any, error) {
 	}
 	// The node panel appears only once there are remote nodes: a single
 	// machine shows no cluster furniture.
-	layout, nodes := "single", []nodeView{}
 	views := s.nodeViews()
-	if len(views) > 1 {
+	rep := s.app.ReplicaStatus()
+	layout, nodes := "single", []nodeView{}
+	switch {
+	case rep.Replica:
+		layout, nodes = "replica", views
+	case len(views) > 1:
 		layout, nodes = "cluster", views
 	}
 	paths := []pathView{}

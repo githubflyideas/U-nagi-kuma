@@ -752,25 +752,25 @@ func (d *LocalNet) GateTargets(fam Family, exclude string, n int, now time.Time)
 
 // Health is the "本机健康" card model (overview health card).
 type Health struct {
-	Uplink      string // ok | wan_down | lan_down | no_route | cannot_judge | unknown
-	UplinkSince time.Time
-	Suspected   bool // wan_down judged without wan anchors
-	Gateway     string
-	GatewayOK   bool
-	GatewayRTT  time.Duration
-	GatewayNote string // container | unresponsive | no_route | ""
+	Uplink      string    `json:"uplink"` // ok | wan_down | lan_down | no_route | cannot_judge | unknown
+	UplinkSince time.Time `json:"uplink_since,omitzero"`
+	Suspected   bool      `json:"suspected,omitzero"` // wan_down judged without wan anchors
+	Gateway     string    `json:"gateway,omitempty"`
+	GatewayOK   bool      `json:"gateway_ok"`
+	GatewayRTT  time.Duration `json:"gateway_rtt,omitzero"`
+	GatewayNote string    `json:"gateway_note,omitempty"` // container | unresponsive | no_route | ""
 	// GatewayState: ok | down (answered before, stopped) | silent (never
 	// answered ping: many routers ignore it, which is fine) | unsure.
-	GatewayState   string
-	WANDomains     int
-	WANAnchors     int
-	DNSDown        bool
-	CanJudgeUplink bool
-	Exit           string // internet exit address, "" when off or not checked yet
-	ExitOK         bool
-	ExitRTT        time.Duration
-	ExitAt         time.Time
-	ExitIdle       bool // not pinged because every internet target answers
+	GatewayState   string        `json:"gateway_state,omitempty"`
+	WANDomains     int           `json:"wan_domains"`
+	WANAnchors     int           `json:"wan_anchors"`
+	DNSDown        bool          `json:"dns_down,omitzero"`
+	CanJudgeUplink bool          `json:"can_judge_uplink"`
+	Exit           string        `json:"exit,omitempty"` // internet exit address, "" when off or not checked yet
+	ExitOK         bool          `json:"exit_ok,omitzero"`
+	ExitRTT        time.Duration `json:"exit_rtt,omitzero"`
+	ExitAt         time.Time     `json:"exit_at,omitzero"`
+	ExitIdle       bool          `json:"exit_idle,omitzero"` // not pinged because every internet target answers
 }
 
 // Health summarises the detector for the UI (IPv4 preferred, else IPv6).
