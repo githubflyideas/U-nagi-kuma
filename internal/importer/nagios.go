@@ -13,7 +13,11 @@ import (
 	"unicode/utf8"
 
 	"github.com/githubflyideas/unagikuma/internal/config"
+	"github.com/githubflyideas/unagikuma/internal/notify"
 )
+
+// haveSendmail tells whether this machine can mail the way Nagios does.
+var haveSendmail = func() bool { return notify.FindSendmail("") != "" }
 
 // Nagios converts Nagios (or Icinga 1, Naemon) object definitions into
 // monitors.bind records: hosts become PING checks, services the matching
@@ -1400,9 +1404,23 @@ func (n *nagios) contactChannel(name, kind string) string {
 		}
 	}
 	ch := n.names.take(name, "contact")
-	opts := []config.Opt{{Key: "host", Value: "localhost"}, {Key: "port", Value: "25"}, {Key: "tls", Value: "none"},
-		{Key: "from", Value: "unagikuma@localhost"}, {Key: "to", Value: v["email"]}}
+	// Nagios mails through the machine's own mail system (its notify
+	// commands pipe into mail or sendmail), so the channel does the same
+	// when this machine has a sendmail command: whatever mail system is
+	// behind it, postfix, sendmail, exim or msmtp, keeps relaying as before.
+	// Without one, the nearest thing is that mail system's SMTP port.
+	var opts []config.Opt
+	if haveSendmail() {
+		opts = []config.Opt{{Key: "via", Value: "sendmail"}, {Key: "to", Value: v["email"]}}
+	} else {
+		opts = []config.Opt{{Key: "host", Value: "localhost"}, {Key: "port", Value: "25"}, {Key: "tls", Value: "none"},
+			{Key: "from", Value: "unagikuma@localhost"}, {Key: "to", Value: v["email"]}}
+	}
 	it := Item{Kind: "channel", Source: name, Name: ch, Type: "Email", Target: "to " + v["email"], Status: StatusImported}
+	if len(opts) > 2 {
+		it.attention("This machine has no sendmail command, so the channel sends to the SMTP server on localhost:25.",
+			"Run the import on the Nagios machine, or set the SMTP server under Alerting › Channels.")
+	}
 	if p := n.period(v["service_notification_period"]); p != "" {
 		opts = append(opts, config.Opt{Key: "period", Value: p})
 		it.Target += ", during " + p

@@ -197,3 +197,33 @@ func TestNagiosHuge(t *testing.T) {
 	}
 	apply(t, soaLine, res)
 }
+
+// Contacts are mailed the way Nagios mailed them: through this machine's
+// sendmail command, or its SMTP port when it has none (pointed out).
+func TestNagiosContactMail(t *testing.T) {
+	cfg := "define contact {\n contact_name ops\n email ops@example.com\n}\n" +
+		"define host {\n host_name web\n address 10.0.0.1\n contacts ops\n}\n"
+	for _, have := range []bool{true, false} {
+		haveSendmail = func() bool { return have }
+		res, err := Nagios([]byte(cfg), nil, Options{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		text, _ := apply(t, soaLine, res)
+		want := "IN CHANNEL email via=sendmail to=ops@example.com"
+		if !have {
+			want = "IN CHANNEL email host=localhost port=25 tls=none from=unagikuma@localhost to=ops@example.com"
+		}
+		if !strings.Contains(text, want) {
+			t.Errorf("sendmail %v: want %q in\n%s", have, want, text)
+		}
+		var flagged bool
+		for _, it := range res.Items {
+			flagged = flagged || it.Kind == "channel" && strings.Contains(it.Why, "no sendmail command")
+		}
+		if flagged == have {
+			t.Errorf("sendmail %v: flagged %v", have, flagged)
+		}
+	}
+	haveSendmail = func() bool { return true }
+}

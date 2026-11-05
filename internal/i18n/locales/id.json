@@ -1485,5 +1485,9 @@
 "ui.dir.reach.no_channel": "Belum ada cara menghubungi yang dipilih",
 "ui.dir.reach.no_address": "Alamat yang dibutuhkan kanal belum ada",
 "ui.dir.reach.channel_gone": "Kanal yang dipilih sudah tidak ada",
-"ui.team.unreachable": "Tidak bisa diberi tahu saat infrastruktur bersama gagal: {names} (tautkan kontak ke login-nya dan pilih Beri tahu lewat di Peringatan › Kontak)"
+"ui.team.unreachable": "Tidak bisa diberi tahu saat infrastruktur bersama gagal: {names} (tautkan kontak ke login-nya dan pilih Beri tahu lewat di Peringatan › Kontak)",
+"ui.field.via": "Kirim melalui",
+"ui.field.program": "Perintah sendmail",
+"ui.ch.program_hint": "Ditemukan sendiri (/usr/sbin/sendmail dan lokasi umum); postfix, sendmail, exim, msmtp dan sejenisnya menyediakannya. Isi hanya jika letaknya tidak biasa.",
+"ui.ch.from_sendmail_hint": "Boleh kosong: sistem surel lalu mengirim atas nama mesin ini, seperti untuk Nagios."
 }

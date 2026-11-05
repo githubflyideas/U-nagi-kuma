@@ -13,17 +13,22 @@ import (
 	"net/mail"
 	"net/smtp"
 	"net/textproto"
+	"os"
 	"strings"
 	"time"
 )
 
-// sendEmail delivers m over SMTP. tls=starttls (default, port 587),
+// sendEmail delivers m over SMTP, or through the local sendmail command
+// with via=sendmail. tls=starttls (default, port 587),
 // tls=tls (implicit TLS, port 465) or tls=none (only for local relays:
 // credentials are never sent over plain connections).
 //
 // A recipient refused as nonexistent is reported as a bounce and the
 // message still goes to the others; it fails only when nobody accepts it.
 func sendEmail(ctx context.Context, o map[string]string, m *Message) ([]Bounce, error) {
+	if strings.EqualFold(o["via"], "sendmail") {
+		return nil, sendSendmail(ctx, o, m)
+	}
 	host := o["host"]
 	port := o["port"]
 	mode := strings.ToLower(o["tls"])
@@ -157,11 +162,20 @@ func buildMail(from *mail.Address, to []*mail.Address, m *Message) []byte {
 	id := make([]byte, 12)
 	_, _ = rand.Read(id)
 	domain := "unagikuma.local"
-	if i := strings.LastIndex(from.Address, "@"); i >= 0 {
+	if from == nil {
+		// Through sendmail without from=: the mail system adds From as
+		// it does for Nagios, and the Message-ID names this machine.
+		if h, err := os.Hostname(); err == nil && h != "" {
+			domain = h
+		}
+	} else if i := strings.LastIndex(from.Address, "@"); i >= 0 {
 		domain = from.Address[i+1:]
 	}
-	headers := [][2]string{
-		{"From", from.String()},
+	var headers [][2]string
+	if from != nil {
+		headers = append(headers, [2]string{"From", from.String()})
+	}
+	headers = append(headers, [][2]string{
 		{"To", strings.Join(list, ", ")},
 		{"Subject", mime.QEncoding.Encode("utf-8", strings.Join(strings.Fields(title), " "))},
 		{"Date", time.Now().Format(time.RFC1123Z)},
@@ -170,7 +184,7 @@ func buildMail(from *mail.Address, to []*mail.Address, m *Message) []byte {
 		{"Content-Type", "text/plain; charset=utf-8"},
 		{"Content-Transfer-Encoding", "base64"},
 		{"Auto-Submitted", "auto-generated"},
-	}
+	}...)
 	if m.DeliveryID != "" {
 		headers = append(headers, [2]string{"X-Unagikuma-Delivery-Id", m.DeliveryID})
 	}

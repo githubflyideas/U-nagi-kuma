@@ -1485,5 +1485,9 @@
 "ui.dir.reach.no_channel": "連絡方法が選ばれていません",
 "ui.dir.reach.no_address": "チャネルに必要なアドレスがありません",
 "ui.dir.reach.channel_gone": "選んだチャネルはもうありません",
-"ui.team.unreachable": "共有インフラの障害を伝えられません：{names}（「アラート › 連絡先」でログインに連絡先を紐づけ、通知方法を選んでください）"
+"ui.team.unreachable": "共有インフラの障害を伝えられません：{names}（「アラート › 連絡先」でログインに連絡先を紐づけ、通知方法を選んでください）",
+"ui.field.via": "送信方法",
+"ui.field.program": "sendmail コマンド",
+"ui.ch.program_hint": "自動で見つけます（/usr/sbin/sendmail などの通常の場所）。postfix、sendmail、exim、msmtp などはどれも提供しています。特別な場所にある場合だけ指定します。",
+"ui.ch.from_sendmail_hint": "空のままで構いません。その場合はメールシステムがこのマシンとして送信します（Nagios と同じ）。"
 }

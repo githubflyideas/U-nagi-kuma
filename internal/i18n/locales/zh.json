@@ -1485,5 +1485,9 @@
 "ui.dir.reach.no_channel": "未选择联系方式",
 "ui.dir.reach.no_address": "缺少该通道所需的地址",
 "ui.dir.reach.channel_gone": "所选通道已不存在",
-"ui.team.unreachable": "公共设施故障时无法通知：{names}（请在“告警 › 联系人”中为其登录账号关联联系人并选择通知方式）"
+"ui.team.unreachable": "公共设施故障时无法通知：{names}（请在“告警 › 联系人”中为其登录账号关联联系人并选择通知方式）",
+"ui.field.via": "发送方式",
+"ui.field.program": "sendmail 命令",
+"ui.ch.program_hint": "自动查找（/usr/sbin/sendmail 等常见位置）；postfix、sendmail、exim、msmtp 等都会提供它。只有放在特殊位置时才需要填写。",
+"ui.ch.from_sendmail_hint": "可以留空：由本机的邮件系统决定发件人，和 Nagios 发出的邮件一样。"
 }

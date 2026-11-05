@@ -1495,5 +1495,9 @@
 "ui.dir.reach.no_channel": "No way to reach them chosen",
 "ui.dir.reach.no_address": "Missing the address the channel needs",
 "ui.dir.reach.channel_gone": "The chosen channel no longer exists",
-"ui.team.unreachable": "Cannot be told of shared failures: {names} (link a contact to their login and choose Notify via under Alerting › Contacts)"
+"ui.team.unreachable": "Cannot be told of shared failures: {names} (link a contact to their login and choose Notify via under Alerting › Contacts)",
+"ui.field.via": "Send through",
+"ui.field.program": "sendmail command",
+"ui.ch.program_hint": "Found by itself (/usr/sbin/sendmail and the usual places); postfix, sendmail, exim, msmtp and the like all provide it. Set only for an unusual place.",
+"ui.ch.from_sendmail_hint": "May stay empty: the mail system then sends as this machine, as it does for Nagios."
 }

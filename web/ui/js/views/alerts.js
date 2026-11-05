@@ -10,6 +10,9 @@ function fieldLabel(k) {
   return has(key) ? t(key) : k;
 }
 
+// The e-mail options that only an SMTP server uses.
+const SMTP_ONLY = ['host', 'port', 'username', 'password', 'tls'];
+
 function ChannelForm({ kinds, initial, onClose, onSaved }) {
   const editing = !!initial;
   const [kind, setKind] = useState(initial ? (initial.opts.preset ? 'webhook:' + initial.opts.preset : initial.kind) : 'feishu');
@@ -20,8 +23,13 @@ function ChannelForm({ kinds, initial, onClose, onSaved }) {
   const [test, setTest] = useState(null);
   const [unknown, setUnknown] = useState(null); // addresses to offer for the directory
   const found = kinds.find(k => k.kind === kind);
+  // E-mail goes to an SMTP server or through this machine's sendmail
+  // command; each way shows only its own fields.
+  const viaSendmail = kind === 'email' && opts.via === 'sendmail';
+  const shown = (f) => kind !== 'email' || (viaSendmail ? !SMTP_ONLY.includes(f.key) : f.key !== 'program');
   // Any channel may be limited to a time period ("!name" = outside it).
-  const info = { ...found, fields: [...((found && found.fields) || []), { key: 'period', type: 'text', placeholder: 'office-hours' }] };
+  const info = { ...found, fields: [...((found && found.fields) || []).filter(shown), { key: 'period', type: 'text', placeholder: 'office-hours' }] };
+  const required = (f) => f.required || (kind === 'email' && !viaSendmail && (f.key === 'host' || f.key === 'from'));
   const set = (k, v) => setOpts({ ...opts, [k]: v });
   const values = () => {
     const o = {};
@@ -78,16 +86,17 @@ function ChannelForm({ kinds, initial, onClose, onSaved }) {
       </div>
       ${info.fields.map(f => {
         const v = opts[f.key] !== undefined ? opts[f.key] : (editing ? '' : f.default || '');
-        const label = fieldLabel(f.key) + (f.required ? ' *' : '');
+        const label = fieldLabel(f.key) + (required(f) ? ' *' : '');
         if (f.type === 'select') {
           return html`<${Field} label=${label}><select value=${v} onChange=${(e) => set(f.key, e.target.value)}>${['', ...(f.options || [])].map(o => html`<option value=${o}>${o || '–'}</option>`)}</select><//>`;
         }
         if (f.type === 'textarea') {
           return html`<${Field} label=${label}><textarea class="ltr mono" rows="5" value=${v} placeholder=${f.placeholder || ''} onInput=${(e) => set(f.key, e.target.value)}></textarea><//>`;
         }
-        const hint = f.type === 'secret' ? t('ui.ch.secret_hint') : f.type === 'email-list' ? t('ui.ch.email_list') : f.key === 'period' ? t('ui.ch.period_hint') : f.key === 'members' ? t('ui.ch.members_hint') : '';
+        const hint = f.type === 'secret' ? t('ui.ch.secret_hint') : f.type === 'email-list' ? t('ui.ch.email_list') : f.key === 'period' ? t('ui.ch.period_hint') : f.key === 'members' ? t('ui.ch.members_hint')
+          : f.key === 'program' ? t('ui.ch.program_hint') : f.key === 'from' && viaSendmail ? t('ui.ch.from_sendmail_hint') : '';
         return html`<${Field} label=${label} hint=${hint}>
-          <input type=${f.type === 'secret' ? 'password' : f.type === 'number' ? 'number' : 'text'} class="ltr" value=${v} required=${f.required && !editing}
+          <input type=${f.type === 'secret' ? 'password' : f.type === 'number' ? 'number' : 'text'} class="ltr" value=${v} required=${required(f) && !editing}
             placeholder=${f.type === 'secret' && editing ? '***' : f.placeholder || ''} autocomplete="off" onInput=${(e) => set(f.key, e.target.value)} /><//>`;
       })}
       ${err && html`<div class="banner error">${errText(err)}</div>`}

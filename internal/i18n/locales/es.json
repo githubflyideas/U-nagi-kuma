@@ -1494,5 +1494,9 @@
 "ui.dir.reach.no_channel": "No se eligió cómo contactarla",
 "ui.dir.reach.no_address": "Falta la dirección que necesita el canal",
 "ui.dir.reach.channel_gone": "El canal elegido ya no existe",
-"ui.team.unreachable": "No se le puede avisar de fallos de la infraestructura compartida: {names} (vincule un contacto a su usuario y elija «Avisar por» en Alertas › Contactos)"
+"ui.team.unreachable": "No se le puede avisar de fallos de la infraestructura compartida: {names} (vincule un contacto a su usuario y elija «Avisar por» en Alertas › Contactos)",
+"ui.field.via": "Enviar mediante",
+"ui.field.program": "Comando sendmail",
+"ui.ch.program_hint": "Se encuentra solo (/usr/sbin/sendmail y las rutas habituales); postfix, sendmail, exim, msmtp y similares lo incluyen. Indíquelo solo si está en un lugar poco común.",
+"ui.ch.from_sendmail_hint": "Puede quedar vacío: el sistema de correo enviará como esta máquina, igual que con Nagios."
 }
