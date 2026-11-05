@@ -143,6 +143,10 @@ type JoinOptions struct {
 }
 
 // JoinCluster turns this server into a node of the cluster in the code.
+// JoinSerial is the revision every joining node takes: the cluster rule is
+// that a joining node is strictly below the cluster's highest revision.
+const JoinSerial uint32 = 1
+
 func (a *App) JoinCluster(ctx context.Context, o JoinOptions) (cluster.JoinResponse, error) {
 	var resp cluster.JoinResponse
 	a.am.mu.Lock()
@@ -182,8 +186,10 @@ func (a *App) JoinCluster(ctx context.Context, o JoinOptions) (cluster.JoinRespo
 		return resp, err
 	}
 	a.am.member = m
-	// The master decides what this node checks from now on.
-	if _, err := a.cfg.edit(o.Author, "joined cluster "+info.Server+" as "+resp.Node, func(f *config.File) error {
+	// The master decides what this node checks from now on: its own monitors
+	// go, and its revision becomes JoinSerial (lower than the cluster's), in
+	// one write.
+	if err := a.cfg.setJoinSerial(o.Author, "joined cluster "+info.Server+" as "+resp.Node, func(f *config.File) error {
 		for _, mon := range cur.Config.Monitors {
 			if err := f.DeleteRecord(mon.Name); err != nil {
 				return err
@@ -251,6 +257,10 @@ func (a *App) AcceptJoin(req cluster.JoinRequest) (cluster.JoinResponse, error) 
 	resp := cluster.JoinResponse{Node: req.Node}
 	cfg := a.Config().Config
 	switch {
+	case cfg.Serial <= JoinSerial:
+		// A joining node takes revision JoinSerial (1), which must be lower
+		// than the cluster's; a master still at that revision cannot take it.
+		return resp, fmt.Errorf("the master's configuration revision is %d; it must be above %d so that a joining node can be lower. Raise it first (unagikuma serial bump)", cfg.Serial, JoinSerial)
 	case !config.ValidName(req.Node):
 		return resp, fmt.Errorf("%w %q", ErrNodeName, req.Node)
 	case req.Node == cfg.MName || cfg.HasName(req.Node):

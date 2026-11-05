@@ -425,3 +425,29 @@ func recordText(st ConfigState, name string) string {
 	}
 	return t
 }
+
+// setJoinSerial is the one write a joining node makes to its own file: the
+// change (dropping its own monitors) and the revision JoinSerial together.
+// It is not an edit: the serial rules that guard user edits (no going back,
+// no big jumps) do not apply, since the master's configuration replaces the
+// contents from now on.
+func (cm *configManager) setJoinSerial(author, message string, change func(f *config.File) error) error {
+	cur := cm.current()
+	f, _ := config.Parse(cm.path, []byte(cur.Text))
+	if err := change(f); err != nil {
+		return err
+	}
+	if err := f.SetSerial(JoinSerial); err != nil {
+		return err
+	}
+	text := f.Bytes()
+	nf, cfg, diags := config.Load(cm.path, text, cm.app.validators())
+	if config.HasErrors(diags) {
+		return &InvalidError{Diags: diags}
+	}
+	if err := writeAtomic(cm.path, text); err != nil {
+		return err
+	}
+	cm.touchStamp()
+	return cm.apply(text, nf, cfg, "join", author, message, nil)
+}
