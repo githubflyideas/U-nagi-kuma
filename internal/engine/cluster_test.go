@@ -132,7 +132,7 @@ func newClusterEnv(t *testing.T, cfg Config) *clusterEnv {
 	fc.e = e
 	ts, err := tunables.New(map[string]string{
 		"engine.first-round-delay": "0s", "suspend.recheck-spread": "0s", "suspend.tick": "200ms",
-		"engine.round-grace": "0s", "cluster.vote-grace": "300ms", "localnet.enabled": "off",
+		"engine.round-grace": "0s", "cluster.vote-grace": "300ms", "cluster.startup-grace": "0s", "localnet.enabled": "off",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -397,5 +397,26 @@ func TestProbeForAgentMode(t *testing.T) {
 	v := c.e.ProbeFor(context.Background(), "x", probe.Spec{Name: "x", Type: "TCP", Target: "10.0.0.9:22", Timeout: time.Second}, "")
 	if v.Vote != probe.VoteFail || v.Reason != probe.ReasonTimeout || v.Excluded {
 		t.Fatalf("%+v", v)
+	}
+}
+
+func TestCheckNodesSkipsSelf(t *testing.T) {
+	// After a promote the restored config may still list this server as a
+	// NODE; it must not be judged offline forever.
+	cfg := clusterCfg(clusterMonitor("m", "a"), "a", "self")
+	cfg.Self = "self"
+	c := newClusterEnv(t, cfg)
+	c.online("a")
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		for _, n := range c.e.Nodes() {
+			if n.Node == "self" {
+				t.Fatalf("self listed as a remote node: %+v", n)
+			}
+		}
+		if _, ok := c.sink.open(IncidentSystem, nodeOfflineKey("self")); ok {
+			t.Fatal("opened offline incident for self")
+		}
+		time.Sleep(20 * time.Millisecond)
 	}
 }

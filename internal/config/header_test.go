@@ -117,3 +117,40 @@ func diagCodes(ds []Diagnostic) string {
 	}
 	return b.String()
 }
+
+func TestSetMaster(t *testing.T) {
+	const body = "c IN CHANNEL log\ndefault IN POLICY chain=c\nweb IN HTTP https://example.com/\n"
+	f, ds := Parse("t.bind", []byte("$FILE revision=1 master=old\nb IN NODE\n"+body))
+	if HasErrors(ds) {
+		t.Fatal(ds)
+	}
+	if err := f.SetMaster("b"); err != nil {
+		t.Fatal(err)
+	}
+	_, cfg, ds := Load("t.bind", f.Bytes(), Options{})
+	if e := errorsOf(ds); len(e) > 0 || cfg.MName != "b" {
+		t.Fatalf("master %q diags %v", cfg.MName, e)
+	}
+	f, ds = Parse("t.bind", []byte("$FILE revision=2\nb IN NODE\n"+body))
+	if HasErrors(ds) {
+		t.Fatal(ds)
+	}
+	if err := f.SetMaster("b"); err != nil {
+		t.Fatal(err)
+	}
+	_, cfg, ds = Load("t.bind", f.Bytes(), Options{})
+	if e := errorsOf(ds); len(e) > 0 || cfg.MName != "b" {
+		t.Fatalf("added master %q diags %v text %s", cfg.MName, e, f.Bytes())
+	}
+	f, ds = Parse("t.bind", []byte("@ IN SOA old. a.b. ( 3 1m 15s 5s 3 )\nold IN NODE\n"+body))
+	if HasErrors(ds) {
+		t.Fatal(ds)
+	}
+	if err := f.SetMaster("b"); err != nil {
+		t.Fatal(err)
+	}
+	_, cfg, ds = Load("t.bind", f.Bytes(), Options{})
+	if e := errorsOf(ds); len(e) > 0 || cfg.MName != "b" {
+		t.Fatalf("SOA master %q diags %v text %s", cfg.MName, e, f.Bytes())
+	}
+}

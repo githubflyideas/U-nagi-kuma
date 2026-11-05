@@ -118,6 +118,65 @@ func byteIndexOfCol(line string, col int) int {
 	return len(line)
 }
 
+// SetMaster sets the master node name on the $FILE line (master=) or the
+// SOA mname. A $FILE without master= gets the option added.
+func (f *File) SetMaster(name string) error {
+	if !ValidName(name) {
+		return fmt.Errorf("invalid master name %q", name)
+	}
+	ls := f.lines()
+	cr := f.eol()
+	for i := range f.Stmts {
+		s := &f.Stmts[i]
+		if s.isDirective() {
+			d := s.directive()
+			if d.Name != "FILE" {
+				continue
+			}
+			for _, t := range d.Args {
+				k, _, ok := t.option()
+				if !ok || k != "master" {
+					continue
+				}
+				line := ls[t.Pos.Line-1]
+				idx := byteIndexOfCol(line, t.Pos.Col)
+				key, _, _ := strings.Cut(t.Raw, "=")
+				ls[t.Pos.Line-1] = line[:idx] + key + "=" + name + line[idx+len(t.Raw):]
+				return f.setLines(ls)
+			}
+			// No master= yet: append it to the $FILE line.
+			line := strings.TrimRight(ls[s.StartLine-1], "\r\n")
+			ls[s.StartLine-1] = line + " master=" + name + cr
+			return f.setLines(ls)
+		}
+		r, d := s.record()
+		if d != nil || r.Type != "SOA" {
+			continue
+		}
+		// name IN SOA mname rname ... — mname is the 4th bare token.
+		n := 0
+		for j := range s.Tokens {
+			t := &s.Tokens[j]
+			if t.Paren != 0 {
+				continue
+			}
+			if n == 3 {
+				line := ls[t.Pos.Line-1]
+				idx := byteIndexOfCol(line, t.Pos.Col)
+				repl := name
+				if strings.HasSuffix(t.Raw, ".") {
+					repl += "."
+				}
+				ls[t.Pos.Line-1] = line[:idx] + repl + line[idx+len(t.Raw):]
+				return f.setLines(ls)
+			}
+			n++
+		}
+		return errors.New("SOA has no mname")
+	}
+	return errors.New("no file header")
+}
+
 // RecordSpec is a record to write: Opts in the given order.
 type RecordSpec struct {
 	Name     string

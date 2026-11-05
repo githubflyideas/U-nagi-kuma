@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/githubflyideas/unagikuma/internal/backup"
+	"github.com/githubflyideas/unagikuma/internal/config"
 	"github.com/githubflyideas/unagikuma/internal/cluster"
 	"github.com/githubflyideas/unagikuma/internal/store"
 )
@@ -352,12 +353,19 @@ func applyPromote(dir, configPath string) (bool, error) {
 			}
 		}
 	}
-	pb, _ := json.Marshal(promoted{Self: self, Term: req.Term, PrevTerm: meta.Term})
-	if err := os.WriteFile(filepath.Join(dir, promotedFile), pb, 0o600); err != nil {
-		return false, err
-	}
 	if _, err := backup.Restore(f, dir, configPath, meta.Key, true); err != nil {
 		return false, fmt.Errorf("restore the master's state: %w", err)
+	}
+	// A backup taken from a running master carries its "still running"
+	// marker; a planned take-over is not an abnormal exit.
+	markPromotedClean(dir)
+	oldMaster, err := adoptPromotedConfig(configPath, self)
+	if err != nil {
+		return false, fmt.Errorf("adopt the configuration as this node: %w", err)
+	}
+	pb, _ := json.Marshal(promoted{Self: self, OldMaster: oldMaster, Term: req.Term, PrevTerm: meta.Term})
+	if err := os.WriteFile(filepath.Join(dir, promotedFile), pb, 0o600); err != nil {
+		return false, err
 	}
 	for _, name := range []string{agentFile, agentTokenFile, supersededFile, promoteFile} {
 		_ = os.Remove(filepath.Join(dir, name))
@@ -367,6 +375,59 @@ func applyPromote(dir, configPath string) (bool, error) {
 		_ = os.WriteFile(filepath.Join(dir, previousFile), b, 0o644)
 	}
 	return true, os.WriteFile(filepath.Join(dir, termFile), []byte(strconv.FormatUint(req.Term, 10)+"\n"), 0o644)
+}
+
+// markPromotedClean records that a promote restart is a clean handover, not
+// a crash of the previous process that owned this data directory.
+func markPromotedClean(dir string) {
+	st, err := store.Open(dir, store.Options{Tool: true})
+	if err != nil {
+		return
+	}
+	defer st.Close()
+	_ = st.SetSetting("clean_shutdown", "1")
+	_ = st.SetSetting("last_beat", "")
+}
+
+// adoptPromotedConfig makes the promoting node the master in the restored
+// configuration (master=<self>) so its own NODE record is no longer treated
+// as a missing remote agent. The previous master's name is returned so it
+// can rejoin under that name.
+func adoptPromotedConfig(configPath, self string) (string, error) {
+	if self == "" {
+		return "", nil
+	}
+	b, err := os.ReadFile(configPath)
+	if err != nil {
+		return "", err
+	}
+	f, diags := config.Parse(configPath, b)
+	if config.HasErrors(diags) {
+		return "", fmt.Errorf("parse: %v", diags[0])
+	}
+	_, cfg, diags := config.Load(configPath, b, config.Options{})
+	if cfg == nil {
+		return "", fmt.Errorf("load: %v", diags)
+	}
+	old := cfg.MName
+	if old == self {
+		return old, nil
+	}
+	if err := f.SetMaster(self); err != nil {
+		return "", err
+	}
+	cur, err := f.Serial()
+	if err != nil {
+		return "", err
+	}
+	next, _, _ := config.NextSerial(cur, time.Now().UTC())
+	if err := f.SetSerial(next); err != nil {
+		return "", err
+	}
+	if err := os.WriteFile(configPath, f.Bytes(), 0o600); err != nil {
+		return "", err
+	}
+	return old, nil
 }
 
 // requestRestart asks the process to restart (the server command re-runs
@@ -403,6 +464,19 @@ func (a *App) retirePrevious(ctx context.Context) {
 		return
 	}
 	a.rejoinOffer(&n)
+	// Also tell every known peer listen address (BUG-10): replicas learn the
+	// successor even while the old master is still unreachable.
+	seen := map[string]bool{}
+	for _, srv := range prev {
+		seen[srv] = true
+	}
+	for _, host := range a.peerListenAddrs() {
+		u := "https://" + host
+		if !seen[u] && !seen[host] {
+			prev = append(prev, u)
+			seen[u] = true
+		}
+	}
 	var left []string
 	for _, srv := range prev {
 		sctx, cancel := context.WithTimeout(ctx, 30*time.Second)

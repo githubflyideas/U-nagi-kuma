@@ -2,8 +2,8 @@ package app
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"encoding/json"
 	"net"
 	"net/http"
 	"os"
@@ -29,9 +29,10 @@ const (
 )
 
 type promoted struct {
-	Self      string           `json:"self"`      // this node's name before
-	Term      uint64           `json:"term"`      // the new term
-	PrevTerm  uint64           `json:"prev_term"` // the term of the copy
+	Self      string           `json:"self"`       // this node's name before
+	OldMaster string           `json:"old_master"` // the previous master's MName (rejoin name)
+	Term      uint64           `json:"term"`       // the new term
+	PrevTerm  uint64           `json:"prev_term"`  // the term of the copy
 	Marks     map[string]int64 `json:"marks,omitempty"`
 	Base      store.Snapshot   `json:"base"` // the configuration version taken over with
 	OwnMerged bool             `json:"own_merged,omitempty"`
@@ -114,14 +115,21 @@ func (a *App) mergeOwn(dir string, p promoted) error {
 	return nil
 }
 
-// prevSite is the name the replaced master rejoins under (its master name
-// stays with the configuration).
+// prevSite is the name the replaced master rejoins under: its previous
+// master name when that name is free, otherwise a term-suffixed form.
 func (a *App) prevSite(p promoted) string {
-	c := a.applied.Load()
-	if c == nil || c.MName == "" {
-		return ""
+	name := p.OldMaster
+	if name == "" || name == p.Self {
+		c := a.applied.Load()
+		if c == nil || c.MName == "" || c.MName == p.Self {
+			return ""
+		}
+		name = c.MName
 	}
-	return fmt.Sprintf("%s-t%d", c.MName, p.PrevTerm)
+	if c := a.applied.Load(); c != nil && (c.FindNode(name) != nil || c.HasName(name)) {
+		return fmt.Sprintf("%s-t%d", name, p.PrevTerm)
+	}
+	return name
 }
 
 // rejoinOffer fills a retire notice with a join code for the replaced
@@ -170,6 +178,7 @@ func (a *App) demote(n cluster.RetireNotice) {
 	a.log.Warn("this replaced master now follows the new one as a replica", "node", n.Node)
 	_ = a.store.Audit(auditEntry("cluster.demoted", "system", map[string]any{"node": n.Node, "term": n.Term}))
 	a.Reapply()
+	a.engine.ClearClusterRoleIncidents()
 	a.emit("banner", nil)
 }
 

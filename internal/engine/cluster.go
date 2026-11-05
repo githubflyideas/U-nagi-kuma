@@ -314,6 +314,9 @@ const SystemNodeOffline = "node_offline"
 func (e *Engine) applyNodes(specs []NodeSpec, now time.Time) {
 	keep := map[string]bool{}
 	for _, n := range specs {
+		if n.Name == e.self {
+			continue // this server is never a remote agent of itself
+		}
 		keep[n.Name] = true
 		if e.nodes[n.Name] == nil {
 			e.nodes[n.Name] = &nodeRuntime{status: NodeStatus{Node: n.Name, Since: now}, offlineSince: now}
@@ -338,16 +341,29 @@ const SystemMinority = "minority"
 // reports that it cannot reach the others (in a two-node cluster: that its
 // peer is unreachable) and never declares anyone down on its own.
 func (e *Engine) checkNodes(now time.Time) {
-	total := 1 + len(e.cfg.Nodes)
-	reach := 1
+	// Count only remote nodes; this server is never one of them.
+	var remote []NodeSpec
 	for _, n := range e.cfg.Nodes {
+		if n.Name != e.self {
+			remote = append(remote, n)
+		}
+	}
+	total := 1 + len(remote)
+	reach := 1
+	for _, n := range remote {
 		if nr := e.nodes[n.Name]; nr != nil && nr.status.Online {
 			reach++
 		}
 	}
-	minority := len(e.cfg.Nodes) > 0 && reach*2 <= total
+	// Just after start agents have not reconnected yet: hold minority and
+	// node-down notices for cluster.startup-grace so a restart is not a
+	// false outage of every peer. Nodes that disconnect after boot are
+	// judged normally.
+	grace := e.cfg.Tunables.Duration("cluster.startup-grace")
+	bootGrace := grace > 0 && !e.booted.IsZero() && now.Sub(e.booted) < grace
+	minority := len(remote) > 0 && reach*2 <= total
 	var away []string
-	for _, n := range e.cfg.Nodes {
+	for _, n := range remote {
 		nr := e.nodes[n.Name]
 		if nr == nil {
 			continue
@@ -378,6 +394,9 @@ func (e *Engine) checkNodes(now time.Time) {
 			continue
 		}
 		nr.status.Verdict = NodeDown
+		if bootGrace && !nr.offlineSince.After(e.booted) {
+			continue
+		}
 		key := nodeOfflineKey(n.Name)
 		if inc := e.system[key]; inc != nil && inc.State.Open() {
 			continue
@@ -391,6 +410,19 @@ func (e *Engine) checkNodes(now time.Time) {
 			detail += "\n" + e.text("node_witnesses", against, total)
 		}
 		e.openSystemAs(key, pol, e.text("node_offline_title", title), detail, now)
+	}
+	if bootGrace {
+		allInitial := true
+		for _, n := range remote {
+			nr := e.nodes[n.Name]
+			if nr != nil && !nr.status.Online && nr.offlineSince.After(e.booted) {
+				allInitial = false
+				break
+			}
+		}
+		if allInitial {
+			return
+		}
 	}
 	if minority && len(away) > 0 {
 		if total == 2 {
@@ -427,6 +459,21 @@ func (e *Engine) witnesses(x string) (against int, witnessable bool) {
 		}
 	}
 	return against, witnessable
+}
+
+// ClearClusterRoleIncidents resolves master-era system incidents after this
+// server steps down and rejoins as a member: minority and node-offline of
+// the old role must not stay open under the new one.
+func (e *Engine) ClearClusterRoleIncidents() {
+	e.do(func() {
+		now := e.now()
+		e.resolveSystem(SystemMinority, now, "")
+		for key := range e.system {
+			if key == SystemMinority || strings.HasPrefix(key, SystemNodeOffline+":") {
+				e.resolveSystem(key, now, "")
+			}
+		}
+	})
 }
 
 // Nodes returns the configured agents with their latest state.
