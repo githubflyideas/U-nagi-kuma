@@ -286,26 +286,31 @@ func TestClusterNodeOffline(t *testing.T) {
 	cfg := clusterCfg(clusterMonitor("m", "a"), "a")
 	cfg.Nodes[0].Timeout = 300 * time.Millisecond
 	c := newClusterEnv(t, cfg)
+	// Two nodes: when the peer cannot be reached, half of the cluster (this
+	// node included) cannot reach it, which is enough to judge it down. This
+	// node reaches half of the cluster, so it is not a minority either.
+	key := nodeOfflineKey("a")
 	deadline := time.Now().Add(5 * time.Second)
 	for {
-		// Two nodes: nobody can tell which side is cut off, so the peer is
-		// only reported unreachable, never down.
-		if _, ok := c.sink.open(IncidentSystem, SystemMinority); ok {
+		if _, ok := c.sink.open(IncidentSystem, key); ok {
 			break
 		}
 		if time.Now().After(deadline) {
-			t.Fatal("no peer-unreachable incident for a node that never connected")
+			t.Fatal("no node-offline incident for a node that never connected")
 		}
 		time.Sleep(20 * time.Millisecond)
+	}
+	if _, ok := c.sink.open(IncidentSystem, SystemMinority); ok {
+		t.Fatal("half of the cluster reachable must not be a minority")
 	}
 	c.online("a")
 	deadline = time.Now().Add(5 * time.Second)
 	for {
-		if _, ok := c.sink.open(IncidentSystem, SystemMinority); !ok {
+		if _, ok := c.sink.open(IncidentSystem, key); !ok {
 			break
 		}
 		if time.Now().After(deadline) {
-			t.Fatal("peer-unreachable incident not resolved after reconnect")
+			t.Fatal("node-offline incident not resolved after reconnect")
 		}
 		time.Sleep(20 * time.Millisecond)
 	}

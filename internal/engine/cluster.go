@@ -322,9 +322,9 @@ func (e *Engine) applyNodes(specs []NodeSpec, now time.Time) {
 // instead of reporting the others.
 const SystemMinority = "minority"
 
-// checkNodes judges the nodes by majority. A node is down only when more
-// than half of the cluster cannot reach it, and only a node that itself
-// reaches more than half of the cluster says so. A node in the minority
+// checkNodes judges the nodes by half. A node is down when at least half of
+// the cluster cannot reach it, and a node says so only when it itself reaches
+// at least half of the cluster. A node in the minority
 // reports that it cannot reach the others (in a two-node cluster: that its
 // peer is unreachable) and never declares anyone down on its own.
 func (e *Engine) checkNodes(now time.Time) {
@@ -335,7 +335,9 @@ func (e *Engine) checkNodes(now time.Time) {
 			reach++
 		}
 	}
-	minority := len(e.cfg.Nodes) > 0 && reach*2 <= total
+	// A node is in the minority only when it reaches less than half of the
+	// cluster: reaching exactly half is enough to judge the others.
+	minority := len(e.cfg.Nodes) > 0 && reach*2 < total
 	var away []string
 	for _, n := range e.cfg.Nodes {
 		nr := e.nodes[n.Name]
@@ -365,7 +367,7 @@ func (e *Engine) checkNodes(now time.Time) {
 		case minority:
 			nr.status.Verdict = NodeUnknown
 			continue
-		case witnessable && against*2 <= total:
+		case witnessable && against*2 < total:
 			// Others still reach it: a broken path from here, not a dead node.
 			nr.status.Verdict = NodeUnreachable
 			continue
