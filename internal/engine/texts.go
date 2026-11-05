@@ -73,6 +73,10 @@ func (e *Engine) text(id string, args ...any) string {
 		return i18n.T(lang, "sys.peer_unreachable", "node", args[0])
 	case id == "minority_title":
 		return i18n.T(lang, "sys.minority_title")
+	case id == "two_masters_title":
+		return i18n.T(lang, "sys.two_masters_title")
+	case id == "two_masters":
+		return i18n.T(lang, "sys.two_masters", "peer", args[0], "term", args[1])
 	case id == "minority":
 		return i18n.T(lang, "sys.minority", "reach", args[0], "total", args[1], "nodes", args[2])
 	case id == "node_back":

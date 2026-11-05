@@ -1414,6 +1414,8 @@
 "sys.peer_unreachable": "Địa điểm này không kết nối được {node}. Với hai địa điểm không thể biết bên nào bị cắt, nên {node} không bị báo là ngừng; cả hai địa điểm tiếp tục tự kiểm tra và cảnh báo.",
 "sys.minority_title": "Không kết nối được các nút khác: không rõ trạng thái",
 "sys.minority": "Nút này chỉ kết nối được {reach} trên {total} nút nên thuộc thiểu số và không biết {nodes} bị ngừng hay chính nó bị cắt. Không báo nút nào ngừng từ đây; địa điểm này vẫn kiểm tra mục tiêu và cảnh báo.",
+  "sys.two_masters_title": "Two masters of this cluster are running",
+  "sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
 "ui.rep.mode": "Bản sao",
 "ui.rep.local": "Đang tự kiểm tra",
 "ui.rep.local_hint": "Không kết nối được máy chủ chính: địa điểm này chạy {n} giám sát và tự gửi cảnh báo.",

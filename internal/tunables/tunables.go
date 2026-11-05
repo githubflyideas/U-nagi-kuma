@@ -120,6 +120,7 @@ var defs = []Def{
 
 	// ---- multi-node ----
 	{Key: "cluster.node-timeout", Kind: Duration, Default: "60s", Min: "10s", Max: "1h", Desc: "agent disconnected this long is offline", DescZH: "Agent 断开多久判为离线", Override: "NODE node-timeout="},
+	{Key: "cluster.startup-grace", Kind: Duration, Default: "15s", Min: "0s", Max: "5m", Desc: "after start, hold minority and node-down notices this long while agents reconnect", DescZH: "启动后这段时间内暂缓少数派/节点离线告警，等待 Agent 重连"},
 	{Key: "cluster.standby-sync", Kind: Duration, Default: "5m", Min: "30s", Max: "24h", Desc: "how often standbys fetch a copy of the master's state (also after every configuration change)", DescZH: "备用节点拉取主节点状态副本的间隔（每次配置变更后也会拉取）"},
 	{Key: "cluster.standby-retry", Kind: Duration, Default: "30s", Min: "5s", Max: "10m", Desc: "wait before a standby tries again after a failed copy of the master's state (three times at most)", DescZH: "备用节点复制主节点状态失败后，再次尝试前的等待时间（最多三次）"},
 	{Key: "cluster.vote-grace", Kind: Duration, Default: "5s", Min: "0s", Max: "1m", Desc: "extra time agents get to answer a round, beyond the check timeout", DescZH: "一轮探测中，在检查超时之外再给 Agent 回票的余量"},

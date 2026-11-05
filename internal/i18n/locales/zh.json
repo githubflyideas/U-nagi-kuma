@@ -1414,6 +1414,8 @@
 "sys.peer_unreachable": "本站点无法连接 {node}。只有两个站点时无法判断是哪一侧断开，因此不会把 {node} 报告为宕机；两个站点各自继续检查和告警。",
 "sys.minority_title": "无法连接其他节点：其状态未知",
 "sys.minority": "本节点只能连接 {total} 个节点中的 {reach} 个，处于少数派，无法判断 {nodes} 是宕机还是自己被隔离。此处不会报告任何节点宕机；本站点继续检查目标并告警。",
+  "sys.two_masters_title": "集群里同时有两个主节点在运行",
+  "sys.two_masters": "能联系到另一个主节点（{peer}，任期 {term}）。集群只能有一个主；请提升或关闭其中一个。",
 "ui.rep.mode": "副本",
 "ui.rep.local": "独立检查中",
 "ui.rep.local_hint": "无法连接主节点：本站点运行其 {n} 个监控并独立发送告警。",

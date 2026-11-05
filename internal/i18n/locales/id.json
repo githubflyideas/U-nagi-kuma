@@ -1414,6 +1414,8 @@
 "sys.peer_unreachable": "Situs ini tidak dapat menjangkau {node}. Dengan dua situs tidak dapat diketahui sisi mana yang terputus, jadi {node} tidak dilaporkan mati; kedua situs tetap memeriksa dan memberi peringatan sendiri.",
 "sys.minority_title": "Tidak dapat menjangkau node lain: statusnya tidak diketahui",
 "sys.minority": "Node ini hanya menjangkau {reach} dari {total} node, jadi termasuk minoritas dan tidak dapat memastikan apakah {nodes} mati atau dirinya yang terputus. Tidak ada yang dilaporkan mati dari sini; situs ini tetap memeriksa targetnya dan memberi peringatan.",
+  "sys.two_masters_title": "Two masters of this cluster are running",
+  "sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
 "ui.rep.mode": "Replika",
 "ui.rep.local": "Memeriksa sendiri",
 "ui.rep.local_hint": "Master tidak terjangkau: situs ini menjalankan {n} monitornya dan mengirim peringatan sendiri.",

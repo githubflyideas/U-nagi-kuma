@@ -180,8 +180,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST "+cluster.MergePath, s.agentMerge)
 	s.mux.HandleFunc("POST "+cluster.DivergedPath, s.agentDiverged)
 	s.mux.HandleFunc("GET "+cluster.ReachPath, func(w http.ResponseWriter, r *http.Request) {
-		node, reach := s.app.ReachView()
-		cluster.ServeReach(w, node, reach)
+		cluster.ServeReach(w, s.app.FullReachView())
 	})
 	s.mux.HandleFunc("POST "+cluster.RetirePath, s.agentRetire)
 	s.mux.HandleFunc("POST "+cluster.JoinPath, s.agentJoin)

@@ -1422,6 +1422,8 @@
 "sys.peer_unreachable": "یہ سائٹ {node} تک نہیں پہنچ سکتی۔ صرف دو سائٹس میں یہ معلوم نہیں ہو سکتا کہ کون سا حصہ کٹا ہے، اس لیے {node} کو بند نہیں بتایا جاتا؛ دونوں سائٹس خود جانچ اور الرٹ جاری رکھتی ہیں۔",
 "sys.minority_title": "دوسرے نوڈز تک رسائی نہیں: ان کی حالت نامعلوم ہے",
 "sys.minority": "یہ نوڈ {total} میں سے صرف {reach} نوڈز تک پہنچتا ہے، اس لیے اقلیت میں ہے اور نہیں بتا سکتا کہ {nodes} بند ہیں یا یہ خود کٹا ہوا ہے۔ یہاں سے کچھ بھی بند نہیں بتایا جاتا؛ یہ سائٹ اپنے اہداف کی جانچ اور الرٹ جاری رکھتی ہے۔",
+  "sys.two_masters_title": "Two masters of this cluster are running",
+  "sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
 "ui.rep.mode": "ریپلیکا",
 "ui.rep.local": "خود جانچ رہا ہے",
 "ui.rep.local_hint": "ماسٹر تک رسائی نہیں: یہ سائٹ اس کے {n} مانیٹر چلاتی ہے اور خود الرٹ بھیجتی ہے۔",

@@ -1424,6 +1424,8 @@
 "sys.peer_unreachable": "This site cannot reach {node}. With two sites nobody can tell which side is cut off, so {node} is not reported down; both sites keep checking and alerting on their own.",
 "sys.minority_title": "Cannot reach the other nodes: their status is unknown",
 "sys.minority": "This node reaches only {reach} of {total} nodes, so it is in the minority and cannot tell whether {nodes} are down or it is cut off itself. Nothing is reported down from here; this site keeps checking and alerting on its targets.",
+  "sys.two_masters_title": "Two masters of this cluster are running",
+  "sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
 "ui.rep.mode": "Replica",
 "ui.rep.local": "Checking on its own",
 "ui.rep.local_hint": "The master is out of reach: this site runs its {n} monitors and sends its own alerts.",

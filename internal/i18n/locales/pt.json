@@ -1423,6 +1423,8 @@
 "sys.peer_unreachable": "Este site não alcança {node}. Com dois sites não dá para saber qual lado ficou isolado, então {node} não é dado como fora; os dois sites continuam verificando e alertando por conta própria.",
 "sys.minority_title": "Não é possível alcançar os outros nós: estado desconhecido",
 "sys.minority": "Este nó só alcança {reach} de {total} nós; está em minoria e não sabe se {nodes} caíram ou se ele próprio ficou isolado. Nada é dado como fora a partir daqui; este site continua verificando e alertando sobre seus alvos.",
+  "sys.two_masters_title": "Two masters of this cluster are running",
+  "sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
 "ui.rep.mode": "Réplica",
 "ui.rep.local": "Verificando por conta própria",
 "ui.rep.local_hint": "Mestre inacessível: este site executa seus {n} monitores e envia os próprios alertas.",

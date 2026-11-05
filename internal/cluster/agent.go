@@ -108,7 +108,8 @@ type Agent struct {
 	sem      chan struct{}
 	conn     AgentStatus
 
-	peers peerSet
+	peers    peerSet
+	peersKick chan struct{}
 }
 
 // AgentStatus is the agent's view of its connection, for its local UI.
@@ -139,7 +140,7 @@ func (a *Agent) Status() AgentStatus {
 
 func (a *Agent) setConnected(on bool, node string, err error) {
 	a.mu.Lock()
-	defer a.mu.Unlock()
+	was := a.conn.Connected
 	if a.conn.Connected != on || a.conn.Since.IsZero() {
 		a.conn.Since = time.Now()
 	}
@@ -151,6 +152,14 @@ func (a *Agent) setConnected(on bool, node string, err error) {
 		a.conn.LastError = err.Error()
 	} else if on {
 		a.conn.LastError = ""
+	}
+	kick := a.peersKick
+	a.mu.Unlock()
+	if on && !was && kick != nil {
+		select {
+		case kick <- struct{}{}:
+		default:
+		}
 	}
 }
 
@@ -166,9 +175,9 @@ func NewAgent(o AgentOptions) (*Agent, error) {
 		o.Probe = probe.Run
 	}
 	if o.MaxBackoff <= 0 {
-		o.MaxBackoff = time.Minute
+		o.MaxBackoff = 15 * time.Second
 	}
-	a := &Agent{o: o, log: o.Log, monitors: map[string]AgentMonitor{}, term: o.Term}
+	a := &Agent{o: o, log: o.Log, monitors: map[string]AgentMonitor{}, term: o.Term, peersKick: make(chan struct{}, 1)}
 	for _, s := range append([]string{o.Server}, o.Servers...) {
 		u, err := NormalizeServer(s)
 		if err != nil {
@@ -360,6 +369,10 @@ func (a *Agent) session(ctx context.Context) error {
 	_ = conn.SetDeadline(time.Time{})
 	a.log.Info("connected to master", "node", w.Node, "server", addr, "proto", w.Proto, "term", w.Term)
 	a.setConnected(true, w.Node, nil)
+	// Keep membership.server in sync when we moved on via next() (BUG-8).
+	if a.o.OnMasters != nil {
+		a.o.OnMasters(a.Servers())
+	}
 
 	s := &agentSession{a: a, conn: conn, ping: w.Ping, out: make(chan outFrame, sendQueue), done: make(chan struct{}), dead: make(chan struct{})}
 	go s.writer()

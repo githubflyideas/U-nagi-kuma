@@ -1414,6 +1414,8 @@
 "sys.peer_unreachable": "এই সাইট {node}-এ পৌঁছাতে পারছে না। মাত্র দুটি সাইটে বোঝা যায় না কোন দিক বিচ্ছিন্ন, তাই {node}-কে ডাউন বলা হয় না; দুটি সাইটই নিজে পরীক্ষা ও সতর্ক করা চালিয়ে যায়।",
 "sys.minority_title": "অন্য নোডগুলিতে পৌঁছানো যাচ্ছে না: তাদের অবস্থা অজানা",
 "sys.minority": "এই নোড {total}টির মধ্যে কেবল {reach}টিতে পৌঁছায়, তাই সংখ্যালঘু এবং বলতে পারে না {nodes} ডাউন নাকি এটি নিজেই বিচ্ছিন্ন। এখান থেকে কিছুই ডাউন বলা হয় না; এই সাইট লক্ষ্য পরীক্ষা ও সতর্ক করা চালিয়ে যায়।",
+  "sys.two_masters_title": "Two masters of this cluster are running",
+  "sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
 "ui.rep.mode": "প্রতিলিপি",
 "ui.rep.local": "নিজে পরীক্ষা করছে",
 "ui.rep.local_hint": "মাস্টারে পৌঁছানো যাচ্ছে না: এই সাইট তার {n}টি মনিটর চালায় ও নিজে সতর্ক করে।",

@@ -156,6 +156,10 @@ type PeerAddr struct {
 type ReachView struct {
 	Node  string          `json:"node"`
 	Reach map[string]bool `json:"reach"`
+	// Term and Role let peers detect a foreign master (concurrent promote).
+	// Role is "master" or "replica"; empty on older nodes.
+	Term uint64 `json:"term,omitempty"`
+	Role string `json:"role,omitempty"`
 }
 
 // CapReplica: the node is a full server keeping a copy of the master's

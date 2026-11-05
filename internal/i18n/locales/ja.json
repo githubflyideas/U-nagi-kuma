@@ -1414,6 +1414,8 @@
 "sys.peer_unreachable": "このサイトは {node} に到達できません。2 サイト構成ではどちらが切断されたか判断できないため、{node} をダウンとは報告しません。両サイトがそれぞれ監視と通知を続けます。",
 "sys.minority_title": "他のノードに到達できません: 状態は不明です",
 "sys.minority": "このノードは {total} ノード中 {reach} ノードにしか到達できず少数派のため、{nodes} がダウンしたのか自分が切り離されたのか判断できません。ここからはダウンを報告しません。このサイトは対象の監視と通知を続けます。",
+  "sys.two_masters_title": "Two masters of this cluster are running",
+  "sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
 "ui.rep.mode": "レプリカ",
 "ui.rep.local": "単独で監視中",
 "ui.rep.local_hint": "マスターに接続できません: このサイトが {n} 件のモニターを実行し、単独で通知します。",

@@ -354,8 +354,12 @@ func (a *App) Run(ctx context.Context) error {
 		a.every(ctx, a.Config().Config.Tunables.Duration("cluster.standby-sync"), a.syncStandbys)
 	})
 	run(func() {
+		a.probeForeignMastersAtStart()
 		a.retirePrevious(ctx)
 		a.every(ctx, time.Minute, func() { a.retirePrevious(ctx) })
+	})
+	run(func() {
+		a.every(ctx, 10*time.Second, a.watchForeignMasters)
 	})
 	run(func() {
 		a.every(ctx, time.Hour, func() {

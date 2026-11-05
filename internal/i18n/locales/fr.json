@@ -1423,6 +1423,8 @@
 "sys.peer_unreachable": "Ce site ne joint pas {node}. Avec deux sites, impossible de savoir quel côté est coupé : {node} n'est donc pas signalé en panne ; les deux sites continuent de vérifier et d'alerter seuls.",
 "sys.minority_title": "Impossible de joindre les autres nœuds : leur état est inconnu",
 "sys.minority": "Ce nœud ne joint que {reach} nœuds sur {total} : minoritaire, il ne peut pas savoir si {nodes} sont en panne ou s'il est lui-même isolé. Aucune panne n'est signalée d'ici ; ce site continue de vérifier et d'alerter sur ses cibles.",
+  "sys.two_masters_title": "Two masters of this cluster are running",
+  "sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
 "ui.rep.mode": "Réplique",
 "ui.rep.local": "Vérifie seul",
 "ui.rep.local_hint": "Maître injoignable : ce site exécute ses {n} moniteurs et envoie ses propres alertes.",

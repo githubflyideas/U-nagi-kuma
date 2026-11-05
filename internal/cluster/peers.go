@@ -26,6 +26,8 @@ type PeerView struct {
 	At    time.Time       `json:"at"`
 	Error string          `json:"error,omitempty"`
 	Reach map[string]bool `json:"reach,omitempty"` // the peer's own view
+	Term  uint64          `json:"term,omitempty"`
+	Role  string          `json:"role,omitempty"`
 }
 
 type peerSet struct {
@@ -135,6 +137,10 @@ func (a *Agent) checkPeers(ctx context.Context) {
 				a.peers.mu.Lock()
 				if cur := a.peers.views[v.Name]; cur != nil && cur.Addr == v.Addr {
 					cur.OK, cur.At, cur.Error, cur.Reach = res.OK, res.At, res.Error, res.Reach
+					cur.Term, cur.Role = res.Term, res.Role
+					if res.Name != "" {
+						cur.Name = res.Name
+					}
 				}
 				a.peers.mu.Unlock()
 			}(v)
@@ -153,9 +159,12 @@ func (a *Agent) checkPeers(ctx context.Context) {
 			}()
 		}
 		wg.Wait()
+		a.followPeerMaster()
 		select {
 		case <-ctx.Done():
 			return
+		case <-a.peersKick:
+			// Reconnected to the master: re-check peers right away (BUG-16).
 		case <-time.After(every):
 		}
 	}
@@ -175,18 +184,62 @@ func (a *Agent) checkPeer(ctx context.Context, c *http.Client, addr string) Peer
 	}
 	defer resp.Body.Close()
 	var rv ReachView
-	if resp.StatusCode == http.StatusOK && json.NewDecoder(io.LimitReader(resp.Body, 64<<10)).Decode(&rv) == nil {
-		v.OK, v.Reach = true, rv.Reach
+	switch {
+	case resp.StatusCode == http.StatusOK && json.NewDecoder(io.LimitReader(resp.Body, 64<<10)).Decode(&rv) == nil:
+		v.OK, v.Reach, v.Name, v.Term, v.Role = true, rv.Reach, rv.Node, rv.Term, rv.Role
+		return v
+	case resp.StatusCode == http.StatusNotFound:
+		// Older releases have no ReachPath: reachable, no view (BUG-13).
+		v.OK = true
 		return v
 	}
-	// It answered, so it is reachable, even if it is too old to tell more.
+	// Any other answer still proves reachability.
+	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 64<<10))
 	v.OK = true
 	return v
 }
 
-// ServeReach answers a peer's check with this node's name and view.
-func ServeReach(w http.ResponseWriter, node string, reach map[string]bool) {
+// ServeReach answers a peer's check with this node's name, view and role.
+func ServeReach(w http.ResponseWriter, v ReachView) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
-	_ = json.NewEncoder(w).Encode(ReachView{Node: node, Reach: reach})
+	_ = json.NewEncoder(w).Encode(v)
+}
+
+// followPeerMaster switches to a peer that answered Reach as a master with
+// a newer term (or the same term and a winning name). Used when the old
+// master is down and another replica was promoted (BUG-10, BUG-11).
+func (a *Agent) followPeerMaster() {
+	known := a.Term()
+	self := a.o.Node
+	a.peers.mu.Lock()
+	var cand *PeerView
+	for _, v := range a.peers.views {
+		if !v.OK || v.Role != "master" || v.Name == "" || v.Name == self {
+			continue
+		}
+		better := v.Term > known || (v.Term == known && known > 0 && v.Name < self)
+		if !better {
+			continue
+		}
+		if cand == nil || v.Term > cand.Term || (v.Term == cand.Term && v.Name < cand.Name) {
+			c := *v
+			cand = &c
+		}
+	}
+	a.peers.mu.Unlock()
+	if cand == nil || cand.Addr == "" {
+		return
+	}
+	u := "https://" + cand.Addr
+	a.log.Warn("following a peer that took over as master", "peer", cand.Name, "term", cand.Term, "server", u)
+	a.follow([]string{u})
+	if cand.Term > known {
+		a.smu.Lock()
+		a.term = cand.Term
+		a.smu.Unlock()
+		if a.o.OnTerm != nil {
+			a.o.OnTerm(cand.Term)
+		}
+	}
 }

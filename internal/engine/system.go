@@ -27,6 +27,20 @@ func (e *Engine) StorageFailing(on bool, since time.Time, why string, lost int64
 	})
 }
 
+// SystemTwoMasters is the system incident of a permanent split: two
+// masters of the same cluster are reachable at once.
+const SystemTwoMasters = "two_masters"
+
+// TwoMasters opens (or keeps) the CRITICAL notice that another master of
+// this cluster is reachable. peer and term identify the other side.
+func (e *Engine) TwoMasters(peer string, term uint64) {
+	e.do(func() {
+		now := e.now()
+		detail := e.text("two_masters", peer, term)
+		e.openSystemAs(SystemTwoMasters, "system", e.text("two_masters_title"), detail, now)
+	})
+}
+
 // MasterUnreachable opens the replica's "checking on its own" incident
 // while the master is out of reach and resolves it once it is back.
 func (e *Engine) MasterUnreachable(on bool, master string, since time.Time) {
