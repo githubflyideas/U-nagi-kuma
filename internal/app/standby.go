@@ -15,8 +15,8 @@ import (
 	"time"
 
 	"github.com/githubflyideas/unagikuma/internal/backup"
-	"github.com/githubflyideas/unagikuma/internal/config"
 	"github.com/githubflyideas/unagikuma/internal/cluster"
+	"github.com/githubflyideas/unagikuma/internal/config"
 	"github.com/githubflyideas/unagikuma/internal/store"
 )
 
@@ -238,7 +238,6 @@ func (a *App) Standby() StandbyState {
 // with.
 var ErrNoState = errors.New("this server holds no copy of the master's state: it is not a standby, or has not fetched it yet")
 
-
 // ErrPromoteRefused means a reachable master already holds term >= the
 // term this promote would take (Rule 1 / BUG-11).
 var ErrPromoteRefused = errors.New("another master is already running at an equal or higher term; promote refused")
@@ -306,29 +305,11 @@ func (a *App) Promote(ctx context.Context, term uint64, author string) (uint64, 
 	a.persistPeerListens()
 	manual := author != "handover"
 	if manual {
-		deadline := a.now().Add(promoteDelayFn())
-		for {
-			if peer, t, ok := a.competingMaster(term); ok {
-				a.log.Warn("promote refused: another master is already running", "peer", peer, "term", t, "want", term)
-				return 0, &PromoteRefused{Peer: peer, Term: t}
-			}
-			left := deadline.Sub(a.now())
-			if left <= 0 {
-				break
-			}
-			step := time.Second
-			if left < step {
-				step = left
-			}
-			timer := time.NewTimer(step)
-			select {
-			case <-ctx.Done():
-				timer.Stop()
-				return 0, ctx.Err()
-			case <-timer.C:
-			}
+		if err := a.waitPromoteGuard(ctx, term); err != nil {
+			return 0, err
 		}
 	}
+
 	if peer, t, ok := a.competingMaster(term); ok {
 		a.log.Warn("promote refused: another master is already running", "peer", peer, "term", t, "want", term)
 		return 0, &PromoteRefused{Peer: peer, Term: t}
@@ -358,6 +339,16 @@ func PromoteOffline(dir string, now time.Time) (uint64, StandbyState, error) {
 	if m, err := readMembershipTerm(dir); err == nil && m >= term {
 		term = m + 1
 	}
+	a := &App{opts: Options{DataDir: dir, Now: time.Now}}
+	a.loadMembership()
+	pki, err := cluster.LoadOrCreatePKI(dir, now)
+	if err != nil {
+		return 0, meta, err
+	}
+	a.pki = pki
+	if err := a.waitPromoteGuard(context.Background(), term); err != nil {
+		return 0, meta, err
+	}
 	return term, meta, writePromote(dir, term, now)
 }
 
@@ -367,7 +358,10 @@ func readMembershipTerm(dir string) (uint64, error) {
 		return 0, err
 	}
 	var m Membership
-	return m.Term, json.Unmarshal(b, &m)
+	if err := json.Unmarshal(b, &m); err != nil {
+		return 0, err
+	}
+	return m.Term, nil
 }
 
 // applyPromote runs at start, before anything is opened: a standby told
@@ -574,4 +568,25 @@ func (a *App) AcceptRetire(n cluster.RetireNotice) error {
 		go a.demote(n)
 	}
 	return nil
+}
+
+// Both the live API and the stopped-node CLI use the same manual guard.
+func (a *App) waitPromoteGuard(ctx context.Context, term uint64) error {
+	deadline := time.Now().Add(promoteDelayFn())
+	for {
+		if peer, t, ok := a.competingMaster(term); ok {
+			return &PromoteRefused{Peer: peer, Term: t}
+		}
+		left := time.Until(deadline)
+		if left <= 0 {
+			return nil
+		}
+		timer := time.NewTimer(min(left, time.Second))
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return ctx.Err()
+		case <-timer.C:
+		}
+	}
 }

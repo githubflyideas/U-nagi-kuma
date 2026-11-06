@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -51,7 +50,7 @@ func (a *App) watchForeignMasters() {
 	self := a.nodeName()
 	myTerm := a.Term()
 	for _, addr := range a.peerListenAddrs() {
-		rv, ok := probeReach(addr)
+		rv, ok := a.probeReach(addr)
 		if !ok || rv.Role != "master" || rv.Node == "" || rv.Node == self {
 			continue
 		}
@@ -145,10 +144,11 @@ func (a *App) peerListenAddrs() []string {
 	return out
 }
 
-func probeReach(addr string) (cluster.ReachView, bool) {
-	client := &http.Client{Timeout: 3 * time.Second, Transport: &http.Transport{
-		Proxy: nil, TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}}
+func (a *App) probeReach(addr string) (cluster.ReachView, bool) {
+	pins, expected := a.peerTrust(addr)
+	tr := &http.Transport{Proxy: nil, TLSClientConfig: cluster.PinnedTLSConfig(pins...)}
+	defer tr.CloseIdleConnections()
+	client := &http.Client{Timeout: 3 * time.Second, Transport: tr, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://"+addr+cluster.ReachPath, nil)
@@ -167,12 +167,16 @@ func probeReach(addr string) (cluster.ReachView, bool) {
 	if json.NewDecoder(io.LimitReader(resp.Body, 64<<10)).Decode(&rv) != nil {
 		return cluster.ReachView{}, false
 	}
+	if expected != "" && rv.Node != expected {
+		return cluster.ReachView{}, false
+	}
 	return rv, true
 }
 
 // persistPeerListens writes known peer listen addresses so a returning
 // master (or a promote restart) can Reach them after a process restart.
 func (a *App) persistPeerListens() {
+	a.persistPeerIdentities()
 	addrs := a.peerListenAddrs()
 	if len(addrs) == 0 {
 		return
@@ -193,7 +197,7 @@ func (a *App) competingMaster(wantTerm uint64) (peer string, term uint64, ok boo
 		self = a.nodeName()
 	}
 	for _, addr := range a.peerListenAddrs() {
-		rv, reach := probeReach(addr)
+		rv, reach := a.probeReach(addr)
 		if !reach || rv.Role != "master" || rv.Node == "" || rv.Node == self {
 			continue
 		}
@@ -220,7 +224,7 @@ func (a *App) probeForeignMastersAtStart() {
 	self := a.nodeName()
 	myTerm := a.Term()
 	for _, addr := range a.peerListenAddrs() {
-		rv, ok := probeReach(addr)
+		rv, ok := a.probeReach(addr)
 		if !ok || rv.Role != "master" || rv.Node == "" || rv.Node == self {
 			continue
 		}

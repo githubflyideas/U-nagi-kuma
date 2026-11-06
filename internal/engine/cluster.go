@@ -66,7 +66,8 @@ type NodeStatus struct {
 	Unsupported []string `json:"unsupported,omitempty"`
 	// Listen is where other nodes can reach this one ("" for probe-only
 	// agents, which cannot be checked by their peers).
-	Listen string `json:"listen,omitempty"`
+	Listen          string `json:"listen,omitempty"`
+	PeerFingerprint string `json:"peer_fingerprint,omitempty"`
 	// Reach is this node's own view: which other nodes it can reach.
 	Reach map[string]bool `json:"reach,omitempty"`
 	// Gateway is how this node's last notifications went out, per channel.

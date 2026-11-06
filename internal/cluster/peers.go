@@ -2,7 +2,6 @@ package cluster
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -15,19 +14,19 @@ import (
 // Every node checks the others it was told about, so the cluster can judge
 // a node by majority: a node is down only when more than half of the nodes
 // cannot reach it. A check asks the peer's ReachPath, which also returns the
-// peer's own view; it only proves reachability, so the peer's certificate
-// is not verified (nothing secret is exchanged).
+// peer's own view. Its certificate is authenticated before control data is used.
 
 // PeerView is what this node knows about one peer.
 type PeerView struct {
-	Name  string          `json:"name"`
-	Addr  string          `json:"addr"`
-	OK    bool            `json:"ok"`
-	At    time.Time       `json:"at"`
-	Error string          `json:"error,omitempty"`
-	Reach map[string]bool `json:"reach,omitempty"` // the peer's own view
-	Term  uint64          `json:"term,omitempty"`
-	Role  string          `json:"role,omitempty"`
+	Name        string          `json:"name"`
+	Addr        string          `json:"addr"`
+	Fingerprint string          `json:"fingerprint,omitempty"`
+	OK          bool            `json:"ok"`
+	At          time.Time       `json:"at"`
+	Error       string          `json:"error,omitempty"`
+	Reach       map[string]bool `json:"reach,omitempty"` // the peer's own view
+	Term        uint64          `json:"term,omitempty"`
+	Role        string          `json:"role,omitempty"`
 }
 
 type peerSet struct {
@@ -52,9 +51,9 @@ func (a *Agent) setPeers(p Peers) {
 		}
 		keep[n.Name] = true
 		if v := ps.views[n.Name]; v != nil {
-			v.Addr = n.Addr
+			v.Addr, v.Fingerprint = n.Addr, n.Fingerprint
 		} else {
-			ps.views[n.Name] = &PeerView{Name: n.Name, Addr: n.Addr}
+			ps.views[n.Name] = &PeerView{Name: n.Name, Addr: n.Addr, Fingerprint: n.Fingerprint}
 		}
 	}
 	for n := range ps.views {
@@ -116,7 +115,7 @@ func hostOf(u string) string {
 func (a *Agent) checkPeers(ctx context.Context) {
 	client := &http.Client{Timeout: 3 * time.Second, Transport: &http.Transport{
 		Proxy:           nil,
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // reachability only; see the package comment
+		TLSClientConfig: PinnedTLSConfig(a.pin),
 	}}
 	for {
 		a.mu.Lock()
@@ -133,7 +132,14 @@ func (a *Agent) checkPeers(ctx context.Context) {
 			wg.Add(1)
 			go func(v PeerView) {
 				defer wg.Done()
-				res := a.checkPeer(ctx, client, v.Addr)
+				peerClient := &http.Client{Timeout: 3 * time.Second, Transport: &http.Transport{Proxy: nil, TLSClientConfig: PinnedTLSConfig(a.pin, v.Fingerprint)}, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+				res := a.checkPeer(ctx, peerClient, v.Addr)
+				if res.Name != "" && res.Name != v.Name {
+					res = PeerView{Addr: v.Addr, At: time.Now(), Error: "peer identity mismatch"}
+				}
+				if tr, ok := peerClient.Transport.(*http.Transport); ok {
+					tr.CloseIdleConnections()
+				}
 				a.peers.mu.Lock()
 				if cur := a.peers.views[v.Name]; cur != nil && cur.Addr == v.Addr {
 					cur.OK, cur.At, cur.Error, cur.Reach = res.OK, res.At, res.Error, res.Reach

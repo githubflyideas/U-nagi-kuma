@@ -60,13 +60,14 @@ type MasterOptions struct {
 type Master struct {
 	o MasterOptions
 
-	mu      sync.Mutex
-	sink    Sink
-	peers   map[string]*peer
-	configs map[string]*AgentConfig
-	listens map[string]string // last address each node listens at
-	closed  bool
-	wg      sync.WaitGroup
+	mu         sync.Mutex
+	sink       Sink
+	peers      map[string]*peer
+	configs    map[string]*AgentConfig
+	identities map[string]string
+	listens    map[string]string // last address each node listens at
+	closed     bool
+	wg         sync.WaitGroup
 }
 
 // NewMaster creates the master end; SetSink must be called before agents
@@ -84,7 +85,7 @@ func NewMaster(o MasterOptions) *Master {
 	if o.Tunables == nil {
 		o.Tunables = func() tunables.Set { ts, _ := tunables.New(nil); return ts }
 	}
-	return &Master{o: o, peers: map[string]*peer{}, configs: map[string]*AgentConfig{}, listens: map[string]string{}}
+	return &Master{o: o, peers: map[string]*peer{}, configs: map[string]*AgentConfig{}, identities: map[string]string{}, listens: map[string]string{}}
 }
 
 // SetSink sets where agent reports go.
@@ -349,7 +350,7 @@ func (m *Master) session(node, token string, conn net.Conn, r *bufio.Reader, add
 		out: make(chan outFrame, sendQueue), cfgReady: make(chan struct{}, 1), closed: make(chan struct{}),
 		pings: map[uint64]time.Time{}, caps: capSet(h.Caps),
 		status: engine.NodeStatus{Node: node, Online: true, Since: now, LastSeen: now, Skew: h.Time.Sub(now),
-			Version: h.Version, Platform: h.Platform, Addr: addr, Listen: listenAddr(h.Listen, addr)},
+			Version: h.Version, Platform: h.Platform, Addr: addr, Listen: listenAddr(h.Listen, addr), PeerFingerprint: h.PeerFingerprint},
 	}
 	m.mu.Lock()
 	if m.closed {
@@ -360,6 +361,9 @@ func (m *Master) session(node, token string, conn net.Conn, r *bufio.Reader, add
 	m.peers[node] = p
 	if l := p.status.Listen; l != "" {
 		m.listens[node] = l
+		if h.PeerFingerprint != "" {
+			m.identities[node] = h.PeerFingerprint
+		}
 	}
 	cfg := m.configs[node]
 	m.mu.Unlock()
@@ -709,7 +713,8 @@ func (m *Master) sendPeers() {
 	}
 	var addrs []PeerAddr
 	for n, l := range m.listens {
-		addrs = append(addrs, PeerAddr{Name: n, Addr: l})
+		pin := m.identities[n]
+		addrs = append(addrs, PeerAddr{Name: n, Addr: l, Fingerprint: pin})
 	}
 	m.mu.Unlock()
 	// Nodes removed from the configuration are not checked any more.
@@ -752,6 +757,19 @@ func (m *Master) PeerListens() []string {
 	for _, l := range m.listens {
 		if l != "" {
 			out = append(out, l)
+		}
+	}
+	return out
+}
+
+// PeerIdentities are identities learned through token-authenticated sessions.
+func (m *Master) PeerIdentities() []PeerAddr {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []PeerAddr
+	for n, pin := range m.identities {
+		if m.listens[n] != "" && pin != "" {
+			out = append(out, PeerAddr{Name: n, Addr: m.listens[n], Fingerprint: pin})
 		}
 	}
 	return out

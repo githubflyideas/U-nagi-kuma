@@ -133,7 +133,8 @@ type Hello struct {
 	Caps []string `json:"caps,omitempty"`
 	// Listen is where the other nodes can reach this one (host:port; an
 	// unspecified host means the address it connects from).
-	Listen string `json:"listen,omitempty"`
+	Listen          string `json:"listen,omitempty"`
+	PeerFingerprint string `json:"peer_fingerprint,omitempty"`
 }
 
 // ReachPath answers peers checking this node: its name and which nodes
@@ -148,8 +149,9 @@ type Peers struct {
 
 // PeerAddr is one node and where it listens.
 type PeerAddr struct {
-	Name string `json:"name"`
-	Addr string `json:"addr"`
+	Name        string `json:"name"`
+	Addr        string `json:"addr"`
+	Fingerprint string `json:"fingerprint,omitempty"`
 }
 
 // ReachView is a node's answer on ReachPath.

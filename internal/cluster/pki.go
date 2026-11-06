@@ -232,3 +232,25 @@ func pinnedVerifier(pin string) func(tls.ConnectionState) error {
 		return err
 	}
 }
+
+// PinnedTLSConfig authenticates cluster peers even when the public UI uses
+// a different certificate. An empty or malformed trust set fails closed.
+func PinnedTLSConfig(pins ...string) *tls.Config {
+	valid := make([]string, 0, len(pins))
+	for _, pin := range pins {
+		if p, err := normalizeFingerprint(pin); err == nil {
+			valid = append(valid, p)
+		}
+	}
+	return &tls.Config{MinVersion: tls.VersionTLS12, ServerName: AgentServerName,
+		NextProtos: []string{"http/1.1"}, InsecureSkipVerify: true,
+		VerifyConnection: func(cs tls.ConnectionState) error {
+			for _, p := range valid {
+				if pinnedVerifier(p)(cs) == nil {
+					return nil
+				}
+			}
+			return errors.New("peer does not match an authenticated cluster identity")
+		},
+	}
+}

@@ -27,6 +27,9 @@ import (
 
 // AgentOptions configure a probe agent.
 type AgentOptions struct {
+	// PeerFingerprint is this listening server's CA, announced only over the authenticated master session.
+	PeerFingerprint string
+	InitialPeers    []PeerAddr
 	// Server is the master's URL, e.g. https://master:8077.
 	Server string
 	// Node is the expected node name; empty accepts the token's node.
@@ -218,6 +221,9 @@ func NewAgent(o AgentOptions) (*Agent, error) {
 // with backoff. While disconnected the agent does not probe: without a
 // round from the master a vote would count for nothing.
 func (a *Agent) Run(ctx context.Context) error {
+	if len(a.o.InitialPeers) > 0 {
+		a.setPeers(Peers{Nodes: a.o.InitialPeers})
+	}
 	ectx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	done := make(chan struct{})
@@ -349,7 +355,7 @@ func (a *Agent) session(ctx context.Context) error {
 	maxMsg := a.ts.Int("cluster.max-message")
 	a.mu.Unlock()
 	if err := writeFrame(conn, msgHello, Hello{Proto: ProtoVersion, Node: a.o.Node, Version: a.o.Version,
-		Platform: runtime.GOOS + "/" + runtime.GOARCH, Time: time.Now(), Term: a.Term(), Caps: a.caps(), Listen: a.o.Listen}); err != nil {
+		Platform: runtime.GOOS + "/" + runtime.GOARCH, Time: time.Now(), Term: a.Term(), Caps: a.caps(), Listen: a.o.Listen, PeerFingerprint: a.o.PeerFingerprint}); err != nil {
 		return err
 	}
 	f, err := readFrame(br, maxMsg)
@@ -850,4 +856,3 @@ func (a *Agent) cancelSession() {
 		c()
 	}
 }
-
