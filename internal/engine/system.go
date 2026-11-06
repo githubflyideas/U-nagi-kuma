@@ -34,11 +34,16 @@ const SystemTwoMasters = "two_masters"
 // TwoMasters opens (or keeps) the CRITICAL notice that another master of
 // this cluster is reachable. peer and term identify the other side.
 func (e *Engine) TwoMasters(peer string, term uint64) {
-	e.do(func() {
+	f := func() {
 		now := e.now()
 		detail := e.text("two_masters", peer, term)
 		e.openSystemAs(SystemTwoMasters, "system", e.text("two_masters_title"), detail, now)
-	})
+	}
+	if !e.started.Load() {
+		f()
+		return
+	}
+	e.do(f)
 }
 
 // MasterUnreachable opens the replica's "checking on its own" incident

@@ -465,7 +465,7 @@ func (e *Engine) witnesses(x string) (against int, witnessable bool) {
 // server steps down and rejoins as a member: minority and node-offline of
 // the old role must not stay open under the new one.
 func (e *Engine) ClearClusterRoleIncidents() {
-	e.do(func() {
+	f := func() {
 		now := e.now()
 		e.resolveSystem(SystemMinority, now, "")
 		for key := range e.system {
@@ -473,7 +473,12 @@ func (e *Engine) ClearClusterRoleIncidents() {
 				e.resolveSystem(key, now, "")
 			}
 		}
-	})
+	}
+	if !e.started.Load() {
+		f()
+		return
+	}
+	e.do(f)
 }
 
 // Nodes returns the configured agents with their latest state.

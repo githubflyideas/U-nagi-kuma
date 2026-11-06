@@ -207,7 +207,9 @@ func (a *App) competingMaster(wantTerm uint64) (peer string, term uint64, ok boo
 // probeForeignMastersAtStart runs once before system notices fire for a
 // returning old master: if a peer already has a newer term, step down
 // immediately so this node does not briefly act as master (BUG-15 / Rule 2).
-// It never auto-reclaims mastership; only a manual promote does.
+// No two_masters notice here — the node must not open system incidents or
+// send master notifications before it knows it was replaced. It never
+// auto-reclaims mastership; only a manual promote does.
 func (a *App) probeForeignMastersAtStart() {
 	if a.isMember() || a.SupersededBy() != nil {
 		return
@@ -215,5 +217,17 @@ func (a *App) probeForeignMastersAtStart() {
 	if len(a.peerListenAddrs()) == 0 {
 		return
 	}
-	a.watchForeignMasters()
+	self := a.nodeName()
+	myTerm := a.Term()
+	for _, addr := range a.peerListenAddrs() {
+		rv, ok := probeReach(addr)
+		if !ok || rv.Role != "master" || rv.Node == "" || rv.Node == self {
+			continue
+		}
+		if rv.Term > myTerm {
+			a.log.Warn("another master has a higher term; stepping down at start", "peer", rv.Node, "term", rv.Term, "addr", addr)
+			a.supersede(rv.Term, rv.Node)
+			return
+		}
+	}
 }
