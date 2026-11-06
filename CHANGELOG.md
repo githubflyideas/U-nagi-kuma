@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v2.3.0 — 2026-11-06
 
 **Added**
 - Import monitors from Checkmate (its `monitors.json` export) and Gatus (its YAML configuration), on the command line and under Configuration › Import. HTTP checks are moved; anything that cannot be moved exactly is listed and stops the import.
