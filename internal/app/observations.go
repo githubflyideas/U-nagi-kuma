@@ -62,6 +62,18 @@ func (a *App) peerClient(p cluster.PeerAddr) *http.Client {
 	return &http.Client{Timeout: 3 * time.Second, Transport: &http.Transport{Proxy: nil, TLSClientConfig: cfg}, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 }
 func (a *App) pullSiteObservations(ctx context.Context, p cluster.PeerAddr) error {
+	for page := 0; page < 64; page++ {
+		more, err := a.pullSiteObservationPage(ctx, p)
+		if err != nil {
+			return err
+		}
+		if !more {
+			return nil
+		}
+	}
+	return nil
+}
+func (a *App) pullSiteObservationPage(ctx context.Context, p cluster.PeerAddr) (bool, error) {
 	epoch, seq := a.store.SiteObservationCursor(p.Name)
 	u := url.URL{Scheme: "https", Host: strings.TrimPrefix(p.Addr, "https://"), Path: SiteObservationPath}
 	q := u.Query()
@@ -70,30 +82,38 @@ func (a *App) pullSiteObservations(ctx context.Context, p cluster.PeerAddr) erro
 	u.RawQuery = q.Encode()
 	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
 	if err != nil {
-		return err
+		return false, err
 	}
 	req.Header.Set(peerSiteHeader, a.nodeName())
 	client := a.peerClient(p)
 	defer client.CloseIdleConnections()
 	res, err := client.Do(req)
 	if err != nil {
-		return err
+		return false, err
 	}
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
-		return fmt.Errorf("peer observations: HTTP %d", res.StatusCode)
+		return false, fmt.Errorf("peer observations: HTTP %d", res.StatusCode)
 	}
 	var d observation.Delta
 	if err := json.NewDecoder(io.LimitReader(res.Body, 4<<20)).Decode(&d); err != nil {
-		return err
+		return false, err
 	}
+	filtered := d.Rows[:0]
+	cfg := a.EffectiveConfig()
+	for _, row := range d.Rows {
+		if m := cfg.FindMonitor(row.MonitorID); m != nil && m.DefHash == row.DefHash {
+			filtered = append(filtered, row)
+		}
+	}
+	d.Rows = filtered
 	if err := a.store.ApplySiteObservationDelta(p.Name, d); err != nil {
-		return err
+		return false, err
 	}
 	if len(d.Rows) > 0 {
 		a.emit("state", nil)
 	}
-	return nil
+	return d.More, nil
 }
 func (a *App) syncSiteObservations(ctx context.Context) {
 	self := a.nodeName()

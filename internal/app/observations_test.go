@@ -3,12 +3,14 @@ package app
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"github.com/githubflyideas/unagikuma/internal/cluster"
 	"github.com/githubflyideas/unagikuma/internal/observation"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -105,5 +107,38 @@ func TestObservationSyncWithoutMaster(t *testing.T) {
 	res.Body.Close()
 	if res.StatusCode != 401 {
 		t.Fatal("forged identity accepted", res.StatusCode)
+	}
+}
+
+func TestObservationPullDrainsMultiplePages(t *testing.T) {
+	var extra strings.Builder
+	extra.WriteString("b IN NODE Beijing\nc IN NODE Tokyo\n")
+	for i := 0; i < 600; i++ {
+		fmt.Fprintf(&extra, "check-%03d IN HTTP http://127.0.0.1/\n", i)
+	}
+	makeSite := func(node string) *App {
+		a, _, _, _ := newApp(t, testConfig+extra.String())
+		a.am.member = &Membership{Node: node, Server: "https://master.invalid"}
+		a.replica.cfg = a.applied.Load()
+		a.replica.local = true
+		t.Cleanup(func() { a.store.Close() })
+		return a
+	}
+	b, c := makeSite("b"), makeSite("c")
+	bs, cs := observationServer(t, b), observationServer(t, c)
+	peer := rememberObservationPeer(t, c, b, bs)
+	rememberObservationPeer(t, b, c, cs)
+	for i := 0; i < 600; i++ {
+		name := fmt.Sprintf("check-%03d", i)
+		if err := b.store.RecordSiteObservation(observation.Row{NodeID: "b", MonitorID: name, Status: "down", CheckedAt: time.Now(), IntervalMS: 60000, DefHash: b.EffectiveConfig().FindMonitor(name).DefHash}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := c.pullSiteObservations(context.Background(), peer); err != nil {
+		t.Fatal(err)
+	}
+	_, seq := c.store.SiteObservationCursor("b")
+	if seq != 600 {
+		t.Fatalf("only first page synchronized: %d", seq)
 	}
 }

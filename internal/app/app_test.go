@@ -338,6 +338,7 @@ func TestEngineConfigNodes(t *testing.T) {
 
 	c := ec(`bj   IN NODE "北京" region=north policy=default node-timeout=2m
 sh   IN NODE "上海"
+master-only IN PING 192.168.1.3 nodes=unagikuma
 gw   IN PING 192.168.1.1 nodes=bj
 ntp  IN NTP  192.168.1.2
 `)
@@ -349,6 +350,9 @@ ntp  IN NTP  192.168.1.2
 	}
 	if got := strings.Join(find(c, "web").Nodes, ","); got != "unagikuma,bj,sh" {
 		t.Fatalf("default participants: %s", got)
+	}
+	if got := strings.Join(find(c, "master-only").Nodes, ","); got != "unagikuma" {
+		t.Fatalf("master scope collapsed to all sites: %s", got)
 	}
 	if got := strings.Join(find(c, "gw").Nodes, ","); got != "bj" {
 		t.Fatalf("named participants: %s", got)

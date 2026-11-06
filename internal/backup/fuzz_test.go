@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -34,9 +35,21 @@ func FuzzRestore(f *testing.F) {
 		}
 		files, _ := os.ReadDir(data)
 		for _, e := range files {
-			ok := e.Name() == "core.db" || e.Name() == "history.db" || e.Name() == "monitors.bind"
+			ok := e.Name() == "core.db" || e.Name() == "history.db" || e.Name() == "monitors.bind" || e.Name() == ".db-epoch-reset"
 			for _, k := range keyFiles {
-				ok = ok || e.Name() == k
+				ok = ok || e.Name() == k || (e.IsDir() && e.Name() == "site-identity" && strings.HasPrefix(k, "site-identity/"))
+			}
+			if e.Name() == "site-identity" && e.IsDir() {
+				nested, _ := os.ReadDir(filepath.Join(data, e.Name()))
+				for _, n := range nested {
+					allowed := false
+					for _, k := range keyFiles {
+						allowed = allowed || k == "site-identity/"+n.Name()
+					}
+					if !allowed || n.IsDir() {
+						t.Fatalf("unexpected identity entry %s", n.Name())
+					}
+				}
 			}
 			if !ok {
 				t.Fatalf("restore left %s", e.Name())

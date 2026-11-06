@@ -229,9 +229,7 @@ func (a *App) engineConfig(cfg *config.Config) engine.Config {
 			Handler: m.Opts["handler"],
 		}
 		if len(ec.Nodes) > 0 && m.Type != "PUSH" {
-			if p := participants(m.Nodes, cfg.MName, selfProbes, probers); len(p) != 1 || p[0] != cfg.MName {
-				ms.Nodes = p
-			}
+			ms.Nodes = participants(m.Nodes, cfg.MName, selfProbes, probers)
 			ms.PartialEscalate = m.PartialEscalate
 			// A node with a wrong clock cannot judge a time server or how
 			// close a certificate is to expiry.

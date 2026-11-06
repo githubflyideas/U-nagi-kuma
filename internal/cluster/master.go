@@ -263,7 +263,7 @@ func (m *Master) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("this token belongs to node %s, not %s", node, want), http.StatusForbidden)
 		return
 	}
-	if !m.o.Known(node) {
+	if !m.o.Known(node) && !(m.o.Retired != nil && m.o.Retired()) {
 		http.Error(w, "node "+node+" is not declared in the configuration", http.StatusForbidden)
 		return
 	}

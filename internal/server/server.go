@@ -353,7 +353,7 @@ func notFound(what string) error {
 }
 
 func sharedConfigRoute(path string) bool {
-	if strings.HasSuffix(path, "/test") || strings.HasSuffix(path, "/predict") || strings.HasSuffix(path, "/push-token") {
+	if strings.HasSuffix(path, "/test") || strings.HasSuffix(path, "/predict") || strings.HasSuffix(path, "/push-token") || strings.HasSuffix(path, "/push/rotate") {
 		return false
 	}
 	for _, p := range []string{"/api/v1/config", "/api/v1/monitors", "/api/v1/channels", "/api/v1/policies", "/api/v1/teams", "/api/v1/people", "/api/v1/oncall", "/api/v1/changes", "/api/v1/tunables", "/api/v1/maintenance", "/api/v1/nodes", "/api/v1/status-pages", "/api/v1/import"} {

@@ -155,7 +155,7 @@ func New(o Options) (*App, error) {
 		},
 		Log: o.Log.With("component", "cluster"), Now: o.Now,
 		Term:    a.Term,
-		Retired: func() bool { return a.SupersededBy() != nil },
+		Retired: func() bool { return a.isMember() || a.SupersededBy() != nil },
 		Successor: func() string {
 			// A replaced master that rejoined sends agents to the new one.
 			a.am.mu.Lock()
@@ -181,11 +181,44 @@ func New(o Options) (*App, error) {
 		InContainer: netscope.InContainer(), Remote: a.master, Log: o.Log,
 	})
 	a.master.SetSink(a.engine)
+	for _, path := range []string{o.ConfigPath, a.dataPath(replicaDir, replicaConfig)} {
+		if err := a.migratePushReceivers(path); err != nil {
+			st.Close()
+			return nil, err
+		}
+	}
 	a.loadMembership()
 	a.loadReplica()
 	if err := a.cfg.load(); err != nil {
 		st.Close()
 		return nil, err
+	}
+	migrationCfg := a.EffectiveConfig()
+	if migrationCfg == nil {
+		migrationCfg = a.cfg.current().Config
+	}
+	source := a.nodeName()
+	if source == "" {
+		source = migrationCfg.MName
+	}
+	_ = st.SetSetting("source_node", source)
+	if err := st.MigrateIndependentSite(source, len(migrationCfg.Nodes) > 0); err != nil {
+		st.Close()
+		return nil, fmt.Errorf("site migration: %w", err)
+	}
+	if _, err := os.Stat(a.dataPath(".db-epoch-reset")); err == nil {
+		if err := st.RotateDBEpoch(source); err != nil {
+			st.Close()
+			return nil, err
+		}
+		if err := os.Remove(a.dataPath(".db-epoch-reset")); err != nil {
+			st.Close()
+			return nil, err
+		}
+		if err := st.Audit(auditEntry("system.restore_epoch", "system", map[string]any{"site": a.nodeName()})); err != nil {
+			st.Close()
+			return nil, err
+		}
 	}
 	states, _ := st.States()
 	incidents, _ := st.OpenIncidents()
@@ -343,6 +376,20 @@ func (a *App) applyLocked(cfg *config.Config) {
 			}
 		}
 		ec.Monitors[i].Parents = parents
+	}
+	hashes := map[string]string{}
+	sites := map[string]bool{runtimeCfg.MName: true, ec.SourceNode: true}
+	for _, m := range runtimeCfg.Monitors {
+		hashes[m.Name] = m.DefHash
+	}
+	for _, m := range ec.Monitors {
+		hashes[m.Name] = m.DefHash
+	}
+	for _, n := range runtimeCfg.Nodes {
+		sites[n.Name] = true
+	}
+	if err := a.store.PruneObservationConfig(hashes, sites); err != nil {
+		a.log.Warn("prune observation configuration", "err", err)
 	}
 	a.engine.Apply(ec)
 	a.master.SetConfigs(agentConfigs(cfg, agentEC))

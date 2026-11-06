@@ -150,6 +150,14 @@ var coreMigrations = []string{
  ALTER TABLE acks ADD COLUMN site TEXT NOT NULL DEFAULT '';
  ALTER TABLE acks ADD COLUMN source_epoch TEXT NOT NULL DEFAULT '';
  ALTER TABLE acks ADD COLUMN original_id INTEGER NOT NULL DEFAULT 0;`,
+	`ALTER TABLE events ADD COLUMN original_id INTEGER NOT NULL DEFAULT 0;
+ ALTER TABLE decisions ADD COLUMN original_id INTEGER NOT NULL DEFAULT 0;
+ ALTER TABLE deliveries ADD COLUMN original_id INTEGER NOT NULL DEFAULT 0;
+ CREATE INDEX events_source ON events(site,source_epoch,original_id);
+ CREATE INDEX decisions_source ON decisions(site,source_epoch,original_id);
+ CREATE INDEX deliveries_source ON deliveries(site,source_epoch,original_id);
+ CREATE INDEX evidence_source ON evidence(site,source_epoch,original_id);
+ CREATE INDEX acks_source ON acks(site,source_epoch,original_id);`,
 }
 
 var historyMigrations = []string{
@@ -174,6 +182,16 @@ var historyMigrations = []string{
 	`ALTER TABLE rounds ADD COLUMN site TEXT NOT NULL DEFAULT '';
 	CREATE TABLE merge_marks (site TEXT NOT NULL, tbl TEXT NOT NULL, last_id INTEGER NOT NULL, PRIMARY KEY (site, tbl));`,
 	`ALTER TABLE rounds ADD COLUMN source_epoch TEXT NOT NULL DEFAULT '';`,
+	`ALTER TABLE rounds ADD COLUMN original_id INTEGER NOT NULL DEFAULT 0; CREATE INDEX rounds_source ON rounds(site,source_epoch,original_id);`,
+	`ALTER TABLE rounds RENAME TO rounds_old_rowid;
+ CREATE TABLE rounds (id INTEGER PRIMARY KEY AUTOINCREMENT, mid INTEGER NOT NULL, at INTEGER NOT NULL, st INTEGER NOT NULL, flags INTEGER NOT NULL,
+ lat REAL, reason TEXT, nodes TEXT, site TEXT NOT NULL DEFAULT '', source_epoch TEXT NOT NULL DEFAULT '', original_id INTEGER NOT NULL DEFAULT 0);
+ INSERT INTO rounds(id,mid,at,st,flags,lat,reason,nodes,site,source_epoch,original_id)
+ SELECT rowid,mid,at,st,flags,lat,reason,nodes,site,source_epoch,original_id FROM rounds_old_rowid;
+ DROP TABLE rounds_old_rowid;
+ CREATE INDEX rounds_mid_at ON rounds(mid,at);
+ CREATE INDEX rounds_at ON rounds(at);
+ CREATE INDEX rounds_source ON rounds(site,source_epoch,original_id);`,
 }
 
 func (s *Store) migrate() error {

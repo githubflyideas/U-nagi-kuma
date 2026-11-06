@@ -508,8 +508,27 @@ func adoptPromotedConfig(configPath, self string) (string, error) {
 	if old == self {
 		return old, nil
 	}
+	// The previous master is still a physical monitoring site. Keep it in
+	// the configuration before changing authority, including old nodes= scopes.
+	exists := false
+	for _, n := range cfg.Nodes {
+		if n.Name == old {
+			exists = true
+		}
+	}
+	if !exists {
+		if cfg.HasName(old) {
+			return "", fmt.Errorf("previous site name %q conflicts with another record", old)
+		}
+		if err := f.UpsertRecord(config.RecordSpec{Name: old, Type: "NODE", Target: old}); err != nil {
+			return "", err
+		}
+	}
 	if err := f.SetMaster(self); err != nil {
 		return "", err
+	}
+	if _, _, diags := config.Load(configPath, f.Bytes(), config.Options{}); config.HasErrors(diags) {
+		return "", fmt.Errorf("promoted configuration: %v", diags)
 	}
 	cur, err := f.Serial()
 	if err != nil {
@@ -543,8 +562,8 @@ func auditEntry(action, actor string, detail map[string]any) store.AuditEntry {
 var ErrSuperseded = errors.New("this server handed the master role to another one; change the configuration there")
 
 // retirePrevious tells the master this one replaced to step down, until
-// it confirms: a master that was only cut off must not come back and
-// check (and alert) alongside this one.
+// it confirms: the former master retains local checks but no longer
+// accepts configuration changes or claims configuration authority.
 func (a *App) retirePrevious(ctx context.Context) {
 	b, err := os.ReadFile(a.dataPath(previousFile))
 	if err != nil || a.SupersededBy() != nil {

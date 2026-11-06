@@ -361,6 +361,9 @@ func (e *Engine) resolvedTitle(inc *Incident) string {
 }
 
 func (e *Engine) saveIncident(inc *Incident) {
+	if inc.SourceNode == "" {
+		inc.SourceNode = e.cfg.SourceNode
+	}
 	// An incident the store could not take yet (a full disk) lives under
 	// a temporary negative id, so its alerts still credit it and its
 	// recovery is still owed; the first save that works gives it its id.

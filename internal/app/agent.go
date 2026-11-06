@@ -261,14 +261,26 @@ var ErrNodeName = errors.New("invalid node name")
 func (a *App) AcceptJoin(req cluster.JoinRequest) (cluster.JoinResponse, error) {
 	resp := cluster.JoinResponse{Node: req.Node}
 	cfg := a.Config().Config
+	// Only the immediately replaced master may reclaim its existing NODE
+	// record, and it must still present a valid one-use join capability.
+	rejoin := false
+	if p, ok := a.loadPromoted(); ok && p.Self == cfg.MName && p.OldMaster == req.Node {
+		for _, n := range cfg.Nodes {
+			if n.Name == req.Node {
+				rejoin = true
+			}
+		}
+	}
 	switch {
 	case !config.ValidName(req.Node):
 		return resp, fmt.Errorf("%w %q", ErrNodeName, req.Node)
-	case req.Node == cfg.MName || cfg.HasName(req.Node):
+	case req.Node == cfg.MName || (cfg.HasName(req.Node) && !rejoin):
 		return resp, fmt.Errorf("%w: %q is already used in monitors.bind", ErrNodeName, req.Node)
 	}
-	if err := a.AllowAdd("nodes"); err != nil {
-		return resp, err
+	if !rejoin {
+		if err := a.AllowAdd("nodes"); err != nil {
+			return resp, err
+		}
 	}
 	if err := a.store.UseJoinCode(req.Code, req.Node); err != nil {
 		return resp, err
@@ -279,9 +291,14 @@ func (a *App) AcceptJoin(req cluster.JoinRequest) (cluster.JoinResponse, error) 
 	}
 	author := "join:" + req.Node
 	imports, names := importSpecs(cfg, req)
+	if rejoin {
+		imports, names = nil, nil
+	}
 	_, err := a.EditConfig(author, "node "+req.Node+" joined", func(f *config.File) error {
-		if err := f.UpsertRecord(node); err != nil {
-			return err
+		if !rejoin {
+			if err := f.UpsertRecord(node); err != nil {
+				return err
+			}
 		}
 		for _, sp := range imports {
 			if err := f.UpsertRecord(sp); err != nil {

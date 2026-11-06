@@ -14,7 +14,7 @@ import (
 )
 
 // Data directories left by earlier releases (scripts/upgrade-fixture.sh)
-// open with this one: accounts log in, secrets decrypt, open incidents,
+// open with this one: accounts log in, secrets decrypt, archived incidents,
 // push and node tokens survive, and the history moves to the id-keyed
 // tables.
 func TestUpgradeFromEarlierReleases(t *testing.T) {
@@ -55,15 +55,13 @@ func TestUpgradeFromEarlierReleases(t *testing.T) {
 			if toks, _ := a.store.AgentTokens(); len(toks) != 1 || toks[0].Node != "bj" {
 				t.Fatalf("node token: %+v", toks)
 			}
-			open := 0
-			incs, _ := a.store.OpenIncidents()
-			for _, inc := range incs {
-				if inc.Monitor == "down" {
-					open++
-				}
+			history, err := a.store.Incidents("all", "down", 0, 100)
+			if err != nil || len(history.Items) != 1 {
+				t.Fatalf("legacy history lost: %+v %v", history, err)
 			}
-			if open != 1 {
-				t.Fatalf("open incident of the closed port not restored: %d", open)
+			legacy := history.Items[0]
+			if !legacy.State.Closed || !legacy.State.ResolvedAt.IsZero() || legacy.GlobalID == "" || !legacy.HistoryOnly {
+				t.Fatalf("legacy cluster verdict not safely archived: %+v", legacy)
 			}
 			for _, m := range []string{"self", "down", "backup"} {
 				if a.store.MonitorID(m) == 0 {

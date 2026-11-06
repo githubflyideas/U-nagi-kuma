@@ -256,7 +256,7 @@ func (s *Store) incidentSites(rows []IncidentRow) {
 
 // IncidentRowOf is the listing row of an incident.
 func IncidentRowOf(inc engine.Incident) IncidentRow {
-	return IncidentRow{GlobalID: inc.GlobalID, SourceNode: inc.SourceNode, SourceEpoch: inc.SourceEpoch, OriginalID: inc.OriginalID, ID: inc.ID, Monitor: inc.Monitor, Kind: inc.Kind, System: inc.System, Policy: inc.Policy, Title: inc.Title,
+	return IncidentRow{HistoryOnly: inc.State.Closed && inc.State.ResolvedAt.IsZero(), GlobalID: inc.GlobalID, SourceNode: inc.SourceNode, SourceEpoch: inc.SourceEpoch, OriginalID: inc.OriginalID, ID: inc.ID, Monitor: inc.Monitor, Kind: inc.Kind, System: inc.System, Policy: inc.Policy, Title: inc.Title,
 		Reason: inc.Reason, Detail: inc.Detail, AckComment: inc.AckComment, State: inc.State}
 }
 
@@ -695,10 +695,22 @@ func (s *Store) Prune(r Retention) error {
 		err3 = err
 	}
 	_, err6 := s.core.Exec(`DELETE FROM intents WHERE state!='pending' AND updated_at<?`, cut)
+	if _, err := s.core.Exec(`DELETE FROM evidence WHERE at<?`, ms(now.Add(-r.Raw))); err != nil && err3 == nil {
+		err3 = err
+	}
+	if _, err := s.core.Exec(`DELETE FROM acks WHERE at<? AND incident_id NOT IN(SELECT id FROM incidents)`, now.Add(-r.Events).Unix()); err != nil && err3 == nil {
+		err3 = err
+	}
+	if _, err := s.core.Exec(`DELETE FROM merged WHERE tbl='incidents' AND local_id NOT IN(SELECT id FROM incidents)`); err != nil && err3 == nil {
+		err3 = err
+	}
 	_, err7 := s.core.Exec(`DELETE FROM sessions WHERE expires_at<?`, ms(now))
 	var err8 error
 	if r.Audit > 0 {
 		err8 = s.pruneAudit(ms(now.Add(-r.Audit)))
+		if err8 == nil {
+			_, err8 = s.core.Exec(`DELETE FROM site_audit AS old WHERE origin_id<COALESCE((SELECT min(origin_id) FROM site_audit AS kept WHERE kept.site=old.site AND kept.at>=?),(SELECT max(origin_id) FROM site_audit AS tip WHERE tip.site=old.site))`, ms(now.Add(-r.Audit)))
+		}
 	}
 	s.wmu.Unlock()
 	for _, err := range []error{err1, err2, err3, err4, err5, err6, err7, err8} {

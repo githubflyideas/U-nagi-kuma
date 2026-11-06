@@ -229,3 +229,35 @@ func (s *Store) SiteObservationSnapshot(monitor, defhash string, sites []string,
 	}
 	return out, nil
 }
+
+func (s *Store) PruneObservationConfig(monitors map[string]string, sites map[string]bool) error {
+	rows, err := s.core.Query("SELECT node,monitor,data FROM site_observations")
+	if err != nil {
+		return err
+	}
+	type key struct{ node, monitor string }
+	obsolete := []key{}
+	for rows.Next() {
+		var node, monitor, data string
+		if err := rows.Scan(&node, &monitor, &data); err != nil {
+			rows.Close()
+			return err
+		}
+		var o observation.Row
+		_ = json.Unmarshal([]byte(data), &o)
+		if hash, ok := monitors[monitor]; !ok || !sites[node] || hash != o.DefHash {
+			obsolete = append(obsolete, key{node, monitor})
+		}
+	}
+	err = rows.Err()
+	rows.Close()
+	if err != nil {
+		return err
+	}
+	for _, k := range obsolete {
+		if _, err := s.core.Exec("DELETE FROM site_observations WHERE node=? AND monitor=?", k.node, k.monitor); err != nil {
+			return err
+		}
+	}
+	return nil
+}

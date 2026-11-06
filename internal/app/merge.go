@@ -10,11 +10,11 @@ import (
 )
 
 // mergeEvery is how often a connected node sends the master what it wrote
-// on its own (nothing, most of the time).
+// locally, independently of its configuration authority role.
 const mergeEvery = time.Minute
 
 // maybePushMerge starts a merge push when one is due: right after a
-// replica hands checking back, then every mergeEvery.
+// replica connects, then every mergeEvery. Local checks never hand back.
 func (a *App) maybePushMerge(now bool) {
 	a.am.mu.Lock()
 	ag := a.am.agent

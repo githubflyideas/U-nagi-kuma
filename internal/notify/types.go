@@ -32,11 +32,10 @@ type Message struct {
 	DetailURL        string                `json:"detail_url,omitempty"`
 	AckURL           string                `json:"ack_url,omitempty"`
 	Tags             []string              `json:"tags,omitempty"`
-	Time             time.Time             `json:"time"
-"github.com/githubflyideas/unagikuma/internal/observation"`
-	Delayed  time.Duration `json:"delayed,omitempty"` // >0 when delivered late
-	DryRun   bool          `json:"dry_run,omitempty"`
-	Instance string        `json:"instance"` // unagikuma instance name (multi-instance setups)
+	Time             time.Time             `json:"time"`
+	Delayed          time.Duration         `json:"delayed,omitempty"` // >0 when delivered late
+	DryRun           bool                  `json:"dry_run,omitempty"`
+	Instance         string                `json:"instance"` // unagikuma instance name (multi-instance setups)
 	// Site names the site (cluster node) that sent the message; empty on
 	// a single machine. Sites never deduplicate each other's messages.
 	Site       string `json:"site,omitempty"`

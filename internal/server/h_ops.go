@@ -295,6 +295,7 @@ func (s *Server) incidentBulk(w http.ResponseWriter, r *http.Request) (any, erro
 		return nil, err
 	}
 	done := 0
+	failed := map[int64]string{}
 	for _, id := range req.IDs {
 		if s.incidentGate(r, id) != nil {
 			continue
@@ -305,9 +306,11 @@ func (s *Server) incidentBulk(w http.ResponseWriter, r *http.Request) (any, erro
 		err := s.app.ActOnIncident(r.Context(), id, app.IncidentAction{Action: req.Action, Actor: authOf(r).user, Comment: req.Comment, DurationS: req.DurationS}, incidentVia(r))
 		if err == nil {
 			done++
+		} else {
+			failed[id] = engineErr(err).Error()
 		}
 	}
-	return map[string]any{"done": done}, nil
+	return map[string]any{"done": done, "failed": failed}, nil
 }
 
 // ---- events and notifications ----
@@ -329,13 +332,17 @@ func (s *Server) notifications(w http.ResponseWriter, r *http.Request) (any, err
 // ---- configuration ----
 
 func (s *Server) configGet(w http.ResponseWriter, r *http.Request) (any, error) {
-	cur := s.app.Config()
+	cur := s.app.EffectiveConfigState()
+	mode := "ro"
+	if s.app.ConfigAuthority() {
+		mode = "rw"
+	}
 	_, diags := s.app.ValidateConfig([]byte(cur.Text))
 	if diags == nil {
 		diags = []config.Diagnostic{}
 	}
 	w.Header().Set("ETag", cur.ETag())
-	return map[string]any{"serial": cur.Serial, "etag": cur.ETag(), "path": s.app.ConfigPath(), "mode": "rw", "text": cur.Text,
+	return map[string]any{"serial": cur.Serial, "etag": cur.ETag(), "path": s.app.ConfigPath(), "mode": mode, "text": cur.Text,
 		"diagnostics": diags, "banner": s.app.Banner()}, nil
 }
 

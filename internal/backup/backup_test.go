@@ -23,6 +23,17 @@ func setupFuzz(t testing.TB) (string, DB) {
 	} {
 		os.WriteFile(filepath.Join(dir, name), []byte(body), 0o600)
 	}
+	for _, name := range keyFiles {
+		if strings.Contains(name, "/") {
+			p := filepath.Join(dir, name)
+			if err := os.MkdirAll(filepath.Dir(p), 0700); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(p, []byte("SITE-TEST-KEY\n"), 0600); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
 	db := func(_ context.Context, which string, w io.Writer) error {
 		// Large enough to span several encrypted chunks.
 		_, err := io.WriteString(w, which+strings.Repeat("x", 3*chunkSize))

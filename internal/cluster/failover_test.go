@@ -108,3 +108,18 @@ func TestRetireNotice(t *testing.T) {
 		t.Fatal("sent to a server of another cluster")
 	}
 }
+
+func TestRetiredMasterRedirectsAuthenticatedFormerNode(t *testing.T) {
+	p, err := LoadOrCreatePKI(t.TempDir(), time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	successor := newEnvWith(t, p, func(o *MasterOptions) { o.Term = func() uint64 { return 2 } })
+	old := newEnvWith(t, p, func(o *MasterOptions) {
+		o.Retired = func() bool { return true }
+		o.Known = func(string) bool { return false }
+		o.Successor = func() string { return successor.url }
+	})
+	a, _ := old.agent(nil)
+	waitFor(t, "authenticated former node redirected despite local config removal", func() bool { return a.Status().Connected && a.Server() == successor.url })
+}

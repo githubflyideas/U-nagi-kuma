@@ -419,7 +419,7 @@ func (s *Server) monitorDetail(w http.ResponseWriter, r *http.Request) (any, err
 	if !ok || !seesMonitor(r, name) {
 		return nil, notFound("monitor")
 	}
-	cur := s.app.Config()
+	cur := s.app.EffectiveConfigState()
 	m := cur.Config.FindMonitor(name)
 	out := map[string]any{"row": row}
 	// The path from this host to the target, for the diagram: the gateway
@@ -478,22 +478,34 @@ func (s *Server) monitorDetail(w http.ResponseWriter, r *http.Request) (any, err
 			down = u.DownS
 		}
 	}
+	if site := s.historySite(r); site != "" {
+		for k := range up {
+			up[k] = nil
+			cov[k] = 0
+		}
+		partial = map[string]*float64{}
+		down = 0
+		out["history_site"] = site
+	}
 	out["uptime"] = up
 	out["coverage"] = cov
 	out["uptime_partial"] = partial // the figure so far, for windows watched too briefly
 	out["downtime_30d_s"] = down
 	ev, _ := s.app.Store().EvidenceOf(name, 5, s.historySite(r))
 	type evRow struct {
-		At     time.Time       `json:"at"`
-		Node   string          `json:"node"`
-		Result probeResultJSON `json:"result"`
+		Site        string          `json:"site,omitempty"`
+		SourceEpoch string          `json:"source_epoch,omitempty"`
+		OriginalID  int64           `json:"original_id"`
+		At          time.Time       `json:"at"`
+		Node        string          `json:"node"`
+		Result      probeResultJSON `json:"result"`
 	}
 	evs := make([]evRow, 0, len(ev))
 	for _, e := range ev {
-		evs = append(evs, evRow{At: e.At, Node: e.Node, Result: resultJSON(e.Result)})
+		evs = append(evs, evRow{Site: e.Site, SourceEpoch: e.SourceEpoch, OriginalID: e.OriginalID, At: e.At, Node: e.Node, Result: resultJSON(e.Result)})
 	}
 	out["evidence"] = evs
-	incs, _ := s.app.Store().Incidents("all", name, 0, 10)
+	incs, _ := s.app.Store().Incidents("all", name, 0, 10, s.historySite(r))
 	out["incidents"] = incs.Items
 	return out, nil
 }

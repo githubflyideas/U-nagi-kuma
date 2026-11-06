@@ -103,6 +103,10 @@ func (s *Store) MaxIDs() map[string]int64 {
 func (s *Store) ExportSince(marks map[string]int64) (map[string][]map[string]any, bool, error) {
 	out := map[string][]map[string]any{}
 	more := false
+	epoch, err := s.DBEpoch()
+	if err != nil {
+		return nil, false, err
+	}
 	names, err := s.monitorNamesAll()
 	if err != nil {
 		return nil, false, err
@@ -122,6 +126,16 @@ func (s *Store) ExportSince(marks map[string]int64) (map[string][]map[string]any
 		list, err := scanMaps(rows)
 		if err != nil {
 			return nil, false, fmt.Errorf("export %s: %w", t, err)
+		}
+		for _, r := range list {
+			if t != "audit" && t != "incidents" {
+				if str(r["source_epoch"]) == "" {
+					r["source_epoch"] = epoch
+				}
+				if num(r["original_id"]) == 0 {
+					r["original_id"] = r["id"]
+				}
+			}
 		}
 		if len(list) > mergeLimit {
 			list, more = list[:mergeLimit], true
@@ -281,6 +295,9 @@ func (s *Store) Merge(b MergeBatch) (MergeResult, error) {
 				}
 			}
 			row["site"] = b.Site
+			if t != "incidents" && num(row["original_id"]) == 0 {
+				row["original_id"] = origin
+			}
 			if str(row["source_epoch"]) == "" {
 				row["source_epoch"] = b.Epoch
 			}
@@ -325,6 +342,15 @@ func (s *Store) Merge(b MergeBatch) (MergeResult, error) {
 					if _, err := tx.Exec(`INSERT OR IGNORE INTO merged(site,tbl,origin_id,local_id) VALUES(?,'incidents',?,?)`, MergeScope(b.Site, b.Epoch), origin, prior); err != nil {
 						return res, err
 					}
+					res.Skipped[t]++
+					continue
+				} else if err != sql.ErrNoRows {
+					return res, err
+				}
+			}
+			if t != "incidents" {
+				var exists int
+				if err := tx.QueryRow("SELECT 1 FROM "+t+" WHERE site=? AND source_epoch=? AND original_id=? LIMIT 1", b.Site, str(row["source_epoch"]), num(row["original_id"])).Scan(&exists); err == nil {
 					res.Skipped[t]++
 					continue
 				} else if err != sql.ErrNoRows {
@@ -389,6 +415,19 @@ func (s *Store) mergeRounds(b MergeBatch, mark int64, res *MergeResult) error {
 			if k != "id" && k != "monitor" && k != "mid" && k != "site" && have[k] {
 				row[k] = v
 			}
+		}
+		if str(row["source_epoch"]) == "" {
+			row["source_epoch"] = b.Epoch
+		}
+		if num(row["original_id"]) == 0 {
+			row["original_id"] = origin
+		}
+		var exists int
+		if err := tx.QueryRow(`SELECT 1 FROM rounds WHERE site=? AND source_epoch=? AND original_id=? LIMIT 1`, b.Site, str(row["source_epoch"]), num(row["original_id"])).Scan(&exists); err == nil {
+			res.Skipped["rounds"]++
+			continue
+		} else if err != sql.ErrNoRows {
+			return err
 		}
 		if _, err := insertRow(tx, "rounds", row); err != nil {
 			return fmt.Errorf("merge rounds: %w", err)

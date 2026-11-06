@@ -42,3 +42,24 @@ func TestCopyControlPreservesRuntime(t *testing.T) {
 		t.Fatal("not idempotent", err)
 	}
 }
+
+func TestPromotionTransfersAgentAuthenticationOnlyAtTakeover(t *testing.T) {
+	src, _, _ := open(t)
+	dst, _, _ := open(t)
+	token, err := src.CreateAgentToken("c")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = dst.CopyControlFrom(src, false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = dst.AgentNodeByToken(token, "127.0.0.1"); err == nil {
+		t.Fatal("ordinary sync copied control authentication")
+	}
+	if err = dst.CopyControlFrom(src, true); err != nil {
+		t.Fatal(err)
+	}
+	if node, err := dst.AgentNodeByToken(token, "127.0.0.1"); err != nil || node != "c" {
+		t.Fatal(node, err)
+	}
+}

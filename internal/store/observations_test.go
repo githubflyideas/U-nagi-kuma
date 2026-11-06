@@ -124,3 +124,45 @@ func TestNotificationObservationSnapshotIsDurable(t *testing.T) {
 		}
 	}
 }
+
+func TestObservationSourceClockSkew(t *testing.T) {
+	src, sc, _ := open(t)
+	dst, dc, _ := open(t)
+	sc.t = dc.t.Add(24 * time.Hour)
+	put := func(status string) {
+		t.Helper()
+		if err := src.RecordSiteObservation(observation.Row{NodeID: "a", MonitorID: "web", Status: status, CheckedAt: sc.t, IntervalMS: 1000, DefHash: "v1"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	put("up")
+	d, err := src.SiteObservationDelta("a", "", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = dst.ApplySiteObservationDelta("a", d); err != nil {
+		t.Fatal(err)
+	}
+	snap, err := dst.SiteObservationSnapshot("web", "v1", []string{"a"}, dc.t)
+	if err != nil || snap.Rows[0].Stale || !snap.Rows[0].ReceivedAt.Equal(dc.t) {
+		t.Fatal(snap, err)
+	}
+	dc.t = dc.t.Add(4 * time.Second)
+	snap, err = dst.SiteObservationSnapshot("web", "v1", []string{"a"}, dc.t)
+	if err != nil || !snap.Rows[0].Stale {
+		t.Fatal("future source timestamp concealed stale row", snap, err)
+	}
+	sc.t = sc.t.Add(-48 * time.Hour)
+	put("down")
+	next, err := src.SiteObservationDelta("a", d.Epoch, d.Cursor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = dst.ApplySiteObservationDelta("a", next); err != nil {
+		t.Fatal(err)
+	}
+	snap, err = dst.SiteObservationSnapshot("web", "v1", []string{"a"}, dc.t)
+	if err != nil || snap.Rows[0].Stale || snap.Rows[0].Status != "down" {
+		t.Fatal("clock rollback must not outrank source sequence", snap, err)
+	}
+}

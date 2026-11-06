@@ -7,11 +7,12 @@ import (
 
 // CopyControlFrom copies only authority-owned notification configuration.
 // Incidents, ACKs, intents, delivery health, evidence and audit chains stay local.
-// src must be an immutable restored snapshot, not a live peer database.
+// Promotion also transfers agent authentication hashes with configuration
+// authority; ordinary replica refreshes do not. src is an immutable snapshot.
 func (s *Store) CopyControlFrom(src *Store, changes bool) error {
 	tables := []string{"people", "contacts", "oncall_overrides"}
 	if changes {
-		tables = append(tables, "changes")
+		tables = append(tables, "changes", "agent_tokens")
 	}
 	type snapshot struct {
 		name string

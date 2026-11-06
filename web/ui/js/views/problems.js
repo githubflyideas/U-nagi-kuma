@@ -185,6 +185,7 @@ export function Problems({ tab }) {
     try {
       const r = await post('/incidents/bulk', { ids: [...selected], action, duration_s: 3600 });
       toast(tn('ui.inc.bulk_done', r.done));
+      if (Object.keys(r.failed || {}).length) toastError({ message: detailText(Object.values(r.failed)[0]) });
       setSelected(new Set());
       list.reload();
     } catch (e) { toastError(e); }

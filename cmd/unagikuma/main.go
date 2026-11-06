@@ -309,6 +309,9 @@ func runAgent(args []string) error {
 	logFile := fs.String("log-file", os.Getenv("UNAGIKUMA_LOG_FILE"), "append logs to this file instead of stderr (for services)")
 	scripts := fs.String("script-dir", os.Getenv("UNAGIKUMA_SCRIPT_DIR"), "comma-separated directories of check scripts for EXEC checks (default "+agentScriptDir()+")")
 	_ = fs.Parse(args)
+	if fs.Parsed() {
+		return errors.New("probe-only agents cannot provide independent site alerts; run a full server with its own data directory, then join it through cluster setup")
+	}
 
 	var lvl slog.Level
 	if err := lvl.UnmarshalText([]byte(*logLevel)); err != nil {

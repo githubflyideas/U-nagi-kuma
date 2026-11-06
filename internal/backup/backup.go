@@ -30,7 +30,7 @@ import (
 // a restored or moved server keeps both.
 var idFiles = []string{"installation", "license.json"}
 
-var keyFiles = []string{"unagikuma.key", "cluster-ca.crt", "cluster-ca.key", "cluster.crt", "cluster.key"}
+var keyFiles = []string{"unagikuma.key", "cluster-ca.crt", "cluster-ca.key", "cluster.crt", "cluster.key", "site-identity/cluster-ca.crt", "site-identity/cluster-ca.key", "site-identity/cluster.crt", "site-identity/cluster.key"}
 
 // DB writes a consistent copy of a database ("core" or "history").
 type DB func(ctx context.Context, which string, w io.Writer) error
@@ -231,6 +231,17 @@ func Restore(r io.Reader, dataDir, configPath, passphrase string, force bool) (M
 		if h.Name == "monitors.bind" {
 			dst = configPath
 		}
+		if h.Name != "monitors.bind" && strings.Contains(h.Name, "/") {
+			parent := filepath.Dir(dst)
+			if fi, err := os.Lstat(parent); err == nil && fi.Mode()&os.ModeSymlink != 0 {
+				cleanup()
+				return m, errors.New("restore identity directory must not be a symlink")
+			}
+			if err := os.MkdirAll(parent, 0700); err != nil {
+				cleanup()
+				return m, err
+			}
+		}
 		tmp := dst + ".restore"
 		f, err := os.OpenFile(tmp, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.FileMode(h.Mode)&0o640|0o600)
 		if err != nil {
@@ -264,6 +275,9 @@ func Restore(r io.Reader, dataDir, configPath, passphrase string, force bool) (M
 			cleanup()
 			return m, err
 		}
+	}
+	if err := os.WriteFile(filepath.Join(dataDir, ".db-epoch-reset"), []byte("rotate before starting restored database\n"), 0600); err != nil {
+		return m, err
 	}
 	return m, nil
 }
