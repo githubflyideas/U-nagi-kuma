@@ -109,7 +109,7 @@ func (s *Server) row(name string) (rowJSON, bool) {
 	if !ok {
 		return rowJSON{}, false
 	}
-	return s.rowFrom(r, s.app.Config().Config, s.incidentIndex()), true
+	return s.rowFrom(r, s.app.EffectiveConfig(), s.incidentIndex()), true
 }
 
 func (s *Server) incidentIndex() map[int64]engine.Incident {
@@ -191,7 +191,7 @@ func (s *Server) rowBase(r engine.MonitorRow, cfg *config.Config, incs map[int64
 // target or group; key:value terms filter status, type, tag, group, depth,
 // scope; a leading '-' negates a term.
 func (s *Server) monitors(w http.ResponseWriter, r *http.Request) (any, error) {
-	cfg := s.app.Config().Config
+	cfg := s.app.EffectiveConfig()
 	incs := s.incidentIndex()
 	q := parseQuery(r.URL.Query().Get("q"))
 	var out []rowJSON
@@ -224,7 +224,7 @@ func (s *Server) monitors(w http.ResponseWriter, r *http.Request) (any, error) {
 	} else if err != nil || limit < 1 {
 		return nil, Errorf(http.StatusBadRequest, CodeInvalid, "limit must be a positive integer")
 	}
-	limit = min(limit, s.app.Config().Config.Tunables.Int("api.page-max"))
+	limit = min(limit, s.app.EffectiveConfig().Tunables.Int("api.page-max"))
 	var after int64
 	if c := qv.Get("cursor"); c != "" {
 		if after, err = strconv.ParseInt(c, 10, 64); err != nil || after < 0 {
@@ -404,7 +404,7 @@ func (s *Server) heartbeats(w http.ResponseWriter, r *http.Request) (any, error)
 		if !seesMonitor(r, n) {
 			continue
 		}
-		c, err := s.app.Store().Cells(n, now.Add(-d), now, cells)
+		c, err := s.app.Store().Cells(n, now.Add(-d), now, cells, s.historySite(r))
 		if err != nil {
 			return nil, err
 		}
@@ -482,7 +482,7 @@ func (s *Server) monitorDetail(w http.ResponseWriter, r *http.Request) (any, err
 	out["coverage"] = cov
 	out["uptime_partial"] = partial // the figure so far, for windows watched too briefly
 	out["downtime_30d_s"] = down
-	ev, _ := s.app.Store().EvidenceOf(name, 5)
+	ev, _ := s.app.Store().EvidenceOf(name, 5, s.historySite(r))
 	type evRow struct {
 		At     time.Time       `json:"at"`
 		Node   string          `json:"node"`
@@ -503,7 +503,7 @@ func (s *Server) monitorLatency(w http.ResponseWriter, r *http.Request) (any, er
 		return nil, notFound("monitor")
 	}
 	_, d := rangeOf(r)
-	pts, err := s.app.Store().Latency(s.monitorParam(r), s.now().Add(-d), s.now())
+	pts, err := s.app.Store().Latency(s.monitorParam(r), s.now().Add(-d), s.now(), s.historySite(r))
 	if err != nil {
 		return nil, err
 	}
@@ -514,13 +514,13 @@ func (s *Server) monitorTimeline(w http.ResponseWriter, r *http.Request) (any, e
 	if !seesMonitor(r, s.monitorParam(r)) {
 		return nil, notFound("monitor")
 	}
-	return s.app.Store().Events(store.EventFilter{Monitor: s.monitorParam(r), Before: qInt64(r, "before"), Limit: qInt(r, "limit", 50)})
+	return s.app.Store().Events(store.EventFilter{Site: s.historySite(r), Monitor: s.monitorParam(r), Before: qInt64(r, "before"), Limit: qInt(r, "limit", 50)})
 }
 
 func (s *Server) monitorPush(w http.ResponseWriter, r *http.Request) (any, error) {
 	name := s.monitorParam(r)
-	m := s.app.Config().Config.FindMonitor(name)
-	if m == nil || m.Type != "PUSH" || !seesMonitor(r, name) {
+	m := s.app.EffectiveConfig().FindMonitor(name)
+	if m == nil || m.Type != "PUSH" || !s.app.IsPushReceiver(name) || !seesMonitor(r, name) {
 		return nil, notFound("push monitor")
 	}
 	tok, err := s.app.Store().PushToken(name)
@@ -532,7 +532,7 @@ func (s *Server) monitorPush(w http.ResponseWriter, r *http.Request) (any, error
 
 func (s *Server) monitorPushRotate(w http.ResponseWriter, r *http.Request) (any, error) {
 	name := s.monitorParam(r)
-	if m := s.app.Config().Config.FindMonitor(name); m == nil || m.Type != "PUSH" || !seesMonitor(r, name) {
+	if m := s.app.EffectiveConfig().FindMonitor(name); m == nil || m.Type != "PUSH" || !s.app.IsPushReceiver(name) || !seesMonitor(r, name) {
 		return nil, notFound("push monitor")
 	}
 	if !s.allowsMonitor(authOf(r), name) {
@@ -644,7 +644,7 @@ func (s *Server) monitorCreate(w http.ResponseWriter, r *http.Request) (any, err
 	if err := teamOfNewRecord(authOf(r), &spec); err != nil {
 		return nil, err
 	}
-	if s.app.Config().Config.HasName(spec.Name) {
+	if s.app.EffectiveConfig().HasName(spec.Name) {
 		return nil, Errorf(http.StatusConflict, CodeConflict, "%s already exists", spec.Name)
 	}
 	if !config.IsMonitorType(spec.Type) {
@@ -679,7 +679,7 @@ func (s *Server) monitorUpdate(w http.ResponseWriter, r *http.Request) (any, err
 	if err := decodeJSON(r, s.maxBody(), &req); err != nil {
 		return nil, err
 	}
-	if s.app.Config().Config.FindMonitor(name) == nil || !seesMonitor(r, name) {
+	if s.app.EffectiveConfig().FindMonitor(name) == nil || !seesMonitor(r, name) {
 		return nil, notFound("monitor")
 	}
 	spec := req.spec()
@@ -708,7 +708,7 @@ func (s *Server) monitorUpdate(w http.ResponseWriter, r *http.Request) (any, err
 
 func (s *Server) monitorDelete(w http.ResponseWriter, r *http.Request) (any, error) {
 	name := s.monitorParam(r)
-	if s.app.Config().Config.FindMonitor(name) == nil || !seesMonitor(r, name) {
+	if s.app.EffectiveConfig().FindMonitor(name) == nil || !seesMonitor(r, name) {
 		return nil, notFound("monitor")
 	}
 	if !s.allowsMonitor(authOf(r), name) {
@@ -736,7 +736,7 @@ func (s *Server) monitorBulkDelete(w http.ResponseWriter, r *http.Request) (any,
 	if len(req.Names) == 0 {
 		return nil, Errorf(http.StatusBadRequest, CodeInvalid, "no monitors given")
 	}
-	cfg := s.app.Config().Config
+	cfg := s.app.EffectiveConfig()
 	for _, name := range req.Names {
 		if cfg.FindMonitor(name) == nil || !seesMonitor(r, name) {
 			return nil, notFound("monitor")
@@ -783,7 +783,7 @@ func (s *Server) monitorBulkPause(w http.ResponseWriter, r *http.Request) (any, 
 	if len(req.Names) == 0 {
 		return nil, Errorf(http.StatusBadRequest, CodeInvalid, "no monitors given")
 	}
-	cfg := s.app.Config().Config
+	cfg := s.app.EffectiveConfig()
 	var names, skipped []string
 	seen := map[string]bool{}
 	for _, name := range req.Names {
@@ -927,7 +927,7 @@ func (s *Server) monitorCheck(w http.ResponseWriter, r *http.Request) (any, erro
 	case errors.Is(err, engine.ErrNotFound):
 		return nil, notFound("monitor")
 	case errors.Is(err, engine.ErrRateLimited):
-		return nil, rateLimited(s.app.Config().Config.Tunables.Duration("probe.check-now-rate"))
+		return nil, rateLimited(s.app.EffectiveConfig().Tunables.Duration("probe.check-now-rate"))
 	case err != nil:
 		return nil, err
 	}
@@ -1136,7 +1136,7 @@ func probeName(target string, o map[string]string) string { return probe.PluginO
 // the monitor was watched for less than uptime.min-coverage of it, so a
 // monitor added an hour ago does not claim a 30-day figure.
 func (s *Server) shownRatio(u store.Uptime) *float64 {
-	if u.Coverage < s.app.Config().Config.Tunables.Float("uptime.min-coverage") {
+	if u.Coverage < s.app.EffectiveConfig().Tunables.Float("uptime.min-coverage") {
 		return nil
 	}
 	return u.Ratio

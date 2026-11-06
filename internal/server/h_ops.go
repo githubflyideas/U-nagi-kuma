@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"github.com/githubflyideas/unagikuma/internal/app"
 	"net/http"
 	"sort"
 	"strconv"
@@ -82,7 +83,7 @@ func (s *Server) overview(w http.ResponseWriter, r *http.Request) (any, error) {
 		AvgMS       float64  `json:"avg_ms"`
 		LastError   string   `json:"last_error,omitempty"`
 	}
-	cfg := s.app.Config().Config
+	cfg := s.app.EffectiveConfig()
 	stats := map[string]*ch{}
 	var chans []*ch
 	for _, c := range cfg.Channels {
@@ -212,7 +213,7 @@ func (s *Server) incidents(w http.ResponseWriter, r *http.Request) (any, error) 
 	default:
 		state = "all"
 	}
-	return s.app.Store().IncidentsOf(state, r.URL.Query().Get("monitor"), teamOf(r).list(), qInt64(r, "before"), qInt(r, "limit", 100))
+	return s.app.Store().IncidentsOf(state, r.URL.Query().Get("monitor"), teamOf(r).list(), qInt64(r, "before"), qInt(r, "limit", 100), s.historySite(r))
 }
 
 func pathID(r *http.Request) (int64, error) {
@@ -224,6 +225,9 @@ func pathID(r *http.Request) (int64, error) {
 }
 
 func engineErr(err error) error {
+	if errors.Is(err, app.ErrSourceUnavailable) {
+		return Errorf(http.StatusServiceUnavailable, CodeConflict, "incident source unavailable")
+	}
 	if errors.Is(err, engine.ErrNotFound) {
 		return notFound("incident")
 	}
@@ -243,23 +247,10 @@ func (s *Server) incidentAck(w http.ResponseWriter, r *http.Request) (any, error
 		ExpiresS int    `json:"expires_s"`
 	}
 	_ = decodeJSON(r, s.maxBody(), &req)
-	if err := s.app.Engine().Ack(id, authOf(r).user, req.Comment, time.Duration(req.ExpiresS)*time.Second); err != nil {
+	if err := s.app.ActOnIncident(r.Context(), id, app.IncidentAction{Action: "ack", Actor: authOf(r).user, Comment: req.Comment, DurationS: req.ExpiresS}, incidentVia(r)); err != nil {
 		return nil, engineErr(err)
 	}
-	s.recordAck(r, id, "ack", req.Comment)
 	return nil, nil
-}
-
-// recordAck appends to the incident's acknowledgement history.
-func (s *Server) recordAck(r *http.Request, id int64, action, comment string) {
-	ai := authOf(r)
-	via := "api"
-	if ai.session {
-		via = "web"
-	}
-	if err := s.app.Store().AddAck(id, store.AckRecord{At: s.now(), By: ai.user, Via: via, Action: action, Comment: comment}); err != nil {
-		s.log.Warn("ack history", "incident", id, "err", err)
-	}
 }
 
 func (s *Server) incidentUnack(w http.ResponseWriter, r *http.Request) (any, error) {
@@ -270,10 +261,9 @@ func (s *Server) incidentUnack(w http.ResponseWriter, r *http.Request) (any, err
 	if err := s.incidentGate(r, id); err != nil {
 		return nil, err
 	}
-	if err := s.app.Engine().Unack(id, authOf(r).user); err != nil {
+	if err := s.app.ActOnIncident(r.Context(), id, app.IncidentAction{Action: "unack", Actor: authOf(r).user}, incidentVia(r)); err != nil {
 		return nil, engineErr(err)
 	}
-	s.recordAck(r, id, "unack", "")
 	return nil, nil
 }
 
@@ -291,11 +281,7 @@ func (s *Server) incidentSilence(w http.ResponseWriter, r *http.Request) (any, e
 	if err := decodeJSON(r, s.maxBody(), &req); err != nil {
 		return nil, err
 	}
-	until := time.Time{}
-	if req.DurationS > 0 {
-		until = s.now().Add(time.Duration(req.DurationS) * time.Second)
-	}
-	return nil, engineErr(s.app.Engine().Silence(id, authOf(r).user, until))
+	return nil, engineErr(s.app.ActOnIncident(r.Context(), id, app.IncidentAction{Action: "silence", Actor: authOf(r).user, DurationS: req.DurationS}, incidentVia(r)))
 }
 
 func (s *Server) incidentBulk(w http.ResponseWriter, r *http.Request) (any, error) {
@@ -313,17 +299,10 @@ func (s *Server) incidentBulk(w http.ResponseWriter, r *http.Request) (any, erro
 		if s.incidentGate(r, id) != nil {
 			continue
 		}
-		var err error
-		switch req.Action {
-		case "ack":
-			if err = s.app.Engine().Ack(id, authOf(r).user, req.Comment, 0); err == nil {
-				s.recordAck(r, id, "ack", req.Comment)
-			}
-		case "silence":
-			err = s.app.Engine().Silence(id, authOf(r).user, s.now().Add(time.Duration(req.DurationS)*time.Second))
-		default:
+		if req.Action != "ack" && req.Action != "silence" {
 			return nil, Errorf(http.StatusBadRequest, CodeInvalid, "action must be ack or silence")
 		}
+		err := s.app.ActOnIncident(r.Context(), id, app.IncidentAction{Action: req.Action, Actor: authOf(r).user, Comment: req.Comment, DurationS: req.DurationS}, incidentVia(r))
 		if err == nil {
 			done++
 		}
@@ -339,12 +318,12 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) (any, error) {
 	if t := q.Get("type"); t != "" {
 		types = strings.Split(strings.ToUpper(t), ",")
 	}
-	return s.app.Store().Events(store.EventFilter{Monitor: q.Get("monitor"), Only: teamOf(r).list(), Types: types, Severity: q.Get("severity"),
+	return s.app.Store().Events(store.EventFilter{Site: s.historySite(r), Monitor: q.Get("monitor"), Only: teamOf(r).list(), Types: types, Severity: q.Get("severity"),
 		Before: qInt64(r, "before"), Limit: qInt(r, "limit", 100)})
 }
 
 func (s *Server) notifications(w http.ResponseWriter, r *http.Request) (any, error) {
-	return s.app.Store().Deliveries(r.URL.Query().Get("filter"), qInt64(r, "before"), qInt(r, "limit", 100))
+	return s.app.Store().Deliveries(r.URL.Query().Get("filter"), qInt64(r, "before"), qInt(r, "limit", 100), s.historySite(r))
 }
 
 // ---- configuration ----
@@ -391,7 +370,7 @@ func (s *Server) configValidate(w http.ResponseWriter, r *http.Request) (any, er
 	}
 	out := map[string]any{"diagnostics": diags, "diff": config.UnifiedDiff(s.app.Config().Text, req.Text)}
 	if !config.HasErrors(diags) {
-		changes := config.Diff(s.app.Config().Config, cfg)
+		changes := config.Diff(s.app.EffectiveConfig(), cfg)
 		if changes == nil {
 			changes = []config.Change{}
 		}
@@ -460,4 +439,21 @@ func (s *Server) configReload(w http.ResponseWriter, r *http.Request) (any, erro
 		return nil, s.configError(err)
 	}
 	return s.saved(st), nil
+}
+
+func incidentVia(r *http.Request) string {
+	if ai := authOf(r); ai != nil && ai.session {
+		return "web"
+	}
+	return "api"
+}
+func (s *Server) historySite(r *http.Request) string {
+	site := r.URL.Query().Get("site")
+	if site == s.app.SiteName() {
+		return ""
+	}
+	return site
+}
+func (s *Server) historySites(w http.ResponseWriter, r *http.Request) (any, error) {
+	return s.app.Store().HistorySites()
 }

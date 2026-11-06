@@ -29,7 +29,7 @@ func (s *Server) agentMerge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.Method == http.MethodGet {
-		marks, err := s.app.MergeMarks(node)
+		marks, err := s.app.MergeMarks(node, r.URL.Query().Get("epoch"))
 		if err != nil {
 			writeError(w, err)
 			return

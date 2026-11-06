@@ -37,7 +37,7 @@ func (s *Server) statusPages(w http.ResponseWriter, r *http.Request) (any, error
 		return nil, err
 	}
 	out := []pageJSON{}
-	for _, sp := range s.app.Config().Config.StatusPages {
+	for _, sp := range s.app.EffectiveConfig().StatusPages {
 		c := counts[sp.Name]
 		out = append(out, pageJSON{sp.Name, sp.Title, s.pageURL(sp), sp.Domain, sp.Subscribe, len(s.published(sp)), c[0], c[1]})
 	}
@@ -170,7 +170,7 @@ func (s *Server) announced(sp *config.StatusPage, a store.Announcement, notifySu
 
 // subscribeChannel is the page's e-mail channel with its secrets resolved.
 func (s *Server) subscribeChannel(sp *config.StatusPage) (notify.Channel, error) {
-	c := s.app.Config().Config.FindChannel(sp.Subscribe)
+	c := s.app.EffectiveConfig().FindChannel(sp.Subscribe)
 	if c == nil || c.Kind != "email" {
 		return notify.Channel{}, fmt.Errorf("subscribe=%s is not an email channel", sp.Subscribe)
 	}
@@ -193,7 +193,7 @@ func (s *Server) mail(ch notify.Channel, to, title, body string) {
 		c.Opts[k] = v
 	}
 	c.Opts["to"] = to
-	ctx, cancel := context.WithTimeout(context.Background(), s.app.Config().Config.Tunables.Duration("notify.channel-timeout"))
+	ctx, cancel := context.WithTimeout(context.Background(), s.app.EffectiveConfig().Tunables.Duration("notify.channel-timeout"))
 	defer cancel()
 	m := &notify.Message{Kind: "STATUS", Title: title, Body: body, Time: s.now()}
 	if a := s.app.SendDirect(ctx, c, m); !a.OK {
@@ -233,7 +233,7 @@ func (s *Server) subscribe(w http.ResponseWriter, r *http.Request) {
 		writeError(w, Errorf(http.StatusBadRequest, CodeInvalid, "enter an e-mail address"))
 		return
 	}
-	sub, err := s.app.Store().Subscribe(sp.Name, addr.Address, s.app.Config().Config.Tunables.Int("statuspage.max-pending"))
+	sub, err := s.app.Store().Subscribe(sp.Name, addr.Address, s.app.EffectiveConfig().Tunables.Int("statuspage.max-pending"))
 	if errors.Is(err, store.ErrTooManyPending) {
 		writeError(w, Errorf(http.StatusServiceUnavailable, CodeInvalid, "too many subscriptions are waiting for confirmation; try again later"))
 		return
@@ -350,7 +350,7 @@ func (s *Server) domainPage(r *http.Request) *config.StatusPage {
 		host = h
 	}
 	host = strings.ToLower(strings.TrimSuffix(host, "."))
-	for _, sp := range s.app.Config().Config.StatusPages {
+	for _, sp := range s.app.EffectiveConfig().StatusPages {
 		if sp.Domain != "" && sp.Domain == host {
 			return sp
 		}
@@ -409,7 +409,7 @@ func (s *Server) statusPageCreate(w http.ResponseWriter, r *http.Request) (any, 
 	if _, err := config.ParseSelector(req.Select); err != nil {
 		return nil, Errorf(http.StatusBadRequest, CodeInvalid, "select: %v", err)
 	}
-	if s.app.Config().Config.HasName(req.Name) {
+	if s.app.EffectiveConfig().HasName(req.Name) {
 		return nil, Errorf(http.StatusConflict, CodeConflict, "%s already exists", req.Name)
 	}
 	spec := config.RecordSpec{Name: req.Name, Type: "STATUSPAGE", Target: strings.TrimSpace(req.Title), Opts: []config.Opt{{Key: "select", Value: req.Select}}}

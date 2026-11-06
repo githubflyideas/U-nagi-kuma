@@ -19,12 +19,13 @@ import (
 
 // MergeTables are the tables merged, in order (incidents first: the others
 // refer to them).
-var MergeTables = []string{"incidents", "events", "decisions", "deliveries", "audit", "rounds"}
+var MergeTables = []string{"incidents", "events", "decisions", "deliveries", "audit", "evidence", "acks", "rounds"}
 
 // MergeBatch is one site's records above the master's marks. Each row maps
 // column names to values; "id" is the origin id. Rounds carry the monitor
 // name ("monitor") instead of this server's monitor id.
 type MergeBatch struct {
+	Epoch  string                      `json:"epoch,omitempty"`
 	Site   string                      `json:"site"`
 	Term   uint64                      `json:"term"`
 	Tables map[string][]map[string]any `json:"tables"`
@@ -224,7 +225,7 @@ func (s *Store) Merge(b MergeBatch) (MergeResult, error) {
 	if b.Site == "" {
 		return res, errors.New("a merge needs the site it comes from")
 	}
-	marks, err := s.MergeMarks(b.Site)
+	marks, err := s.MergeMarks(MergeScope(b.Site, b.Epoch))
 	if err != nil {
 		return res, err
 	}
@@ -244,10 +245,10 @@ func (s *Store) Merge(b MergeBatch) (MergeResult, error) {
 			return id
 		}
 		var id int64
-		_ = tx.QueryRow(`SELECT local_id FROM merged WHERE site=? AND tbl='incidents' AND origin_id=?`, b.Site, origin).Scan(&id)
+		_ = tx.QueryRow(`SELECT local_id FROM merged WHERE site=? AND tbl='incidents' AND origin_id=?`, MergeScope(b.Site, b.Epoch), origin).Scan(&id)
 		return id
 	}
-	for _, t := range []string{"incidents", "events", "decisions", "deliveries", "audit"} {
+	for _, t := range []string{"incidents", "events", "decisions", "deliveries", "audit", "evidence", "acks"} {
 		rows := b.Tables[t]
 		if len(rows) == 0 {
 			continue
@@ -266,7 +267,7 @@ func (s *Store) Merge(b MergeBatch) (MergeResult, error) {
 			last = max(last, origin)
 			if t == "audit" {
 				if _, err := tx.Exec(`INSERT OR IGNORE INTO site_audit(site,term,origin_id,at,actor,action,target,area,detail,addr,risk,prev,hash)
-					VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`, b.Site, b.Term, origin, num(r["at"]), str(r["actor"]), str(r["action"]),
+					VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`, MergeScope(b.Site, b.Epoch), b.Term, origin, num(r["at"]), str(r["actor"]), str(r["action"]),
 					str(r["target"]), str(r["area"]), str(r["detail"]), str(r["addr"]), str(r["risk"]), str(r["prev"]), str(r["hash"])); err != nil {
 					return res, fmt.Errorf("merge audit: %w", err)
 				}
@@ -280,12 +281,55 @@ func (s *Store) Merge(b MergeBatch) (MergeResult, error) {
 				}
 			}
 			row["site"] = b.Site
+			if str(row["source_epoch"]) == "" {
+				row["source_epoch"] = b.Epoch
+			}
 			switch t {
 			case "incidents":
+				if num(row["source_id"]) == 0 {
+					row["source_id"] = origin
+				}
+				if node := str(row["source_node"]); node != "" && node != b.Site {
+					return res, errors.New("incident source differs from authenticated site")
+				}
+				row["source_node"] = b.Site
+				if str(row["source_epoch"]) == "" {
+					if str(row["source_epoch"]) == "" {
+						row["source_epoch"] = b.Epoch
+					}
+				}
 				row["term"] = int64(b.Term)
 				row["closed"] = 1 // the other site's view: history here, never reopened
+			case "evidence":
+				if str(row["source_epoch"]) == "" {
+					row["source_epoch"] = b.Epoch
+				}
+				if num(row["original_id"]) == 0 {
+					row["original_id"] = origin
+				}
+			case "acks":
+				if str(row["source_epoch"]) == "" {
+					row["source_epoch"] = b.Epoch
+				}
+				if num(row["original_id"]) == 0 {
+					row["original_id"] = origin
+				}
+				row["incident_id"] = lookupInc(num(r["incident_id"]))
 			case "decisions", "deliveries":
 				row["incident_id"] = lookupInc(num(r["incident_id"]))
+			}
+			if t == "incidents" && str(row["source_epoch"]) != "" {
+				var prior int64
+				if err := tx.QueryRow(`SELECT id FROM incidents WHERE source_node=? AND source_epoch=? AND source_id=? LIMIT 1`, b.Site, str(row["source_epoch"]), num(row["source_id"])).Scan(&prior); err == nil {
+					incMap[origin] = prior
+					if _, err := tx.Exec(`INSERT OR IGNORE INTO merged(site,tbl,origin_id,local_id) VALUES(?,'incidents',?,?)`, MergeScope(b.Site, b.Epoch), origin, prior); err != nil {
+						return res, err
+					}
+					res.Skipped[t]++
+					continue
+				} else if err != sql.ErrNoRows {
+					return res, err
+				}
 			}
 			id, err := insertRow(tx, t, row)
 			if err != nil {
@@ -293,16 +337,19 @@ func (s *Store) Merge(b MergeBatch) (MergeResult, error) {
 			}
 			if t == "incidents" {
 				incMap[origin] = id
-				if _, err := tx.Exec(`INSERT OR IGNORE INTO merged(site,tbl,origin_id,local_id) VALUES(?,?,?,?)`, b.Site, t, origin, id); err != nil {
+				if _, err := tx.Exec(`INSERT OR IGNORE INTO merged(site,tbl,origin_id,local_id) VALUES(?,?,?,?)`, MergeScope(b.Site, b.Epoch), t, origin, id); err != nil {
 					return res, err
 				}
 			}
 			res.Added[t]++
 		}
 		if _, err := tx.Exec(`INSERT INTO merge_marks(site,tbl,last_id) VALUES(?,?,?)
-			ON CONFLICT(site,tbl) DO UPDATE SET last_id=max(last_id,excluded.last_id)`, b.Site, t, last); err != nil {
+			ON CONFLICT(site,tbl) DO UPDATE SET last_id=max(last_id,excluded.last_id)`, MergeScope(b.Site, b.Epoch), t, last); err != nil {
 			return res, err
 		}
+	}
+	if _, err := tx.Exec(`DELETE FROM evidence WHERE site=? AND id NOT IN (SELECT id FROM (SELECT id,ROW_NUMBER() OVER(PARTITION BY monitor,node,source_epoch ORDER BY id DESC) AS rn FROM evidence WHERE site=?) WHERE rn<=20)`, b.Site, b.Site); err != nil {
+		return res, err
 	}
 	if err := tx.Commit(); err != nil {
 		return res, err
@@ -349,7 +396,7 @@ func (s *Store) mergeRounds(b MergeBatch, mark int64, res *MergeResult) error {
 		res.Added["rounds"]++
 	}
 	if _, err := tx.Exec(`INSERT INTO merge_marks(site,tbl,last_id) VALUES(?,'rounds',?)
-		ON CONFLICT(site,tbl) DO UPDATE SET last_id=max(last_id,excluded.last_id)`, b.Site, last); err != nil {
+		ON CONFLICT(site,tbl) DO UPDATE SET last_id=max(last_id,excluded.last_id)`, MergeScope(b.Site, b.Epoch), last); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -502,4 +549,12 @@ func (s *Store) DismissDiverged(id int64) error {
 	defer s.wmu.Unlock()
 	_, err := s.core.Exec(`DELETE FROM diverged_configs WHERE id=?`, id)
 	return err
+}
+
+// MergeScope is an internal provenance key, not a display/site name.
+func MergeScope(site, epoch string) string {
+	if epoch == "" {
+		return site
+	}
+	return site + "@" + epoch
 }

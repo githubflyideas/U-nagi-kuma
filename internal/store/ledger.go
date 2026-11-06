@@ -15,13 +15,15 @@ import (
 // from and to, oldest first.
 func (s *Store) Decisions(incident int64, monitor string, from, to time.Time) ([]engine.Decision, error) {
 	s.Flush()
-	q := `SELECT data FROM decisions WHERE incident_id=?`
-	args := []any{incident}
+	var site, epoch string
+	_ = s.core.QueryRow(`SELECT site,source_epoch FROM incidents WHERE id=?`, incident).Scan(&site, &epoch)
+	q := `SELECT data FROM decisions WHERE site=? AND (incident_id=?`
+	args := []any{site, incident}
 	if monitor != "" {
-		q += ` OR (incident_id=0 AND monitor=? AND at>=? AND at<=?)`
-		args = append(args, monitor, ms(from), ms(to))
+		q += ` OR (incident_id=0 AND monitor=? AND at>=? AND at<=? AND source_epoch=?)`
+		args = append(args, monitor, ms(from), ms(to), epoch)
 	}
-	rows, err := s.core.Query(q+` ORDER BY at, id LIMIT 5000`, args...)
+	rows, err := s.core.Query(q+`) ORDER BY at, id LIMIT 5000`, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -66,10 +68,14 @@ func (s *Store) DeliveriesOf(incident int64) ([]DeliveryRow, error) {
 
 // EventsBetween returns events of the given types (all when none) in
 // [from, to], oldest first, at most limit.
-func (s *Store) EventsBetween(from, to time.Time, types []string, limit int) ([]EventRow, error) {
+func (s *Store) EventsBetween(from, to time.Time, types []string, limit int, sites ...string) ([]EventRow, error) {
 	s.Flush()
-	q := `SELECT id,at,type,severity,monitor,message,data FROM events WHERE at>=? AND at<=?`
-	args := []any{ms(from), ms(to)}
+	q := `SELECT id,at,type,severity,monitor,message,data FROM events WHERE at>=? AND at<=? AND site=?`
+	args := []any{ms(from), ms(to), selectedSite(sites)}
+	if len(sites) > 1 && sites[0] != "" {
+		q += " AND source_epoch=?"
+		args = append(args, sites[1])
+	}
 	if len(types) > 0 {
 		q += " AND type IN (?" + strings.Repeat(",?", len(types)-1) + ")"
 		for _, t := range types {
@@ -109,14 +115,19 @@ type RoundRow struct {
 
 // Rounds returns a monitor's rounds in [from, to], oldest first (only
 // while raw history is kept), at most limit.
-func (s *Store) Rounds(monitor string, from, to time.Time, limit int) ([]RoundRow, error) {
+func (s *Store) Rounds(monitor string, from, to time.Time, limit int, sites ...string) ([]RoundRow, error) {
 	s.Flush()
 	mid := s.MonitorID(monitor)
 	if mid == 0 {
 		return nil, nil
 	}
-	rows, err := s.hist.Query(fmt.Sprintf(`SELECT at,st,flags,reason FROM rounds WHERE mid=? AND at>=? AND at<=? ORDER BY at LIMIT %d`,
-		max(1, min(limit, 20000))), mid, ms(from), ms(to))
+	q := `SELECT at,st,flags,reason FROM rounds WHERE mid=? AND at>=? AND at<=? AND site=?`
+	args := []any{mid, ms(from), ms(to), selectedSite(sites)}
+	if len(sites) > 1 && sites[0] != "" {
+		q += " AND source_epoch=?"
+		args = append(args, sites[1])
+	}
+	rows, err := s.hist.Query(q+fmt.Sprintf(" ORDER BY at LIMIT %d", max(1, min(limit, 20000))), args...)
 	if err != nil {
 		return nil, err
 	}

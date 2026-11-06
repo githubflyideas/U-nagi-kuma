@@ -115,7 +115,7 @@ func (s *Server) writeAudit(pattern string, r *http.Request, ai *authInfo, a *au
 		e.Target = pathTarget(pattern, r)
 	}
 	if e.Area == "" && strings.Contains(pattern, "/monitors/{name}") {
-		if m := s.app.Config().Config.FindMonitor(e.Target); m != nil {
+		if m := s.app.EffectiveConfig().FindMonitor(e.Target); m != nil {
 			e.Area = m.Area
 		}
 	}
@@ -144,7 +144,7 @@ func (s *Server) auditLog(w http.ResponseWriter, r *http.Request) (any, error) {
 	if site := r.URL.Query().Get("site"); site != "" {
 		// Another site's own log, as merged after a split.
 		limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-		items, err := s.app.Store().SiteAudit(site, limit)
+		items, err := s.app.Store().SiteAudit(store.MergeScope(site, r.URL.Query().Get("epoch")), limit)
 		if err != nil {
 			return nil, err
 		}
@@ -210,7 +210,7 @@ func (s *Server) auditExport(w http.ResponseWriter, r *http.Request) (any, error
 // auditVerify checks the hash chain.
 func (s *Server) auditVerify(w http.ResponseWriter, r *http.Request) (any, error) {
 	if site := r.URL.Query().Get("site"); site != "" {
-		n, err := s.app.Store().VerifySiteAudit(site)
+		n, err := s.app.Store().VerifySiteAudit(store.MergeScope(site, r.URL.Query().Get("epoch")))
 		res := map[string]any{"ok": err == nil, "entries": n, "head": ""}
 		if err != nil {
 			res["problem"] = err.Error()

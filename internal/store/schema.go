@@ -137,6 +137,19 @@ var coreMigrations = []string{
 	`CREATE TABLE site_observations(node TEXT NOT NULL,monitor TEXT NOT NULL,epoch TEXT NOT NULL,seq INTEGER NOT NULL,data TEXT NOT NULL,PRIMARY KEY(node,monitor));
  CREATE INDEX site_observations_delta ON site_observations(node,epoch,seq);
  CREATE TABLE site_observation_cursors(node TEXT PRIMARY KEY,epoch TEXT NOT NULL,seq INTEGER NOT NULL);`,
+	`ALTER TABLE incidents ADD COLUMN source_node TEXT NOT NULL DEFAULT '';
+ ALTER TABLE incidents ADD COLUMN source_epoch TEXT NOT NULL DEFAULT '';
+ ALTER TABLE incidents ADD COLUMN source_id INTEGER NOT NULL DEFAULT 0;
+ CREATE INDEX incidents_source ON incidents(source_node,source_epoch,source_id);
+ ALTER TABLE events ADD COLUMN source_epoch TEXT NOT NULL DEFAULT '';
+ ALTER TABLE decisions ADD COLUMN source_epoch TEXT NOT NULL DEFAULT '';
+ ALTER TABLE deliveries ADD COLUMN source_epoch TEXT NOT NULL DEFAULT '';
+ ALTER TABLE evidence ADD COLUMN site TEXT NOT NULL DEFAULT '';
+ ALTER TABLE evidence ADD COLUMN source_epoch TEXT NOT NULL DEFAULT '';
+ ALTER TABLE evidence ADD COLUMN original_id INTEGER NOT NULL DEFAULT 0;
+ ALTER TABLE acks ADD COLUMN site TEXT NOT NULL DEFAULT '';
+ ALTER TABLE acks ADD COLUMN source_epoch TEXT NOT NULL DEFAULT '';
+ ALTER TABLE acks ADD COLUMN original_id INTEGER NOT NULL DEFAULT 0;`,
 }
 
 var historyMigrations = []string{
@@ -160,6 +173,7 @@ var historyMigrations = []string{
 		deg_s REAL NOT NULL, lat_sum REAL NOT NULL, lat_n INTEGER NOT NULL, lat_max REAL NOT NULL, PRIMARY KEY (mid, t)) WITHOUT ROWID;`,
 	`ALTER TABLE rounds ADD COLUMN site TEXT NOT NULL DEFAULT '';
 	CREATE TABLE merge_marks (site TEXT NOT NULL, tbl TEXT NOT NULL, last_id INTEGER NOT NULL, PRIMARY KEY (site, tbl));`,
+	`ALTER TABLE rounds ADD COLUMN source_epoch TEXT NOT NULL DEFAULT '';`,
 }
 
 func (s *Store) migrate() error {

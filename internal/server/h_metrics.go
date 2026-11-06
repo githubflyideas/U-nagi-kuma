@@ -38,7 +38,7 @@ func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
 // metrics serves the Prometheus text format. Scrapers authenticate with
 // an API token (read scope) unless api.metrics-public is on.
 func (s *Server) metrics(w http.ResponseWriter, r *http.Request) {
-	if !s.app.Config().Config.Tunables.Bool("api.metrics-public") {
+	if !s.app.EffectiveConfig().Tunables.Bool("api.metrics-public") {
 		ai, err := s.authenticate(r)
 		if err != nil {
 			writeError(w, err)
@@ -59,7 +59,7 @@ func (s *Server) metrics(w http.ResponseWriter, r *http.Request) {
 		}
 		return "{" + strings.Join(parts, ",") + "}"
 	}
-	cfg := s.app.Config().Config
+	cfg := s.app.EffectiveConfig()
 	rows := s.app.Engine().Rows()
 
 	help("unagikuma_build_info", "gauge", "Build version.")

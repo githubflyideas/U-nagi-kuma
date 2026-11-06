@@ -353,7 +353,7 @@ ntp  IN NTP  192.168.1.2
 	if got := strings.Join(find(c, "gw").Nodes, ","); got != "bj" {
 		t.Fatalf("named participants: %s", got)
 	}
-	if find(c, "backup").Nodes != nil {
+	if got := strings.Join(find(c, "backup").Nodes, ","); got != "unagikuma" {
 		t.Fatal("push monitors are judged where the pushes arrive")
 	}
 	if !find(c, "ntp").TimeSensitive || find(c, "web").TimeSensitive {

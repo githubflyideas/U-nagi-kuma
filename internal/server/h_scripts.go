@@ -34,7 +34,7 @@ type nodeScripts struct {
 // runs it reported. Scripts are copied to each node by its administrator;
 // this is where a node that lacks one, or has another version, shows.
 func (s *Server) scriptReport() ([]scriptCheck, []nodeScripts, int) {
-	cfg := s.app.Config().Config
+	cfg := s.app.EffectiveConfig()
 	self := cfg.MName
 	if self == "" {
 		self = "local"

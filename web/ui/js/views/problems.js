@@ -4,6 +4,8 @@ import { t, tn, dur, detailText } from '../i18n.js';
 import { get, post, del } from '../api.js';
 import { useFetch, useLive, Loading, ErrorBox, Empty, Ago, Dot, Modal, Field, toast, toastError, reasonText, enc, href, useDocTitle } from '../ui.js';
 
+import { HistorySite } from './history-site.js';
+
 // AckTrail lists every acknowledgement of an incident, oldest first: a
 // second ACK adds a line instead of replacing the first one's note.
 function AckTrail({ inc, tag, cls }) {
@@ -86,7 +88,9 @@ export function IncidentList({ items, reload, compact, selectable, selected, set
         <i class=${'sev ' + (inc.system ? 'sys' : statusOf(inc))}></i>
         <div class="body">
           ${link ? html`<a class="name" href=${link}>${inc.title}</a>` : html`<span class="name">${inc.title}</span>`}
-          ${inc.system && html` <span class="tag">${t('ui.inc.system')}</span>`}
+          ${inc.global_id && html`<span class="tag ltr">${inc.global_id}</span>`}
+ ${inc.history_only && html`<span class="tag warn">${t('ui.inc.archive')}</span>`}
+ ${inc.system && html` <span class="tag">${t('ui.inc.system')}</span>`}
           ${inc.site && html` <span class="tag" title=${t('ui.inc.site_hint')}>${t('ui.inc.site', { site: inc.site })}</span>`}
           <p>${reasonText(inc.reason, inc.detail)}</p>
           <${AckTrail} inc=${inc} tag="p" />
@@ -113,7 +117,9 @@ export function IncidentList({ items, reload, compact, selectable, selected, set
         <td style=${{ width: '18px' }}><${Dot} status=${statusOf(inc)} pulse=${open && !st.acked && !silenced} /></td>
         <td>
           <div class="row">${link ? html`<a class="name" href=${link}>${inc.title}</a>` : html`<span class="name">${inc.title}</span>`}
-            ${inc.system && html`<span class="tag">${t('ui.inc.system')}</span>`}
+            ${inc.global_id && html`<span class="tag ltr">${inc.global_id}</span>`}
+ ${inc.history_only && html`<span class="tag warn">${t('ui.inc.archive')}</span>`}
+ ${inc.system && html`<span class="tag">${t('ui.inc.system')}</span>`}
             ${inc.site && html`<span class="tag" title=${t('ui.inc.site_hint')}>${t('ui.inc.site', { site: inc.site })}</span>`}
             ${st.acked && html`<span class="tag">${t('ui.inc.acked_by', { who: st.acked_by })}</span>`}
             ${silenced && html`<span class="tag">${t('ui.inc.silenced_until')} <${Ago} at=${st.silenced_until} /></span>`}
@@ -172,7 +178,8 @@ const TABS = [['unhandled', 'ui.inc.tab.unhandled'], ['handled', 'ui.inc.tab.han
 export function Problems({ tab }) {
   useDocTitle(t('ui.nav.problems'));
   const [selected, setSelected] = useState(new Set());
-  const list = useFetch(() => get('/incidents?state=' + tab + '&limit=200'), [tab]);
+ const [site,setSite]=useState('');
+  const list = useFetch(() => get('/incidents?state=' + tab + '&limit=200&site='+encodeURIComponent(site)), [tab,site]);
   useLive(['incident', 'state'], list.reload, 800);
   const bulk = async (action) => {
     try {
@@ -184,7 +191,8 @@ export function Problems({ tab }) {
   };
   const selectable = tab === 'unhandled' || tab === 'handled';
   return html`<div class="page">
-    <div class="tabs">${TABS.map(([k, label]) => html`<a href=${'#/problems/' + k} class=${tab === k ? 'on' : ''}>${t(label)}</a>`)}</div>
+    ${(tab==='all'||tab==='resolved') && html`<${HistorySite} value=${site} onChange=${s=>{setSite(s);setSelected(new Set());}} />`}
+ <div class="tabs">${TABS.map(([k, label]) => html`<a href=${'#/problems/' + k} class=${tab === k ? 'on' : ''}>${t(label)}</a>`)}</div>
     ${(tab === 'unhandled' || tab === 'all') && html`<${SetupIssues} />`}
     ${selectable && selected.size > 0 && html`<div class="row card" style=${{ padding: '8px 12px' }}>
       <span>${tn('ui.inc.selected', selected.size)}</span><div class="spacer"></div>

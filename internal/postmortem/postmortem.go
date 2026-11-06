@@ -138,7 +138,7 @@ func Build(st *store.Store, id int64, o Options) (*Report, error) {
 	// checks kept running.
 	var rounds []store.RoundRow
 	if inc.Monitor != "" {
-		rounds, _ = st.Rounds(inc.Monitor, s.OpenedAt.Add(-6*time.Hour), end.Add(10*time.Minute), 20000)
+		rounds, _ = st.Rounds(inc.Monitor, s.OpenedAt.Add(-6*time.Hour), end.Add(10*time.Minute), 20000, inc.Site, inc.SourceEpoch)
 	}
 	r.FailedAt = failureStart(rounds, s.OpenedAt)
 
@@ -182,7 +182,7 @@ func Build(st *store.Store, id int64, o Options) (*Report, error) {
 		changes = own
 	}
 	r.Changes = changes
-	r.Liveness = liveness(st, rounds, r.FailedAt.Add(-time.Hour), end, o.Coverage.Interval, o)
+	r.Liveness = liveness(st, rounds, r.FailedAt.Add(-time.Hour), end, o.Coverage.Interval, o, inc.Site, inc.SourceEpoch)
 
 	r.Segments = []Segment{
 		r.leadUp(o, rounds, changes),
@@ -466,9 +466,9 @@ func boolInt(b bool) int {
 
 // liveness looks for stretches without check results and for what
 // happened to the monitoring server itself.
-func liveness(st *store.Store, rounds []store.RoundRow, from, to time.Time, interval time.Duration, o Options) Liveness {
+func liveness(st *store.Store, rounds []store.RoundRow, from, to time.Time, interval time.Duration, o Options, sites ...string) Liveness {
 	l := Liveness{From: from, To: to, Gaps: []Gap{}, Events: []Entry{}}
-	evs, _ := st.EventsBetween(from.Add(-LeadUp), to, []string{engine.EventSystem}, 2000)
+	evs, _ := st.EventsBetween(from.Add(-LeadUp), to, []string{engine.EventSystem}, 2000, sites...)
 	for _, ev := range evs {
 		code, _ := ev.Data["msg"].(string)
 		if code == "" {

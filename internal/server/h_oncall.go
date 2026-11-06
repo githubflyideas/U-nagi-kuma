@@ -13,7 +13,7 @@ import (
 // oncallView is the on-call page: every rotation with who is on call and
 // the next shifts, and the response times of the stats window.
 func (s *Server) oncallView(w http.ResponseWriter, r *http.Request) (any, error) {
-	ts := s.app.Config().Config.Tunables
+	ts := s.app.EffectiveConfig().Tunables
 	rots, err := s.app.OnCall(ts.Int("oncall.shifts-shown"))
 	if err != nil {
 		return nil, err

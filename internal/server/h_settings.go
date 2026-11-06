@@ -37,7 +37,7 @@ func isSecretKey(k string) bool {
 }
 
 func (s *Server) channels(w http.ResponseWriter, r *http.Request) (any, error) {
-	cfg := s.app.Config().Config
+	cfg := s.app.EffectiveConfig()
 	type chJSON struct {
 		Name    string            `json:"name"`
 		Kind    string            `json:"kind"`
@@ -100,7 +100,7 @@ func (s *Server) channelSave(w http.ResponseWriter, r *http.Request) (any, error
 		kind = "webhook"
 		req.Opts["preset"] = p
 	}
-	existing := s.app.Config().Config.FindChannel(req.Name)
+	existing := s.app.EffectiveConfig().FindChannel(req.Name)
 	keys := make([]string, 0, len(req.Opts))
 	for k := range req.Opts {
 		keys = append(keys, k)
@@ -133,7 +133,7 @@ func (s *Server) channelSave(w http.ResponseWriter, r *http.Request) (any, error
 
 func (s *Server) channelDelete(w http.ResponseWriter, r *http.Request) (any, error) {
 	name := r.PathValue("name")
-	if s.app.Config().Config.FindChannel(name) == nil {
+	if s.app.EffectiveConfig().FindChannel(name) == nil {
 		return nil, notFound("channel")
 	}
 	st, err := s.app.EditConfig(authOf(r).user, "delete channel "+name, ifMatch(r, name, func(f *config.File) error { return f.DeleteRecord(name) }))
@@ -160,7 +160,7 @@ func (s *Server) channelTest(w http.ResponseWriter, r *http.Request) (any, error
 		ch.Kind = "webhook"
 		ch.Opts["preset"] = p
 	}
-	if c := s.app.Config().Config.FindChannel(req.Name); c != nil && req.Kind == "" {
+	if c := s.app.EffectiveConfig().FindChannel(req.Name); c != nil && req.Kind == "" {
 		ch.Kind, ch.Opts = c.Kind, map[string]string{}
 		for k, v := range c.Opts {
 			ch.Opts[k] = v
@@ -174,7 +174,7 @@ func (s *Server) channelTest(w http.ResponseWriter, r *http.Request) (any, error
 		}
 		ch.Opts[k] = rv
 	}
-	ctx, cancel := context.WithTimeout(r.Context(), s.app.Config().Config.Tunables.Duration("notify.channel-timeout"))
+	ctx, cancel := context.WithTimeout(r.Context(), s.app.EffectiveConfig().Tunables.Duration("notify.channel-timeout"))
 	defer cancel()
 	return s.app.Engine().TestChannel(ctx, ch), nil
 }
@@ -202,7 +202,7 @@ func (s *Server) policies(w http.ResponseWriter, r *http.Request) (any, error) {
 		IssueChannels []string `json:"issue_channels,omitempty"`
 	}
 	issues := s.app.ChannelIssues()
-	cfg := s.app.Config().Config
+	cfg := s.app.EffectiveConfig()
 	out := []polJSON{}
 	for _, p := range cfg.Policies {
 		n := 0
@@ -261,7 +261,7 @@ func (s *Server) policyTest(w http.ResponseWriter, r *http.Request) (any, error)
 	}
 	_ = decodeJSON(r, s.maxBody(), &req)
 	name := r.PathValue("name")
-	if s.app.Config().Config.FindPolicy(name) == nil {
+	if s.app.EffectiveConfig().FindPolicy(name) == nil {
 		return nil, notFound("policy")
 	}
 	id, err := s.app.Engine().TestPolicy(name, req.FailFirst, authOf(r).user)
@@ -303,7 +303,7 @@ func (s *Server) policyPredict(w http.ResponseWriter, r *http.Request) (any, err
 // ---- tunables, keywords, system, settings ----
 
 func (s *Server) tunablesGet(w http.ResponseWriter, r *http.Request) (any, error) {
-	ts := s.app.Config().Config.Tunables
+	ts := s.app.EffectiveConfig().Tunables
 	over := ts.Overrides()
 	type tj struct {
 		Key        string `json:"key"`

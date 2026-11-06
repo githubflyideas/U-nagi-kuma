@@ -284,7 +284,7 @@ func (s *Server) teamOverview(r *http.Request) map[string]any {
 		What    string  `json:"what"`
 	}
 	expiring := []exp{}
-	certWin := float64(s.app.Config().Config.Tunables.Int("probe.cert-warn-days"))
+	certWin := float64(s.app.EffectiveConfig().Tunables.Int("probe.cert-warn-days"))
 	if certWin <= 0 {
 		certWin = 62
 	}
@@ -318,12 +318,12 @@ func (s *Server) teamOverview(r *http.Request) map[string]any {
 // follows configuration changes.
 func (s *Server) teamStream(user string) sseFilter {
 	var mu sync.Mutex
-	serial := s.app.Config().Serial
-	ts := teamScopeFor(s.app.Config().Config, user)
+	serial := s.app.EffectiveConfig().Serial
+	ts := teamScopeFor(s.app.EffectiveConfig(), user)
 	return func(ev sseEvent) (sseEvent, bool) {
 		mu.Lock()
-		if cur := s.app.Config(); cur.Serial != serial {
-			serial, ts = cur.Serial, teamScopeFor(cur.Config, user)
+		if cur := s.app.EffectiveConfig(); cur.Serial != serial {
+			serial, ts = cur.Serial, teamScopeFor(cur, user)
 		}
 		scope := ts
 		mu.Unlock()

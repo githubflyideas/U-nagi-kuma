@@ -101,8 +101,8 @@ func New(a *app.App, o Options) *Server {
 	boot := make([]byte, 4)
 	_, _ = rand.Read(boot)
 	s := &Server{app: a, opts: o, log: o.Log, mux: http.NewServeMux(), now: time.Now}
-	ts := a.Config().Config.Tunables
-	s.hub = NewHub(hex.EncodeToString(boot), 1024, func() int { return a.Config().Config.Tunables.Int("api.max-sse") })
+	ts := a.EffectiveConfig().Tunables
+	s.hub = NewHub(hex.EncodeToString(boot), 1024, func() int { return a.EffectiveConfig().Tunables.Int("api.max-sse") })
 	rate := func(key string) (float64, int) {
 		r := ts.Rate(key)
 		return r, max(1, int(r*10))
@@ -228,6 +228,10 @@ func (s *Server) handle(pattern, scope string, f apiFunc) {
 			}
 			r = r.WithContext(context.WithValue(r.Context(), ctxKey{}, ai))
 		}
+		if (scope == "write" || scope == "admin") && r.Method != "GET" && r.Method != "HEAD" && !s.app.ConfigAuthority() && sharedConfigRoute(r.URL.Path) {
+			writeError(w, Errorf(http.StatusConflict, CodeConflict, "configuration is read-only on this site"))
+			return
+		}
 		audit := r.Method != http.MethodGet && r.Method != http.MethodHead && scope != "read" && !noAudit[pattern]
 		var rec *auditRec
 		if audit {
@@ -302,7 +306,7 @@ func (s *Server) authenticate(r *http.Request) (*authInfo, error) {
 	ai := &authInfo{user: se.User.Username, userID: se.User.ID, csrf: se.CSRF, session: true,
 		scopes: roleScopes(se.User.Role), role: se.User.Role, areas: se.User.Areas}
 	if se.User.Role != store.RoleAdmin {
-		if ts := teamScopeFor(s.app.Config().Config, se.User.Username); ts != nil {
+		if ts := teamScopeFor(s.app.EffectiveConfig(), se.User.Username); ts != nil {
 			ai.team, ai.scopes = ts, ts.scopes()
 		}
 	}
@@ -342,8 +346,20 @@ func qInt64(r *http.Request, k string) int64 {
 	return n
 }
 
-func (s *Server) maxBody() int64 { return int64(s.app.Config().Config.Tunables.Int("api.max-body")) }
+func (s *Server) maxBody() int64 { return int64(s.app.EffectiveConfig().Tunables.Int("api.max-body")) }
 
 func notFound(what string) error {
 	return Errorf(http.StatusNotFound, CodeNotFound, "%s not found", what)
+}
+
+func sharedConfigRoute(path string) bool {
+	if strings.HasSuffix(path, "/test") || strings.HasSuffix(path, "/predict") || strings.HasSuffix(path, "/push-token") {
+		return false
+	}
+	for _, p := range []string{"/api/v1/config", "/api/v1/monitors", "/api/v1/channels", "/api/v1/policies", "/api/v1/teams", "/api/v1/people", "/api/v1/oncall", "/api/v1/changes", "/api/v1/tunables", "/api/v1/maintenance", "/api/v1/nodes", "/api/v1/status-pages", "/api/v1/import"} {
+		if path == p || strings.HasPrefix(path, p+"/") {
+			return true
+		}
+	}
+	return false
 }

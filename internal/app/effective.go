@@ -15,3 +15,7 @@ func (a *App) EffectiveConfig() *config.Config {
 	}
 	return a.applied.Load()
 }
+
+func (a *App) ConfigAuthority() bool { return !a.isMember() && a.SupersededBy() == nil }
+
+func (a *App) SiteName() string { return a.nodeName() }

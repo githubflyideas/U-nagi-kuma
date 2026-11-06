@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/githubflyideas/unagikuma/internal/notify"
@@ -83,14 +84,18 @@ const (
 
 // Incident is a problem with its notification state.
 type Incident struct {
-	ID      int64
-	Monitor string // "" for system incidents
-	Kind    string // normal | low | system
-	System  string // system incident key
-	Policy  string
-	Reason  string
-	Detail  string
-	Title   string
+	SourceNode  string
+	SourceEpoch string
+	OriginalID  int64
+	GlobalID    string
+	ID          int64
+	Monitor     string // "" for system incidents
+	Kind        string // normal | low | system
+	System      string // system incident key
+	Policy      string
+	Reason      string
+	Detail      string
+	Title       string
 	// AckComment is the note given with the ACK.
 	AckComment string
 	// Summary is the body of a system incident's recovery notice.
@@ -184,3 +189,10 @@ const (
 	CounterCapSaved      = "cap_saved"
 	CounterQuorumBlocked = "quorum_blocked"
 )
+
+func IncidentKey(node, epoch string, id int64) string {
+	if node == "" || epoch == "" || id <= 0 {
+		return ""
+	}
+	return fmt.Sprintf("%s:%s:%d", node, epoch, id)
+}

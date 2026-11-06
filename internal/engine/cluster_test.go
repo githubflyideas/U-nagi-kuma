@@ -327,3 +327,14 @@ func TestCheckNodesSkipsSelf(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 	}
 }
+
+func TestForeignParentCannotSuppressLocalIncident(t *testing.T) {
+	m := clusterMonitor("m")
+	m.Parents = []string{"foreign-parent"}
+	c := newClusterEnv(t, clusterCfg(m, "a"))
+	c.fc.set("m", probe.VoteFail)
+	c.waitRow("web", "local failure with foreign parent", func(r MonitorRow) bool { return r.IncidentID != 0 && r.Status == StatusCritical })
+	if _, ok := c.sink.open(IncidentNormal, "web"); !ok {
+		t.Fatal("foreign parent suppressed local incident")
+	}
+}

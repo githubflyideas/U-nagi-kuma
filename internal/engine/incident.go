@@ -301,7 +301,7 @@ func (e *Engine) enqueue(in *Intent) bool {
 func (e *Engine) message(inc *Incident, n PlannedNotice, now time.Time) notify.Message {
 	msg := notify.Message{
 		Kind: string(n.Kind), Priority: "high", Monitor: inc.Monitor, Title: inc.Title,
-		Reason: inc.Reason, Detail: inc.Detail, Count: n.Seq, Max: n.Max, IncidentID: inc.ID,
+		GlobalIncidentID: inc.GlobalID, Reason: inc.Reason, Detail: inc.Detail, Count: n.Seq, Max: n.Max, IncidentID: inc.ID,
 		Duration: now.Sub(inc.State.OpenedAt), Time: now, Instance: e.cfg.Instance, Lang: e.cfg.Lang,
 	}
 	if inc.Kind == IncidentLow || inc.Kind == IncidentRegional {

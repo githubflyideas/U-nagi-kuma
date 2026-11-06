@@ -12,7 +12,7 @@ import (
 // and handled (acknowledged, silenced, in maintenance) like an operations
 // console needs it.
 func (s *Server) tactical(req *http.Request) map[string]any {
-	cfg := s.app.Config().Config
+	cfg := s.app.EffectiveConfig()
 	incs := s.incidentIndex()
 	type split struct {
 		Total     int `json:"total"`
@@ -67,7 +67,7 @@ func (s *Server) availability(w http.ResponseWriter, r *http.Request) (any, erro
 		ExcludedS float64  `json:"excluded_s"`
 		Incidents int      `json:"incidents"`
 	}
-	cfg := s.app.Config().Config
+	cfg := s.app.EffectiveConfig()
 	counts, _ := s.app.Store().IncidentCounts(from, now)
 	status := map[string]string{}
 	for _, r := range s.app.Engine().Rows() {
@@ -106,7 +106,7 @@ type dailyJSON struct {
 }
 
 func (s *Server) daily(r engine.Report) dailyJSON {
-	ts := s.app.Config().Config.Tunables
+	ts := s.app.EffectiveConfig().Tunables
 	return dailyJSON{Title: r.Title, Body: r.Body, Policy: r.Policy, OK: r.OK, Enabled: ts.Bool("notify.daily-report"), At: ts.Raw("notify.daily-report-at")}
 }
 

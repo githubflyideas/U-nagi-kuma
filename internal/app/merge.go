@@ -50,11 +50,15 @@ func (a *App) pushMerge(ag *cluster.Agent) error {
 	if err := a.pushDiverged(ag); err != nil {
 		a.log.Warn("sending the diverged configuration to the master", "err", err)
 	}
+	epoch, err := a.store.DBEpoch()
+	if err != nil {
+		return err
+	}
 	total := map[string]int{}
 	for i := 0; i < 1000; i++ {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		var marks map[string]int64
-		err := ag.Call(ctx, http.MethodGet, cluster.MergePath, nil, &marks)
+		err := ag.Call(ctx, http.MethodGet, cluster.MergePath+"?epoch="+epoch, nil, &marks)
 		if err != nil {
 			cancel()
 			return err
@@ -68,7 +72,7 @@ func (a *App) pushMerge(ag *cluster.Agent) error {
 			return err
 		}
 		var res store.MergeResult
-		err = ag.Call(ctx, http.MethodPost, cluster.MergePath, store.MergeBatch{Term: a.Term(), Tables: tables}, &res)
+		err = ag.Call(ctx, http.MethodPost, cluster.MergePath, store.MergeBatch{Epoch: epoch, Term: a.Term(), Tables: tables}, &res)
 		cancel()
 		if err != nil {
 			return err
@@ -84,7 +88,13 @@ func (a *App) pushMerge(ag *cluster.Agent) error {
 }
 
 // MergeMarks are the master's marks for a site.
-func (a *App) MergeMarks(site string) (map[string]int64, error) { return a.store.MergeMarks(site) }
+func (a *App) MergeMarks(site string, epoch ...string) (map[string]int64, error) {
+	e := ""
+	if len(epoch) > 0 {
+		e = epoch[0]
+	}
+	return a.store.MergeMarks(store.MergeScope(site, e))
+}
 
 // MergeFrom adds a site's records (on the master).
 func (a *App) MergeFrom(site string, b store.MergeBatch) (store.MergeResult, error) {

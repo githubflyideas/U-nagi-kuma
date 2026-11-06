@@ -41,6 +41,7 @@ func (s *Server) routes() {
 	s.handle("POST /api/v1/monitors/same-check", "read", s.sameCheck)
 
 	// Incidents, events, notifications.
+	s.handle("GET /api/v1/history/sites", "read", s.historySites)
 	s.handle("GET /api/v1/incidents", "read", s.incidents)
 	s.handle("GET /api/v1/incidents/{id}/report", "read", s.incidentReport)
 	s.handle("POST /api/v1/incidents/{id}/ack", "ack", s.incidentAck)
@@ -177,6 +178,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /metrics", s.metrics)
 	s.mux.HandleFunc("GET "+cluster.ConnectPath, s.agentConnect)
 	s.mux.HandleFunc("GET "+app.SiteObservationPath, s.app.ServeSiteObservations)
+	s.mux.HandleFunc("POST "+app.SiteIncidentActionPath, s.app.ServeSiteIncidentAction)
 	s.mux.HandleFunc("GET "+cluster.StatePath, s.agentState)
 	s.mux.HandleFunc("GET "+cluster.MergePath, s.agentMerge)
 	s.mux.HandleFunc("POST "+cluster.MergePath, s.agentMerge)

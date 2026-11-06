@@ -4,6 +4,8 @@ import { t, fmtTime } from '../i18n.js';
 import { get, qs, me } from '../api.js';
 import { useFetch, useLive, Loading, ErrorBox, Empty, Dot, msText, enc, href, useDocTitle } from '../ui.js';
 
+import { HistorySite } from './history-site.js';
+
 const SEV = { critical: 'critical', warning: 'degraded', info: 'ok', ok: 'ok' };
 const TYPES = ['STATE', 'INCIDENT', 'NOTIFY', 'ACK', 'SILENCE', 'CONFIG', 'SYSTEM', 'PARTIAL', 'DRILL'];
 
@@ -30,28 +32,30 @@ export function EventRows({ items, hideMonitor }) {
     <td class="nowrap small muted">${fmtTime(e.at)}</td>
     <td class="nowrap"><span class="tag">${e.type}</span></td>
     ${!hideMonitor && html`<td class="nowrap">${e.monitor ? html`<a href=${href('/monitors/' + enc(e.monitor))}>${e.monitor}</a>` : ''}</td>`}
-    <td>${eventText(e)}</td>
+    <td>${e.site && html`<span class="tag">${e.site}</span>`} ${eventText(e)}</td>
   </tr>`)}</tbody></table></div>`;
 }
 
 function EventsTab() {
+ const [site,setSite]=useState('');
   const [type, setType] = useState('');
   const [sev, setSev] = useState('');
   const [monitor, setMonitor] = useState('');
   const [pages, setPages] = useState([]);
-  const first = useFetch(() => get('/events' + qs({ type, severity: sev, monitor, limit: 100 })), [type, sev, monitor]);
+  const first = useFetch(() => get('/events' + qs({ site,type, severity: sev, monitor, limit: 100 })), [site,type, sev, monitor]);
   useLive(['event'], first.reload, 1000);
   const more = async () => {
     const last = pages.length ? pages[pages.length - 1] : first.data;
     if (!last || !last.next_cursor) return;
-    const p = await get('/events' + qs({ type, severity: sev, monitor, limit: 100, before: last.next_cursor }));
+    const p = await get('/events' + qs({ site,type, severity: sev, monitor, limit: 100, before: last.next_cursor }));
     setPages([...pages, p]);
   };
   const items = first.data ? [first.data, ...pages].flatMap(p => p.items) : [];
   const last = pages.length ? pages[pages.length - 1] : first.data;
   return html`<div class="col" style=${{ gap: '12px' }}>
     <div class="row">
-      <select style=${{ width: 'auto' }} value=${type} onChange=${(e) => { setPages([]); setType(e.target.value); }} aria-label=${t('ui.type')}>
+      <${HistorySite} value=${site} onChange=${s=>{setPages([]);setSite(s);}} />
+ <select style=${{ width: 'auto' }} value=${type} onChange=${(e) => { setPages([]); setType(e.target.value); }} aria-label=${t('ui.type')}>
         <option value="">${t('ui.events.all_types')}</option>${TYPES.map(x => html`<option value=${x}>${x}</option>`)}
       </select>
       <select style=${{ width: 'auto' }} value=${sev} onChange=${(e) => { setPages([]); setSev(e.target.value); }} aria-label=${t('ui.events.severity')}>
@@ -69,11 +73,13 @@ function EventsTab() {
 }
 
 function NotificationsTab() {
+ const [site,setSite]=useState('');
   const [filter, setFilter] = useState('');
-  const list = useFetch(() => get('/notifications' + qs({ filter, limit: 100 })), [filter]);
+  const list = useFetch(() => get('/notifications' + qs({site,filter, limit: 100 })), [site,filter]);
   useLive(['event'], list.reload, 1500);
   return html`<div class="col" style=${{ gap: '12px' }}>
-    <div class="chips">${['', 'failed', 'fallback', 'drill'].map(f => html`<button class=${'chip' + (filter === f ? ' on' : '')} onClick=${() => setFilter(f)}>${t('ui.notif.filter.' + (f || 'all'))}</button>`)}</div>
+    <${HistorySite} value=${site} onChange=${setSite} />
+ <div class="chips">${['', 'failed', 'fallback', 'drill'].map(f => html`<button class=${'chip' + (filter === f ? ' on' : '')} onClick=${() => setFilter(f)}>${t('ui.notif.filter.' + (f || 'all'))}</button>`)}</div>
     <div class="card"><div class="bd flush tbl-wrap">
       <${ErrorBox} error=${list.error} retry=${list.reload} />
       ${!list.data ? html`<${Loading} />` : !list.data.items.length ? html`<${Empty}>${t('ui.notif.none')}<//>` : html`<table class="tbl">
@@ -81,7 +87,7 @@ function NotificationsTab() {
         <tbody>${list.data.items.map(d => html`<tr>
           <td style=${{ width: '18px' }}><${Dot} status=${d.ok ? 'ok' : 'critical'} /></td>
           <td class="nowrap small">${fmtTime(d.at)}${d.delayed_s > 0 ? html`<div class="sub">${t('ui.notif.delayed')}</div>` : ''}</td>
-          <td class="nowrap"><span class="tag">${t('msg.kind.' + d.kind)}</span>${d.seq ? html` <span class="small muted">#${d.seq}</span>` : ''}
+          <td class="nowrap">${d.site && html`<span class="tag">${d.site}</span>`} <span class="tag">${t('msg.kind.' + d.kind)}</span>${d.seq ? html` <span class="small muted">#${d.seq}</span>` : ''}
             ${d.fallback && html` <span class="tag warn">${t('ui.notif.fallback')}</span>`}${d.drill && html` <span class="tag">${t('ui.notif.drill')}</span>`}
             ${d.incident_id ? html`<div class="sub">${t('ui.notif.incident', { id: d.incident_id })}</div>` : ''}</td>
           <td>${(d.attempts || []).map(a => html`<div class="small">

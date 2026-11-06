@@ -69,22 +69,39 @@ func (s *Store) States() ([]engine.StateRecord, error) {
 
 // SaveIncident inserts (assigning inc.ID) or updates an incident.
 func (s *Store) SaveIncident(inc *engine.Incident) error {
+	if inc.SourceEpoch == "" {
+		epoch, err := s.DBEpoch()
+		if err != nil {
+			return err
+		}
+		inc.SourceEpoch = epoch
+	}
+	if inc.SourceNode == "" {
+		inc.SourceNode, _ = s.Setting("source_node")
+		if inc.SourceNode == "" {
+			inc.SourceNode = "local"
+		}
+	}
+
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
 	st := inc.State
 	args := []any{inc.Monitor, inc.Kind, inc.System, inc.Policy, inc.Reason, inc.Detail, inc.Title, inc.AckComment, inc.Summary,
-		mustJSON(st), ms(st.OpenedAt), ms(st.ResolvedAt), st.Closed, st.Acked, st.Drill, ms(s.now())}
+		mustJSON(st), ms(st.OpenedAt), ms(st.ResolvedAt), st.Closed, st.Acked, st.Drill, ms(s.now()), inc.SourceNode, inc.SourceEpoch, inc.OriginalID}
 	if inc.ID == 0 {
-		res, err := s.core.Exec(`INSERT INTO incidents(monitor,kind,system,policy,reason,detail,title,ack_comment,summary,state,opened_at,resolved_at,closed,acked,drill,updated_at)
-			VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, args...)
+		res, err := s.core.Exec(`INSERT INTO incidents(monitor,kind,system,policy,reason,detail,title,ack_comment,summary,state,opened_at,resolved_at,closed,acked,drill,updated_at,source_node,source_epoch,source_id)
+			VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, args...)
 		if err != nil {
 			return err
 		}
 		inc.ID, err = res.LastInsertId()
+		inc.OriginalID = inc.ID
+		inc.GlobalID = engine.IncidentKey(inc.SourceNode, inc.SourceEpoch, inc.OriginalID)
 		return err
 	}
 	_, err := s.core.Exec(`UPDATE incidents SET monitor=?,kind=?,system=?,policy=?,reason=?,detail=?,title=?,ack_comment=?,summary=?,state=?,
-		opened_at=?,resolved_at=?,closed=?,acked=?,drill=?,updated_at=? WHERE id=?`, append(args, inc.ID)...)
+		opened_at=?,resolved_at=?,closed=?,acked=?,drill=?,updated_at=?,source_node=?,source_epoch=?,source_id=? WHERE id=?`, append(args, inc.ID)...)
+	inc.GlobalID = engine.IncidentKey(inc.SourceNode, inc.SourceEpoch, inc.OriginalID)
 	return err
 }
 
@@ -109,11 +126,11 @@ func (s *Store) SaveIntent(in *engine.Intent) error {
 
 // OpenIncidents loads incidents that are not closed (for engine.Restore).
 func (s *Store) OpenIncidents() ([]*engine.Incident, error) {
-	return s.queryIncidents(`WHERE closed=0`, nil)
+	return s.queryIncidents(`WHERE closed=0 AND site=''`, nil)
 }
 
 func (s *Store) queryIncidents(where string, args []any) ([]*engine.Incident, error) {
-	rows, err := s.core.Query(`SELECT id,monitor,kind,system,policy,reason,detail,title,ack_comment,summary,state FROM incidents `+where, args...)
+	rows, err := s.core.Query(`SELECT id,monitor,kind,system,policy,reason,detail,title,ack_comment,summary,state,source_node,source_epoch,source_id FROM incidents `+where, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -123,12 +140,16 @@ func (s *Store) queryIncidents(where string, args []any) ([]*engine.Incident, er
 		inc := &engine.Incident{}
 		var system, policy, reason, detail, title, ack, summary sql.NullString
 		var st string
-		if err := rows.Scan(&inc.ID, &inc.Monitor, &inc.Kind, &system, &policy, &reason, &detail, &title, &ack, &summary, &st); err != nil {
+		if err := rows.Scan(&inc.ID, &inc.Monitor, &inc.Kind, &system, &policy, &reason, &detail, &title, &ack, &summary, &st, &inc.SourceNode, &inc.SourceEpoch, &inc.OriginalID); err != nil {
 			return nil, err
 		}
 		inc.System, inc.Policy, inc.Reason, inc.Detail, inc.Title = system.String, policy.String, reason.String, detail.String, title.String
 		inc.AckComment, inc.Summary = ack.String, summary.String
 		_ = json.Unmarshal([]byte(st), &inc.State)
+		if inc.OriginalID == 0 {
+			inc.OriginalID = inc.ID
+		}
+		inc.GlobalID = engine.IncidentKey(inc.SourceNode, inc.SourceEpoch, inc.OriginalID)
 		out = append(out, inc)
 	}
 	return out, rows.Err()
@@ -670,8 +691,8 @@ func (b *batcher) flushCore(items []item) bool {
 		s.logErr("batch write", err)
 	}
 	for k := range touched {
-		_, err := tx.Exec(`DELETE FROM evidence WHERE monitor=? AND node=? AND id NOT IN
-			(SELECT id FROM evidence WHERE monitor=? AND node=? ORDER BY id DESC LIMIT ?)`, k[0], k[1], k[0], k[1], b.keep)
+		_, err := tx.Exec(`DELETE FROM evidence WHERE site='' AND monitor=? AND node=? AND id NOT IN
+			(SELECT id FROM evidence WHERE site='' AND monitor=? AND node=? ORDER BY id DESC LIMIT ?)`, k[0], k[1], k[0], k[1], b.keep)
 		s.logErr("evidence ring", err)
 	}
 	if err := tx.Commit(); err != nil {

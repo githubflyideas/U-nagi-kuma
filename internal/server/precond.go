@@ -142,7 +142,7 @@ func (s *Server) idempotent(w http.ResponseWriter, r *http.Request, caller strin
 	sum := sha256.Sum256(body)
 	id := caller + "\x00" + r.URL.Path + "\x00" + key
 	now := s.now()
-	ttl := s.app.Config().Config.Tunables.Duration("api.idempotency-ttl")
+	ttl := s.app.EffectiveConfig().Tunables.Duration("api.idempotency-ttl")
 
 	c := &s.idem
 	c.mu.Lock()

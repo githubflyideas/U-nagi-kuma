@@ -27,7 +27,7 @@ func templateData(m *Message, o map[string]string, escapeJSON bool) map[string]a
 		"Title": esc(title), "Body": esc(body), "Text": esc(title + "\n" + body), "Kind": m.Kind, "Priority": m.Priority,
 		"Monitor": esc(m.Monitor), "Name": esc(m.Title), "Type": m.Type, "Target": esc(m.Target), "Depth": m.Depth,
 		"Status": m.Status, "Reason": m.Reason, "Detail": esc(sanitize(m.Detail, detailCap)), "Quorum": esc(m.Quorum),
-		"Count": m.Count, "Max": m.Max, "IncidentID": m.IncidentID, "Duration": m.Duration, "DetailURL": esc(m.DetailURL),
+		"Count": m.Count, "Max": m.Max, "IncidentID": m.IncidentID, "GlobalIncidentID": esc(m.GlobalIncidentID), "Duration": m.Duration, "DetailURL": esc(m.DetailURL),
 		"AckURL": esc(m.DetailURL), "Tags": m.Tags, "Time": m.Time, "Delayed": m.Delayed, "DryRun": m.DryRun,
 		"Instance": esc(m.Instance), "Site": esc(m.Site), "DeliveryID": m.DeliveryID,
 	}

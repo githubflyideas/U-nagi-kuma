@@ -103,7 +103,7 @@ func checkNotify(req personReq, chans []personalChannel) error {
 
 func (s *Server) people(w http.ResponseWriter, r *http.Request) (any, error) {
 	d := s.app.Directory()
-	cfg := s.app.Config().Config
+	cfg := s.app.EffectiveConfig()
 	used := map[int64][]string{}
 	for _, ch := range cfg.Channels {
 		key, kind, ok := directory.AddressKey(ch.Kind)
@@ -171,7 +171,7 @@ func (s *Server) personSave(w http.ResponseWriter, r *http.Request) (any, error)
 			return nil, Errorf(http.StatusBadRequest, CodeInvalid, "no login named %s", req.Username)
 		}
 	}
-	if err := checkNotify(req, personalChannels(s.app.Config().Config)); err != nil {
+	if err := checkNotify(req, personalChannels(s.app.EffectiveConfig())); err != nil {
 		return nil, err
 	}
 	id, err := s.app.Store().SavePerson(store.Person{ID: id, Handle: req.Handle, Name: req.Name, Note: req.Note, Username: req.Username,
@@ -264,7 +264,7 @@ func (s *Server) peopleImport(w http.ResponseWriter, r *http.Request) (any, erro
 	var errs []string
 	unknown := s.app.UnknownAddresses()
 	// Each one is reached through the channels that already name them.
-	cfg := s.app.Config().Config
+	cfg := s.app.EffectiveConfig()
 	via := func(kind, addr string) []string {
 		var out []string
 		for _, ch := range cfg.Channels {

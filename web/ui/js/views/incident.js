@@ -22,12 +22,13 @@ export function IncidentReport({ id }) {
   return html`<div class="page pm">
     <div class="row"><a href="#/problems/all" class="muted">← ${t('ui.nav.problems')}</a></div>
     <div class="row wrap">
-      <h1 class="spacer">${t('pm.title', { id, name: r.incident.monitor || r.incident.title })}</h1>
+      <h1 class="spacer">${t('pm.title', { id:r.incident.global_id||id, name: r.incident.monitor || r.incident.title })}</h1>
       <a class="btn" href=${file('md')} download>${t('ui.pm.download_md')}</a>
       <a class="btn" href=${file('html')} download>${t('ui.pm.download_html')}</a>
       <a class="btn" href=${file('json')} download>${t('ui.pm.download_json')}</a>
     </div>
-    <div class="card"><div class="bd"><p class="pm-concl">${r.conclusion}</p></div></div>
+    ${r.incident.history_only && html`<p class="warn-text">${t('ui.inc.archive')}</p>`}
+ <div class="card"><div class="bd"><p class="pm-concl">${r.conclusion}</p></div></div>
     <div class="card"><div class="bd flush tbl-wrap"><table class="tbl">
       <tbody>${facts.map(([k, v]) => html`<tr><td class="muted">${t(k)}</td><td>${at(v)}</td></tr>`)}
       ${(r.recipients || []).length > 0 && html`<tr><td class="muted">${t('pm.f.recipients')}</td><td>${r.recipients.join(', ')}</td></tr>`}</tbody>

@@ -35,7 +35,7 @@ func timeOrNull(t time.Time) *time.Time {
 }
 
 func (s *Server) maintList(w http.ResponseWriter, r *http.Request) (any, error) {
-	cfg := s.app.Config().Config
+	cfg := s.app.EffectiveConfig()
 	byName := map[string]*config.Maint{}
 	for _, mt := range cfg.Maints {
 		byName[mt.Name] = mt
@@ -89,7 +89,7 @@ func (s *Server) maintSave(w http.ResponseWriter, r *http.Request) (any, error) 
 	if err := decodeJSON(r, s.maxBody(), &req); err != nil {
 		return nil, err
 	}
-	cfg := s.app.Config().Config
+	cfg := s.app.EffectiveConfig()
 	existing := false
 	for _, mt := range cfg.Maints {
 		existing = existing || mt.Name == req.Name
@@ -138,7 +138,7 @@ func (s *Server) maintSave(w http.ResponseWriter, r *http.Request) (any, error) 
 func (s *Server) maintDelete(w http.ResponseWriter, r *http.Request) (any, error) {
 	name := r.PathValue("name")
 	found := false
-	for _, mt := range s.app.Config().Config.Maints {
+	for _, mt := range s.app.EffectiveConfig().Maints {
 		if mt.Name == name {
 			found = true
 			if !s.allowsMonitors(authOf(r), mt.Monitors) {

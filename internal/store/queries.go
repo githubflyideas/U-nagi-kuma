@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -44,6 +45,7 @@ type Page[T any] struct {
 
 // EventRow is a stored event.
 type EventRow struct {
+	Site     string         `json:"site,omitempty"`
 	ID       int64          `json:"id"`
 	At       time.Time      `json:"at"`
 	Type     string         `json:"type"`
@@ -55,6 +57,7 @@ type EventRow struct {
 
 // EventFilter selects events.
 type EventFilter struct {
+	Site    string
 	Monitor string
 	// Only, when set, keeps the events of these monitors and nothing else
 	// (an empty list keeps none): what a team member may see.
@@ -76,6 +79,10 @@ func limitOf(n int) int {
 func (s *Store) Events(f EventFilter) (Page[EventRow], error) {
 	var where []string
 	var args []any
+	if f.Site != "*" {
+		where = append(where, "site=?")
+		args = append(args, f.Site)
+	}
 	if f.Monitor != "" {
 		where, args = append(where, "monitor=?"), append(args, f.Monitor)
 	}
@@ -95,7 +102,7 @@ func (s *Store) Events(f EventFilter) (Page[EventRow], error) {
 	if f.Before > 0 {
 		where, args = append(where, "id<?"), append(args, f.Before)
 	}
-	q := `SELECT id,at,type,severity,monitor,message,data FROM events`
+	q := `SELECT id,at,type,severity,monitor,message,data,site FROM events`
 	if len(where) > 0 {
 		q += " WHERE " + strings.Join(where, " AND ")
 	}
@@ -112,7 +119,7 @@ func (s *Store) Events(f EventFilter) (Page[EventRow], error) {
 		var e EventRow
 		var at int64
 		var sev, mon, msg, data sql.NullString
-		if err := rows.Scan(&e.ID, &at, &e.Type, &sev, &mon, &msg, &data); err != nil {
+		if err := rows.Scan(&e.ID, &at, &e.Type, &sev, &mon, &msg, &data, &e.Site); err != nil {
 			return out, err
 		}
 		e.At, e.Severity, e.Monitor, e.Message = fromMS(at), sev.String, mon.String, msg.String
@@ -131,6 +138,7 @@ func (s *Store) Events(f EventFilter) (Page[EventRow], error) {
 
 // DeliveryRow is a notification log entry.
 type DeliveryRow struct {
+	Site       string           `json:"site,omitempty"`
 	ID         int64            `json:"id"`
 	IntentID   string           `json:"intent_id"`
 	IncidentID int64            `json:"incident_id"`
@@ -145,9 +153,14 @@ type DeliveryRow struct {
 }
 
 // Deliveries lists the notification log; filter is "" | failed | fallback | drill.
-func (s *Store) Deliveries(filter string, before int64, limit int) (Page[DeliveryRow], error) {
+func (s *Store) Deliveries(filter string, before int64, limit int, sites ...string) (Page[DeliveryRow], error) {
 	var where []string
 	var args []any
+	site := selectedSite(sites)
+	if site != "*" {
+		where = append(where, "site=?")
+		args = append(args, site)
+	}
 	switch filter {
 	case "failed":
 		where = append(where, "ok=0")
@@ -159,7 +172,7 @@ func (s *Store) Deliveries(filter string, before int64, limit int) (Page[Deliver
 	if before > 0 {
 		where, args = append(where, "id<?"), append(args, before)
 	}
-	q := `SELECT id,intent_id,incident_id,kind,seq,at,attempts,ok,fallback,drill,delayed_s FROM deliveries`
+	q := `SELECT id,intent_id,incident_id,kind,seq,at,attempts,ok,fallback,drill,delayed_s,site FROM deliveries`
 	if len(where) > 0 {
 		q += " WHERE " + strings.Join(where, " AND ")
 	}
@@ -177,7 +190,7 @@ func (s *Store) Deliveries(filter string, before int64, limit int) (Page[Deliver
 		var att sql.NullString
 		var inc sql.NullInt64
 		var intent sql.NullString
-		if err := rows.Scan(&d.ID, &intent, &inc, &d.Kind, &d.Seq, &at, &att, &d.OK, &d.Fallback, &d.Drill, &d.DelayedS); err != nil {
+		if err := rows.Scan(&d.ID, &intent, &inc, &d.Kind, &d.Seq, &at, &att, &d.OK, &d.Fallback, &d.Drill, &d.DelayedS, &d.Site); err != nil {
 			return out, err
 		}
 		d.IntentID, d.IncidentID, d.At = intent.String, inc.Int64, fromMS(at)
@@ -194,18 +207,23 @@ func (s *Store) Deliveries(filter string, before int64, limit int) (Page[Deliver
 
 // IncidentRow is an incident for lists.
 type IncidentRow struct {
-	ID         int64                `json:"id"`
-	Monitor    string               `json:"monitor"`
-	Kind       string               `json:"kind"`
-	System     string               `json:"system,omitempty"`
-	Policy     string               `json:"policy"`
-	Title      string               `json:"title"`
-	Reason     string               `json:"reason"`
-	Detail     string               `json:"detail"`
-	AckComment string               `json:"ack_comment,omitempty"` // the latest; Acks has them all
-	State      engine.IncidentState `json:"state"`
-	Acks       []AckRecord          `json:"acks,omitempty"`
-	Site       string               `json:"site,omitempty"` // merged from another site of the cluster
+	GlobalID    string               `json:"global_id"`
+	SourceNode  string               `json:"source_node"`
+	SourceEpoch string               `json:"source_epoch"`
+	OriginalID  int64                `json:"original_id"`
+	HistoryOnly bool                 `json:"history_only,omitempty"`
+	ID          int64                `json:"id"`
+	Monitor     string               `json:"monitor"`
+	Kind        string               `json:"kind"`
+	System      string               `json:"system,omitempty"`
+	Policy      string               `json:"policy"`
+	Title       string               `json:"title"`
+	Reason      string               `json:"reason"`
+	Detail      string               `json:"detail"`
+	AckComment  string               `json:"ack_comment,omitempty"` // the latest; Acks has them all
+	State       engine.IncidentState `json:"state"`
+	Acks        []AckRecord          `json:"acks,omitempty"`
+	Site        string               `json:"site,omitempty"` // merged from another site of the cluster
 }
 
 // incidentSites returns the site of the incidents among ids that were
@@ -231,13 +249,14 @@ func (s *Store) incidentSites(rows []IncidentRow) {
 		var site string
 		if q.Scan(&id, &site) == nil {
 			rows[idx[id]].Site = site
+			rows[idx[id]].HistoryOnly = true
 		}
 	}
 }
 
 // IncidentRowOf is the listing row of an incident.
 func IncidentRowOf(inc engine.Incident) IncidentRow {
-	return IncidentRow{ID: inc.ID, Monitor: inc.Monitor, Kind: inc.Kind, System: inc.System, Policy: inc.Policy, Title: inc.Title,
+	return IncidentRow{GlobalID: inc.GlobalID, SourceNode: inc.SourceNode, SourceEpoch: inc.SourceEpoch, OriginalID: inc.OriginalID, ID: inc.ID, Monitor: inc.Monitor, Kind: inc.Kind, System: inc.System, Policy: inc.Policy, Title: inc.Title,
 		Reason: inc.Reason, Detail: inc.Detail, AckComment: inc.AckComment, State: inc.State}
 }
 
@@ -278,8 +297,8 @@ func (s *Store) Acks(incident int64) ([]AckRecord, error) {
 }
 
 // Incidents lists incidents: filter open | resolved | all; monitor optional.
-func (s *Store) Incidents(filter, monitor string, before int64, limit int) (Page[IncidentRow], error) {
-	return s.IncidentsOf(filter, monitor, nil, before, limit)
+func (s *Store) Incidents(filter, monitor string, before int64, limit int, sites ...string) (Page[IncidentRow], error) {
+	return s.IncidentsOf(filter, monitor, nil, before, limit, sites...)
 }
 
 // inList is "col IN (?,...)" for vals; with no values it matches nothing.
@@ -296,9 +315,14 @@ func inList(col string, vals []string) (string, []any) {
 
 // IncidentsOf is Incidents limited to the monitors in only when it is not
 // nil (an empty list keeps none): what a team member may see.
-func (s *Store) IncidentsOf(filter, monitor string, only *[]string, before int64, limit int) (Page[IncidentRow], error) {
+func (s *Store) IncidentsOf(filter, monitor string, only *[]string, before int64, limit int, sites ...string) (Page[IncidentRow], error) {
 	var where []string
 	var args []any
+	site := selectedSite(sites)
+	if site != "*" {
+		where = append(where, "site=?")
+		args = append(args, site)
+	}
 	if only != nil {
 		w, a := inList("monitor", *only)
 		where, args = append(where, w), append(args, a...)
@@ -408,7 +432,7 @@ var severity = map[string]int{"": 0, "pending": 1, "paused": 1, "maintenance": 1
 
 // Cells splits [from, to) into n slots for the heartbeat bar: from the
 // rounds while they are kept, from the aggregates beyond.
-func (s *Store) Cells(monitor string, from, to time.Time, n int) ([]Cell, error) {
+func (s *Store) Cells(monitor string, from, to time.Time, n int, sites ...string) ([]Cell, error) {
 	if n <= 0 || n > 500 || !to.After(from) {
 		return nil, fmt.Errorf("invalid range")
 	}
@@ -431,8 +455,9 @@ func (s *Store) Cells(monitor string, from, to time.Time, n int) ([]Cell, error)
 			c.Status = st
 		}
 	}
-	if !from.Before(s.now().Add(-s.retention().Raw)) {
-		rows, err := s.hist.Query(`SELECT at,st FROM rounds WHERE mid=? AND at>=? AND at<?`, mid, ms(from), ms(to))
+	site := selectedSite(sites)
+	if site != "" || !from.Before(s.now().Add(-s.retention().Raw)) {
+		rows, err := s.hist.Query(`SELECT at,st FROM rounds WHERE site=? AND mid=? AND at>=? AND at<?`, site, mid, ms(from), ms(to))
 		if err != nil {
 			return nil, err
 		}
@@ -478,14 +503,15 @@ type LatencyPoint struct {
 
 // Latency returns latency points over [from, to): every round while they
 // are kept, 5-minute or hourly averages beyond.
-func (s *Store) Latency(monitor string, from, to time.Time) ([]LatencyPoint, error) {
+func (s *Store) Latency(monitor string, from, to time.Time, sites ...string) ([]LatencyPoint, error) {
 	out := []LatencyPoint{}
 	mid := s.MonitorID(monitor)
 	if mid == 0 {
 		return out, nil
 	}
-	if !from.Before(s.now().Add(-s.retention().Raw)) {
-		rows, err := s.hist.Query(`SELECT at,lat FROM rounds WHERE mid=? AND at>=? AND at<? AND lat>0 ORDER BY at`, mid, ms(from), ms(to))
+	site := selectedSite(sites)
+	if site != "" || !from.Before(s.now().Add(-s.retention().Raw)) {
+		rows, err := s.hist.Query(`SELECT at,lat FROM rounds WHERE site=? AND mid=? AND at>=? AND at<? AND lat>0 ORDER BY at`, site, mid, ms(from), ms(to))
 		if err != nil {
 			return nil, err
 		}
@@ -514,14 +540,17 @@ func (s *Store) Latency(monitor string, from, to time.Time) ([]LatencyPoint, err
 
 // EvidenceRow is one stored probe exchange.
 type EvidenceRow struct {
-	At     time.Time    `json:"at"`
-	Node   string       `json:"node"`
-	Result probe.Result `json:"result"`
+	Site        string       `json:"site,omitempty"`
+	SourceEpoch string       `json:"source_epoch,omitempty"`
+	OriginalID  int64        `json:"original_id"`
+	At          time.Time    `json:"at"`
+	Node        string       `json:"node"`
+	Result      probe.Result `json:"result"`
 }
 
 // EvidenceOf returns recent evidence of a monitor, newest first.
-func (s *Store) EvidenceOf(monitor string, limit int) ([]EvidenceRow, error) {
-	rows, err := s.core.Query(`SELECT at,node,result FROM evidence WHERE monitor=? ORDER BY id DESC LIMIT ?`, monitor, limitOf(limit))
+func (s *Store) EvidenceOf(monitor string, limit int, sites ...string) ([]EvidenceRow, error) {
+	rows, err := s.core.Query(`SELECT at,node,result,site,source_epoch,CASE WHEN original_id=0 THEN id ELSE original_id END FROM evidence WHERE site=? AND monitor=? ORDER BY id DESC LIMIT ?`, selectedSite(sites), monitor, limitOf(limit))
 	if err != nil {
 		return nil, err
 	}
@@ -531,7 +560,7 @@ func (s *Store) EvidenceOf(monitor string, limit int) ([]EvidenceRow, error) {
 		var e EvidenceRow
 		var at int64
 		var res string
-		if err := rows.Scan(&at, &e.Node, &res); err != nil {
+		if err := rows.Scan(&at, &e.Node, &res, &e.Site, &e.SourceEpoch, &e.OriginalID); err != nil {
 			return nil, err
 		}
 		e.At = fromMS(at)
@@ -720,4 +749,45 @@ func (s *Store) SnapshotsAt(term uint64) (Snapshot, error) {
 	err := s.core.QueryRow(`SELECT serial,sha256,term FROM config_snapshots WHERE term<=? ORDER BY serial DESC LIMIT 1`, term).
 		Scan(&sn.Serial, &sn.SHA256, &sn.Term)
 	return sn, err
+}
+
+// LocalIncidentID resolves only source-owned rows; a reset database cannot ACK an old epoch.
+func (s *Store) LocalIncidentID(key string) (int64, error) {
+	parts := strings.Split(key, ":")
+	if len(parts) != 3 {
+		return 0, nil
+	}
+	original, err := strconv.ParseInt(parts[2], 10, 64)
+	if err != nil || original <= 0 {
+		return 0, nil
+	}
+	var id int64
+	err = s.core.QueryRow("SELECT id FROM incidents WHERE site='' AND source_node=? AND source_epoch=? AND (source_id=? OR(source_id=0 AND id=?))", parts[0], parts[1], original, original).Scan(&id)
+	if err == sql.ErrNoRows {
+		return 0, nil
+	}
+	return id, err
+}
+func selectedSite(sites []string) string {
+	if len(sites) > 0 {
+		return sites[0]
+	}
+	return ""
+}
+
+func (s *Store) HistorySites() ([]string, error) {
+	rows, err := s.core.Query("SELECT site FROM incidents WHERE site!='' UNION SELECT site FROM events WHERE site!='' UNION SELECT site FROM deliveries WHERE site!='' ORDER BY site")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []string{}
+	for rows.Next() {
+		var site string
+		if err := rows.Scan(&site); err != nil {
+			return nil, err
+		}
+		out = append(out, site)
+	}
+	return out, rows.Err()
 }

@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"encoding/json"
 	"net"
 	"net/http"
@@ -116,7 +115,7 @@ func (a *App) mergeOwn(dir string, p promoted) error {
 }
 
 // prevSite is the name the replaced master rejoins under: its previous
-// master name when that name is free, otherwise a term-suffixed form.
+// physical site name. Authority changes never rename an incident source.
 func (a *App) prevSite(p promoted) string {
 	name := p.OldMaster
 	if name == "" || name == p.Self {
@@ -126,9 +125,7 @@ func (a *App) prevSite(p promoted) string {
 		}
 		name = c.MName
 	}
-	if c := a.applied.Load(); c != nil && (c.FindNode(name) != nil || c.HasName(name)) {
-		return fmt.Sprintf("%s-t%d", name, p.PrevTerm)
-	}
+
 	return name
 }
 

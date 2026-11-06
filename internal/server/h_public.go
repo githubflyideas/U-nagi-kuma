@@ -20,7 +20,7 @@ import (
 // loaded), matched against the monitors as configured — not the UI's
 // search syntax, which reads live fields.
 func (s *Server) published(sp *config.StatusPage) []rowJSON {
-	cfg := s.app.Config().Config
+	cfg := s.app.EffectiveConfig()
 	sel, err := config.ParseSelector(sp.Select)
 	if err != nil {
 		return nil
@@ -40,7 +40,7 @@ func (s *Server) published(sp *config.StatusPage) []rowJSON {
 }
 
 func (s *Server) statusPage(name string) *config.StatusPage {
-	for _, sp := range s.app.Config().Config.StatusPages {
+	for _, sp := range s.app.EffectiveConfig().StatusPages {
 		if sp.Name == name || strings.TrimPrefix(sp.Path, "/status/") == name {
 			return sp
 		}
@@ -119,7 +119,7 @@ func (s *Server) statusPageBody(sp *config.StatusPage) []byte {
 	if mons == nil {
 		mons = []mon{}
 	}
-	anns, _ := s.app.Store().Announcements(sp.Name, now.Add(-s.app.Config().Config.Tunables.Duration("statuspage.resolved-shown")), 20)
+	anns, _ := s.app.Store().Announcements(sp.Name, now.Add(-s.app.EffectiveConfig().Tunables.Duration("statuspage.resolved-shown")), 20)
 	for i := range anns {
 		anns[i].Author, anns[i].Page = "", "" // public
 	}
@@ -168,7 +168,7 @@ func (s *Server) statusPageBody(sp *config.StatusPage) []byte {
 func (s *Server) badge(w http.ResponseWriter, r *http.Request) {
 	name, kind := r.PathValue("monitor"), strings.TrimSuffix(r.PathValue("kind"), ".svg")
 	var row *rowJSON
-	for _, sp := range s.app.Config().Config.StatusPages {
+	for _, sp := range s.app.EffectiveConfig().StatusPages {
 		for _, rj := range s.published(sp) {
 			if rj.Name == name {
 				rj := rj
@@ -221,7 +221,7 @@ func (s *Server) pushHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, map[string]any{"ok": false, "msg": "monitor not found or not active"})
 		return
 	}
-	if err != nil {
+	if err != nil || !s.app.IsPushReceiver(name) {
 		writeError(w, err)
 		return
 	}

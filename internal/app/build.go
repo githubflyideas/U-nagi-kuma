@@ -246,6 +246,8 @@ func (a *App) engineConfig(cfg *config.Config) engine.Config {
 		}
 		if m.Type == "PUSH" {
 			ms.Push, ms.PushPeriod, ms.PushGrace = true, m.Period, m.Grace
+			ms.Nodes = append([]string(nil), m.Nodes...)
+			ec.ObservationSites[m.Name] = append([]string(nil), m.Nodes...)
 		}
 		if err != nil {
 			ms.SecretError = err.Error()

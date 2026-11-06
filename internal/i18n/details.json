@@ -36,5 +36,8 @@
 {"key": "w_timeout", "re": "^timeout (?<t>\\S+) is not shorter than the interval (?<i>\\S+)$"},
 {"key": "w_unlimited", "re": "^max=0 sends notifications without limit$"},
 {"key": "w_stateful", "re": "^(?<kw>\\S+) creates state on the target: interval raised to (?<i>\\S+)$"},
-{"key": "w_empty_select", "re": "^MAINT (?<name>\\S+) selects no monitor$"}
+{"key": "w_empty_select", "re": "^MAINT (?<name>\\S+) selects no monitor$"},
+{"key": "push_site", "re": "^PUSH requires exactly one receiving site$"},
+{"key": "config_read_only", "re": "^configuration is read-only on this site$"},
+{"key": "incident_source_unavailable", "re": "^incident source unavailable$"}
 ]

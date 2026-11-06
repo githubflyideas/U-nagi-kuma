@@ -27,6 +27,7 @@ func observationServer(t *testing.T, a *App) *httptest.Server {
 	t.Helper()
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET "+SiteObservationPath, a.ServeSiteObservations)
+	mux.HandleFunc("POST "+SiteIncidentActionPath, a.ServeSiteIncidentAction)
 	s := httptest.NewUnstartedServer(mux)
 	s.TLS = a.pki.TLSConfig(nil)
 	s.StartTLS()

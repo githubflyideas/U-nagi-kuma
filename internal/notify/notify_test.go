@@ -22,7 +22,7 @@ import (
 func problem() *Message {
 	return &Message{
 		Kind: "PROBLEM", Priority: "high", Monitor: "core-ntp", Title: "核心 NTP", Type: "UDP", Target: "10.0.0.1:ntp", Depth: "L3",
-		Status: "critical", Reason: "assert_failed", Detail: "offset 1.8s \"quoted\"\n}{ breaker\x07", Count: 1, Max: 3, IncidentID: 42,
+		Status: "critical", Reason: "assert_failed", Detail: "offset 1.8s \"quoted\"\n}{ breaker\x07", Count: 1, Max: 3, IncidentID: 42, GlobalIncidentID: "home:epoch-test:42",
 		Duration: 2 * time.Minute, Time: time.Date(2026, 10, 21, 14, 5, 20, 0, time.UTC), DetailURL: "https://mon.example.com/#/monitors/core-ntp",
 		Lang: "zh", DeliveryID: "d-123", Instance: "home",
 	}
@@ -277,7 +277,7 @@ func TestPresets(t *testing.T) {
 		if name == "matrix" && (req.Method != "PUT" || !strings.Contains(req.URL.EscapedPath(), "%21abc:example.org") || req.Header.Get("Authorization") != "Bearer mt") {
 			t.Errorf("matrix request: %s %s %v", req.Method, req.URL.EscapedPath(), req.Header)
 		}
-		if name == "pagerduty" && !strings.Contains(string(body), `"dedup_key":"unagikuma-42"`) {
+		if name == "pagerduty" && !strings.Contains(string(body), `"dedup_key":"unagikuma-home:epoch-test:42"`) {
 			t.Errorf("pagerduty dedup: %s", body)
 		}
 		if name == "ntfy" && (req.Header.Get("Priority") != "high" || req.Header.Get("Title") == "") {
@@ -287,7 +287,7 @@ func TestPresets(t *testing.T) {
 	m := problem()
 	m.Kind = "RECOVERY"
 	s.Send(context.Background(), Channel{Kind: "webhook", Opts: map[string]string{"preset": "opsgenie", "api-key": "ak"}}, m)
-	if req, _ := cap.last(); !strings.HasSuffix(req.URL.Path, "/v2/alerts/unagikuma-42/close") || req.URL.Query().Get("orig_host") != "api.opsgenie.com" {
+	if req, _ := cap.last(); !strings.HasSuffix(req.URL.Path, "/v2/alerts/unagikuma-home:epoch-test:42/close") || req.URL.Query().Get("orig_host") != "api.opsgenie.com" {
 		t.Errorf("opsgenie close: %v", req.URL)
 	}
 	if err := ValidateChannel("webhook", map[string]string{"preset": "ntfy"}); err == nil {

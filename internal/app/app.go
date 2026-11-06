@@ -268,8 +268,16 @@ func (a *App) applyConfig(cfg *config.Config) {
 
 // applyLocked is applyConfig with applyMu held.
 func (a *App) applyLocked(cfg *config.Config) {
-	a.store.SetTunables(cfg.Tunables)
-	a.loadDirectory(cfg.Tunables)
+	runtimeCfg := cfg
+	if a.isMember() {
+		a.replica.mu.Lock()
+		if a.replica.cfg != nil {
+			runtimeCfg = a.replica.cfg
+		}
+		a.replica.mu.Unlock()
+	}
+	a.store.SetTunables(runtimeCfg.Tunables)
+	a.loadDirectory(runtimeCfg.Tunables)
 	lec, local := a.localEngineConfig()
 	defs := make([]store.MonitorDef, 0, len(cfg.Monitors))
 	for _, m := range cfg.Monitors {
@@ -306,6 +314,7 @@ func (a *App) applyLocked(cfg *config.Config) {
 		// NODE list in the local file (BUG-9).
 		ec.Nodes, ec.Self = nil, ""
 	}
+	_ = a.store.SetSetting("source_node", ec.SourceNode)
 	agentEC := ec
 	// Install only monitors assigned to this site; no remote round is scheduled.
 	self := ec.Self
@@ -322,6 +331,19 @@ func (a *App) applyLocked(cfg *config.Config) {
 	}
 	ec.Monitors = keep
 	a.addSiteLocal(&ec, siteLocal)
+	installed := map[string]bool{}
+	for _, m := range ec.Monitors {
+		installed[m.Name] = true
+	}
+	for i := range ec.Monitors {
+		parents := []string{}
+		for _, p := range ec.Monitors[i].Parents {
+			if installed[p] {
+				parents = append(parents, p)
+			}
+		}
+		ec.Monitors[i].Parents = parents
+	}
 	a.engine.Apply(ec)
 	a.master.SetConfigs(agentConfigs(cfg, agentEC))
 	go a.syncStandbys()

@@ -66,7 +66,7 @@ func (s *Server) changeView(c store.Change) changeJSON {
 	n := 0
 	if c.Select != "" {
 		if sel, err := config.ParseSelector(c.Select); err == nil {
-			for _, m := range s.app.Config().Config.Monitors {
+			for _, m := range s.app.EffectiveConfig().Monitors {
 				if sel.Match(m) {
 					n++
 				}
@@ -125,7 +125,7 @@ func (s *Server) changeCreate(w http.ResponseWriter, r *http.Request) (any, erro
 	if err := decodeJSON(r, s.maxBody(), &req); err != nil {
 		return nil, err
 	}
-	cfg := s.app.Config().Config
+	cfg := s.app.EffectiveConfig()
 	if err := req.check(cfg); err != nil {
 		return nil, err
 	}
@@ -212,7 +212,7 @@ func (s *Server) changeUpdate(w http.ResponseWriter, r *http.Request) (any, erro
 	if err := decodeJSON(r, s.maxBody(), &req); err != nil {
 		return nil, err
 	}
-	if err := req.check(s.app.Config().Config); err != nil {
+	if err := req.check(s.app.EffectiveConfig()); err != nil {
 		return nil, err
 	}
 	moved := !req.Start.Equal(prev.Start) || !req.End.Equal(prev.End)

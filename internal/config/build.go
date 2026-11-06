@@ -826,6 +826,12 @@ func (b *builder) target(m *Monitor, r Record, explicitInterval bool) {
 	}
 	switch m.Type {
 	case "PUSH":
+		if len(m.Nodes) == 0 {
+			m.Nodes = []string{b.cfg.MName}
+		}
+		if len(m.Nodes) != 1 {
+			b.errf(r.NamePos, "invalid_option", "PUSH requires exactly one receiving site")
+		}
 		if r.TargetOK && r.Target != "-" {
 			b.errf(p, "syntax", "PUSH takes no target")
 		}

@@ -50,7 +50,7 @@ type nodeView struct {
 }
 
 func (s *Server) nodeViews() []nodeView {
-	cfg := s.app.Config().Config
+	cfg := s.app.EffectiveConfig()
 	status := map[string]engine.NodeStatus{}
 	for _, st := range s.app.Engine().Nodes() {
 		status[st.Node] = st
@@ -117,7 +117,7 @@ func (s *Server) nodesList(w http.ResponseWriter, r *http.Request) (any, error) 
 	case len(views) > 1:
 		layout = "cluster"
 	}
-	monitors := len(s.app.Config().Config.Monitors)
+	monitors := len(s.app.EffectiveConfig().Monitors)
 	if rep.Replica && rep.Monitors > monitors {
 		monitors = rep.Monitors
 	}
@@ -163,7 +163,7 @@ func (s *Server) nodeAdd(w http.ResponseWriter, r *http.Request) (any, error) {
 	if err := decodeJSON(r, s.maxBody(), &req); err != nil {
 		return nil, err
 	}
-	cfg := s.app.Config().Config
+	cfg := s.app.EffectiveConfig()
 	switch {
 	case !config.ValidName(req.Name):
 		return nil, Errorf(http.StatusBadRequest, CodeInvalid, "invalid node name %q", req.Name)
@@ -197,7 +197,7 @@ func (s *Server) nodeAdd(w http.ResponseWriter, r *http.Request) (any, error) {
 
 func (s *Server) nodeToken(w http.ResponseWriter, r *http.Request) (any, error) {
 	name := r.PathValue("name")
-	cfg := s.app.Config().Config
+	cfg := s.app.EffectiveConfig()
 	if cfg.FindNode(name) == nil || name == cfg.MName {
 		return nil, notFound("node")
 	}
@@ -215,7 +215,7 @@ func (s *Server) nodeRevoke(w http.ResponseWriter, r *http.Request) (any, error)
 
 func (s *Server) nodeDelete(w http.ResponseWriter, r *http.Request) (any, error) {
 	name := r.PathValue("name")
-	cfg := s.app.Config().Config
+	cfg := s.app.EffectiveConfig()
 	if cfg.FindNode(name) == nil {
 		return nil, notFound("node")
 	}

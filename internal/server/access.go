@@ -46,7 +46,7 @@ func (s *Server) allowsMonitor(ai *authInfo, name string) bool {
 	if !ai.restricted() {
 		return true
 	}
-	m := s.app.Config().Config.FindMonitor(name)
+	m := s.app.EffectiveConfig().FindMonitor(name)
 	return m != nil && ai.allowsArea(m.Area) && (ai.team == nil || ai.team.writes(m.Team))
 }
 
@@ -112,7 +112,7 @@ func (s *Server) execAllowed(ai *authInfo, text []byte) error {
 	if next == nil || config.HasErrors(diags) {
 		return nil
 	}
-	cur := execDefs(s.app.Config().Config)
+	cur := execDefs(s.app.EffectiveConfig())
 	for name, def := range execDefs(next) {
 		if cur[name] != def {
 			return errExecAdmin

@@ -31,7 +31,7 @@ type teamJSON struct {
 }
 
 func (s *Server) teams(w http.ResponseWriter, r *http.Request) (any, error) {
-	cfg := s.app.Config().Config
+	cfg := s.app.EffectiveConfig()
 	users := map[string]bool{}
 	if list, err := s.app.Store().Users(); err == nil {
 		for _, u := range list {
@@ -104,7 +104,7 @@ func (s *Server) teamSave(w http.ResponseWriter, r *http.Request) (any, error) {
 	// Administrators create and change teams; a team's manager changes its
 	// people, title and description, not its policy, and no other team.
 	if ai := authOf(r); !ai.scopes["admin"] {
-		cur := s.app.Config().Config.FindTeam(req.Name)
+		cur := s.app.EffectiveConfig().FindTeam(req.Name)
 		if ai.team == nil || cur == nil || ai.team.roles[req.Name] != "manager" {
 			return nil, Errorf(http.StatusForbidden, CodeForbidden, "only administrators and the team's managers may change a team")
 		}
@@ -141,7 +141,7 @@ func (s *Server) teamSave(w http.ResponseWriter, r *http.Request) (any, error) {
 
 func (s *Server) teamDelete(w http.ResponseWriter, r *http.Request) (any, error) {
 	name := r.PathValue("name")
-	cfg := s.app.Config().Config
+	cfg := s.app.EffectiveConfig()
 	if cfg.FindTeam(name) == nil {
 		return nil, notFound("team")
 	}
