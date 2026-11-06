@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/githubflyideas/unagikuma/internal/config"
+	"github.com/githubflyideas/unagikuma/internal/engine"
 	"github.com/githubflyideas/unagikuma/internal/store"
 )
 
@@ -25,10 +26,15 @@ func (s *Server) published(sp *config.StatusPage) []rowJSON {
 		return nil
 	}
 	var out []rowJSON
-	for _, r := range s.app.Engine().Rows() {
-		if m := cfg.FindMonitor(r.Name); m != nil && sel.Match(m) {
-			out = append(out, s.rowBase(r, cfg, nil))
+	for _, m := range cfg.Monitors {
+		if !sel.Match(m) {
+			continue
 		}
+		r, ok := s.app.Engine().Row(m.Name)
+		if !ok { // Configured elsewhere: preserve selector coverage without inventing a local verdict.
+			r = engine.MonitorRow{Name: m.Name, Title: m.Title, Type: m.Type, Status: engine.StatusUnknown}
+		}
+		out = append(out, s.rowBase(r, cfg, nil))
 	}
 	return out
 }

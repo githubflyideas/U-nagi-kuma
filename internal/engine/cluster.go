@@ -2,7 +2,6 @@ package engine
 
 import (
 	"context"
-	"sort"
 	"strings"
 	"time"
 
@@ -72,10 +71,7 @@ type NodeStatus struct {
 	Reach map[string]bool `json:"reach,omitempty"`
 	// Gateway is how this node's last notifications went out, per channel.
 	Gateway []GatewayState `json:"gateway,omitempty"`
-	// Verdict is the majority judgement of the node: ok, unreachable
-	// (this node cannot reach it, others can or cannot tell), down (more
-	// than half of the cluster cannot reach it) or unknown (this node is
-	// in the minority and cannot judge).
+	// Verdict is this site's local peer-path status, never a global verdict.
 	Verdict   string `json:"verdict,omitempty"`
 	Witnesses int    `json:"witnesses,omitempty"` // nodes that cannot reach it
 }
@@ -114,18 +110,6 @@ type nodeRuntime struct {
 	offlineSince time.Time // zero while online
 }
 
-// pendingRound collects the votes of one cluster round.
-type pendingRound struct {
-	id       string
-	monitor  string
-	defHash  string
-	due      time.Time
-	deadline time.Time
-	votes    map[string]NodeVote
-	results  map[string]probe.Result
-	waiting  map[string]bool
-}
-
 // IncidentRegional is the low-priority incident of a monitor that keeps
 // failing from some nodes while the others reach it.
 const IncidentRegional = "regional"
@@ -145,128 +129,8 @@ func (e *Engine) participates(m *MonitorSpec) bool {
 	return false
 }
 
-// startRound opens a cluster round: remote participants get a probe
-// request, nodes that are not connected count as offline. The local probe
-// (when this node takes part) reports through onLocalVote.
-func (e *Engine) startRound(m *MonitorSpec, rt *monRuntime, now, due time.Time, local bool) string {
-	ts := e.cfg.Tunables
-	pr := &pendingRound{
-		id: newID(), monitor: m.Name, defHash: m.DefHash, due: due,
-		deadline: now.Add(m.Probe.Timeout + ts.Duration("engine.round-grace") + ts.Duration("cluster.vote-grace")),
-		votes:    map[string]NodeVote{}, results: map[string]probe.Result{}, waiting: map[string]bool{},
-	}
-	for _, n := range m.Nodes {
-		if n == e.self {
-			if local {
-				pr.waiting[n] = true
-			}
-			continue
-		}
-		nr := e.nodes[n]
-		online := nr != nil && nr.status.Online
-		if !online || e.deps.Remote == nil || !e.deps.Remote.Probe(n, ProbeRequest{Round: pr.id, Monitor: m.Name, DefHash: m.DefHash}) {
-			pr.votes[n] = NodeVote{Node: n, Online: false}
-			continue
-		}
-		pr.waiting[n] = true
-	}
-	e.rounds[pr.id] = pr
-	rt.Running = true
-	if len(pr.waiting) == 0 {
-		e.finishRound(pr)
-	}
-	return pr.id
-}
-
-// onLocalVote adds this node's result to its cluster round.
-func (e *Engine) onLocalVote(rr roundResult) {
-	pr := e.rounds[rr.round]
-	if pr == nil {
-		return // the round already ended at its deadline
-	}
-	m, rt := e.monitors[pr.monitor], e.states[pr.monitor]
-	if m == nil || rt == nil || m.DefHash != pr.defHash {
-		e.dropRound(pr)
-		return
-	}
-	pr.votes[e.self] = e.judgeLocal(rt, m.Scope, m.Probe, rr)
-	pr.results[e.self] = rr.res
-	delete(pr.waiting, e.self)
-	if len(pr.waiting) == 0 {
-		e.finishRound(pr)
-	}
-}
-
-// RemoteVote hands an agent's vote to the engine (any goroutine).
-func (e *Engine) RemoteVote(v RemoteVote) {
-	select {
-	case e.votes <- v:
-	default:
-		e.log.Warn("vote queue full, vote dropped", "node", v.Node, "monitor", v.Monitor)
-	}
-}
-
-func (e *Engine) onRemoteVote(v RemoteVote) {
-	pr := e.rounds[v.Round]
-	if pr == nil || pr.monitor != v.Monitor || !pr.waiting[v.Node] {
-		return // late, unknown or duplicate: history only
-	}
-	delete(pr.waiting, v.Node)
-	if v.DefHash != pr.defHash {
-		// Not yet synced to this definition: counts as no answer.
-		pr.votes[v.Node] = NodeVote{Node: v.Node, Online: true, Present: false}
-	} else {
-		nv := NodeVote{Node: v.Node, Online: true, Present: true, Vote: v.Vote, Reason: v.Reason, Excluded: v.Excluded}
-		if m := e.monitors[pr.monitor]; m != nil && m.TimeSensitive && nv.Vote != probe.VoteAbstain {
-			if nr := e.nodes[v.Node]; nr != nil && absDur(nr.status.Skew) > e.cfg.Tunables.Duration("cluster.clock-skew") {
-				nv.Vote, nv.Reason = probe.VoteAbstain, probe.ReasonClockSkew
-			}
-		}
-		pr.votes[v.Node] = nv
-		pr.results[v.Node] = v.Result
-	}
-	if len(pr.waiting) == 0 {
-		e.finishRound(pr)
-	}
-}
-
-// finishRound judges a round with the votes it has; participants that did
-// not answer count as absent.
-func (e *Engine) finishRound(pr *pendingRound) {
-	delete(e.rounds, pr.id)
-	m, rt := e.monitors[pr.monitor], e.states[pr.monitor]
-	if rt != nil {
-		rt.Running = false
-	}
-	if m == nil || rt == nil || m.DefHash != pr.defHash {
-		return
-	}
-	votes := make([]NodeVote, 0, len(m.Nodes))
-	for _, n := range m.Nodes {
-		nv, ok := pr.votes[n]
-		if !ok {
-			nv = NodeVote{Node: n, Online: true, Present: false}
-		}
-		votes = append(votes, nv)
-	}
-	e.judge(m, rt, votes, pr.results, e.now(), pr.due, false)
-}
-
-func (e *Engine) dropRound(pr *pendingRound) {
-	delete(e.rounds, pr.id)
-	if rt := e.states[pr.monitor]; rt != nil {
-		rt.Running = false
-	}
-}
-
-// expireRounds ends rounds whose deadline passed.
-func (e *Engine) expireRounds(now time.Time) {
-	for _, pr := range e.rounds {
-		if !now.Before(pr.deadline) {
-			e.finishRound(pr)
-		}
-	}
-}
+// RemoteVote discards legacy round replies. Observations use a separate path.
+func (e *Engine) RemoteVote(_ RemoteVote) {}
 
 // NodeState records an agent's connection state (any goroutine).
 func (e *Engine) NodeState(s NodeStatus) {
@@ -336,66 +200,32 @@ func (e *Engine) applyNodes(specs []NodeSpec, now time.Time) {
 // instead of reporting the others.
 const SystemMinority = "minority"
 
-// checkNodes judges the nodes by majority. A node is down only when more
-// than half of the cluster cannot reach it, and only a node that itself
-// reaches more than half of the cluster says so. A node in the minority
-// reports that it cannot reach the others (in a two-node cluster: that its
-// peer is unreachable) and never declares anyone down on its own.
+// checkNodes reports this site's own path, never a majority's node verdict.
 func (e *Engine) checkNodes(now time.Time) {
-	// Count only remote nodes; this server is never one of them.
-	var remote []NodeSpec
-	for _, n := range e.cfg.Nodes {
-		if n.Name != e.self {
-			remote = append(remote, n)
-		}
-	}
-	total := 1 + len(remote)
-	reach := 1
-	for _, n := range remote {
-		if nr := e.nodes[n.Name]; nr != nil && nr.status.Online {
-			reach++
-		}
-	}
-	// Just after start agents have not reconnected yet: hold minority and
-	// node-down notices for cluster.startup-grace so a restart is not a
-	// false outage of every peer. Nodes that disconnect after boot are
-	// judged normally.
+	e.resolveSystem(SystemMinority, now, "") // retire pre-upgrade minority state
 	grace := e.cfg.Tunables.Duration("cluster.startup-grace")
-	bootGrace := grace > 0 && !e.booted.IsZero() && now.Sub(e.booted) < grace
-	minority := len(remote) > 0 && reach*2 <= total
-	var away []string
-	for _, n := range remote {
+	for _, n := range e.cfg.Nodes {
+		if n.Name == e.self {
+			continue
+		}
 		nr := e.nodes[n.Name]
 		if nr == nil {
 			continue
 		}
+		nr.status.Witnesses = 0
 		if nr.status.Online || nr.offlineSince.IsZero() {
-			nr.status.Verdict, nr.status.Witnesses = NodeOK, 0
+			nr.status.Verdict = NodeOK
 			continue
 		}
+		nr.status.Verdict = NodeUnreachable
 		timeout := n.Timeout
 		if timeout <= 0 {
 			timeout = e.cfg.Tunables.Duration("cluster.node-timeout")
 		}
 		if now.Sub(nr.offlineSince) < timeout {
-			nr.status.Verdict = NodeUnreachable
 			continue
 		}
-		title := e.nodeLabel(n.Name)
-		away = append(away, title)
-		against, witnessable := e.witnesses(n.Name)
-		nr.status.Witnesses = against
-		switch {
-		case minority:
-			nr.status.Verdict = NodeUnknown
-			continue
-		case witnessable && against*2 <= total:
-			// Others still reach it: a broken path from here, not a dead node.
-			nr.status.Verdict = NodeUnreachable
-			continue
-		}
-		nr.status.Verdict = NodeDown
-		if bootGrace && !nr.offlineSince.After(e.booted) {
+		if grace > 0 && !e.booted.IsZero() && now.Sub(e.booted) < grace && !nr.offlineSince.After(e.booted) {
 			continue
 		}
 		key := nodeOfflineKey(n.Name)
@@ -406,60 +236,8 @@ func (e *Engine) checkNodes(now time.Time) {
 		if pol == "" {
 			pol = "system"
 		}
-		detail := e.text("node_offline_detail", nr.offlineSince)
-		if witnessable {
-			detail += "\n" + e.text("node_witnesses", against, total)
-		}
-		e.openSystemAs(key, pol, e.text("node_offline_title", title), detail, now)
+		e.openSystemAs(key, pol, e.text("peer_unreachable_title", e.nodeLabel(n.Name)), e.text("peer_unreachable", e.nodeLabel(n.Name)), now)
 	}
-	if bootGrace {
-		allInitial := true
-		for _, n := range remote {
-			nr := e.nodes[n.Name]
-			if nr != nil && !nr.status.Online && nr.offlineSince.After(e.booted) {
-				allInitial = false
-				break
-			}
-		}
-		if allInitial {
-			return
-		}
-	}
-	if minority && len(away) > 0 {
-		if total == 2 {
-			e.openSystemAs(SystemMinority, "system", e.text("peer_unreachable_title", away[0]), e.text("peer_unreachable", away[0]), now)
-		} else {
-			e.openSystemAs(SystemMinority, "system", e.text("minority_title"), e.text("minority", reach, total, strings.Join(away, ", ")), now)
-		}
-	} else {
-		e.resolveSystem(SystemMinority, now, "")
-	}
-}
-
-// witnesses counts the nodes that cannot reach node x: this one, and every
-// connected node whose own view says it cannot. witnessable is false when
-// no other node can check x (a probe-only agent nobody can connect to):
-// then this node's view is all there is.
-func (e *Engine) witnesses(x string) (against int, witnessable bool) {
-	against = 1
-	for _, n := range e.cfg.Nodes {
-		if n.Name == x {
-			continue
-		}
-		nr := e.nodes[n.Name]
-		if nr == nil || !nr.status.Online || nr.status.Reach == nil {
-			continue
-		}
-		ok, known := nr.status.Reach[x]
-		if !known {
-			continue
-		}
-		witnessable = true
-		if !ok {
-			against++
-		}
-	}
-	return against, witnessable
 }
 
 // ClearClusterRoleIncidents resolves master-era system incidents after this
@@ -495,87 +273,11 @@ func (e *Engine) Nodes() []NodeStatus {
 	return out
 }
 
-// Self is the name this node votes under.
+// Self is this site's configured node name.
 func (e *Engine) Self() string {
 	var s string
 	e.do(func() { s = e.self })
 	return s
-}
-
-// trackPartial turns a lasting partial failure — the same healthy nodes
-// failing while others reach the target — into a low-priority regional
-// incident with a single notification. It is often a real problem for users
-// in that region, so it should not stay silent forever, but it is not an
-// outage either.
-func (e *Engine) trackPartial(m *MonitorSpec, rt *monRuntime, v Verdict, now time.Time) {
-	if v.Kind != VerdictPartial || m.PartialEscalate <= 0 {
-		rt.PartialKey, rt.PartialSince = "", time.Time{}
-		if inc := e.regional[m.Name]; inc != nil && inc.State.Open() {
-			np := e.regionalPolicy(inc)
-			Recover(&inc.State, now, np)
-			e.saveIncident(inc)
-			e.event(Event{Type: EventIncident, Severity: "info", Monitor: m.Name, Message: "regional incident resolved", Data: map[string]any{"msg": "regional_resolved", "incident_id": inc.ID}})
-		}
-		return
-	}
-	failing := append([]string(nil), v.FailingNodes...)
-	sort.Strings(failing)
-	key := strings.Join(failing, ",")
-	if key != rt.PartialKey {
-		rt.PartialKey, rt.PartialSince = key, now
-	}
-	if inc := e.regional[m.Name]; inc != nil && inc.State.Open() {
-		if inc.Detail != key {
-			inc.Detail = key
-			e.saveIncident(inc)
-		}
-		return
-	}
-	if now.Sub(rt.PartialSince) < m.PartialEscalate {
-		return
-	}
-	pol := e.policy(m.Policy)
-	inc := &Incident{Monitor: m.Name, Kind: IncidentRegional, Policy: pol.Name, Title: m.Title, Reason: "regional", Detail: key,
-		State: IncidentState{Low: true, OpenedAt: rt.PartialSince, HardAt: now}}
-	notices, _ := Advance(&inc.State, now, e.regionalPolicy(inc))
-	e.saveIncident(inc)
-	e.regional[m.Name] = inc
-	e.incidents[inc.ID] = inc
-	e.event(Event{Type: EventIncident, Severity: "warning", Monitor: m.Name, Message: "regional incident opened",
-		Data: map[string]any{"msg": "regional_opened", "incident_id": inc.ID, "fail_nodes": failing, "since": rt.PartialSince}})
-	e.notices(inc, notices, now)
-}
-
-// regionalPolicy is the monitor's policy limited to one notification and no
-// recovery notice.
-func (e *Engine) regionalPolicy(inc *Incident) NotifyPolicy {
-	np := e.policy(inc.Policy).Notify
-	np.Max, np.Recovery, np.Repeat = 1, false, 0
-	return np
-}
-
-// voteViews renders a round's votes for the UI.
-func (e *Engine) voteViews(votes []NodeVote, results map[string]probe.Result, at time.Time) []VoteView {
-	out := make([]VoteView, 0, len(votes))
-	for _, nv := range votes {
-		vv := VoteView{Node: nv.Node, Reason: nv.Reason, Excluded: nv.Excluded}
-		switch {
-		case !nv.Online:
-			vv.Vote = "offline"
-		case !nv.Present:
-			vv.Vote = "absent"
-		default:
-			vv.Vote = string(nv.Vote)
-		}
-		if r, ok := results[nv.Node]; ok {
-			vv.Detail = r.Detail
-			if r.Vote == probe.VoteOK {
-				vv.LatencyMS = ms(r.Latency)
-			}
-		}
-		out = append(out, vv)
-	}
-	return out
 }
 
 // AgentVote is an agent's judged answer to one probe request.
@@ -617,11 +319,4 @@ func (e *Engine) ForgetAgentMonitors(keep map[string]bool) {
 			}
 		}
 	})
-}
-
-func absDur(d time.Duration) time.Duration {
-	if d < 0 {
-		return -d
-	}
-	return d
 }

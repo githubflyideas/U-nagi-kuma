@@ -8,16 +8,10 @@ import (
 	"github.com/githubflyideas/unagikuma/internal/probe"
 )
 
-// onResult takes one finished local probe. A single-node monitor is
-// judged right away; in a cluster the vote joins its round, which is judged
-// once every participant answered or the deadline passed.
+// onResult takes one finished local probe and judges it immediately.
 func (e *Engine) onResult(rr roundResult) {
 	rt := e.states[rr.name]
 	m := e.monitors[rr.name]
-	if rr.round != "" {
-		e.onLocalVote(rr)
-		return
-	}
 	if rt != nil && !rr.push {
 		rt.Running = false
 	}
@@ -25,7 +19,7 @@ func (e *Engine) onResult(rr roundResult) {
 		return // removed or redefined while the round ran
 	}
 	nv := e.judgeLocal(rt, m.Scope, m.Probe, rr)
-	e.judge(m, rt, []NodeVote{nv}, map[string]probe.Result{e.self: rr.res}, rr.end, rr.due, rr.push)
+	e.judge(m, rt, nv, rr.res, rr.end, rr.due, rr.push)
 }
 
 // judgeLocal turns this node's probe result into its vote and feeds the
@@ -75,13 +69,11 @@ func (e *Engine) judgeLocal(rt *monRuntime, scope netscope.Scope, spec probe.Spe
 	return NodeVote{Node: e.self, Online: true, Present: true, Vote: vote, Reason: reason, Excluded: excluded}
 }
 
-// judge decides a round from its votes and drives the state machine,
-// incidents, notifications and history. results holds each answering
-// node's raw probe result (for evidence, latency and the reason shown).
-func (e *Engine) judge(m *MonitorSpec, rt *monRuntime, votes []NodeVote, results map[string]probe.Result, end, due time.Time, push bool) {
+// judge drives only this site's state machine, incidents and evidence.
+func (e *Engine) judge(m *MonitorSpec, rt *monRuntime, nv NodeVote, res probe.Result, end, due time.Time, push bool) {
 	now := e.now()
-	v := Decide(votes, m.Quorum)
-	res, reason := e.primaryResult(votes, results, v)
+	v := LocalVerdict(nv)
+	reason := nv.Reason
 	slow := res.Vote == probe.VoteOK && m.SlowAfter > 0 && res.Latency > m.SlowAfter
 	t := Step(rt.State, v, StepParams{
 		Attempts:         m.Attempts,
@@ -101,11 +93,7 @@ func (e *Engine) judge(m *MonitorSpec, rt *monRuntime, votes []NodeVote, results
 	if v.Kind == VerdictOK {
 		rt.LastReason = ""
 	}
-	if len(votes) > 1 {
-		rt.LastVotes = e.voteViews(votes, results, end)
-	} else {
-		rt.LastVotes = nil
-	}
+	rt.LastVotes = nil
 	if t.Changed() {
 		rt.LastChange = now
 	}
@@ -120,14 +108,12 @@ func (e *Engine) judge(m *MonitorSpec, rt *monRuntime, votes []NodeVote, results
 		Reason: reason, LatencyMS: ms(res.Latency), FailNodes: v.FailingNodes, OKNodes: v.OKNodes,
 		Excluded: excluded, Interval: e.intervalFor(m, rt),
 	})
-	for _, nv := range votes {
-		if r, ok := results[nv.Node]; ok && r.Evidence != nil {
-			e.deps.Sink.Evidence(m.Name, nv.Node, end, r)
-		}
+	if res.Evidence != nil {
+		e.deps.Sink.Evidence(m.Name, e.self, end, res)
 	}
 	e.onTransition(m, rt, t, v, now)
 	e.afterJudge(m, rt, t, now)
-	e.trackPartial(m, rt, v, now)
+
 	if t.Changed() || t.PartialStarted || t.PartialEnded {
 		e.saveState(m.Name, rt)
 	}
@@ -145,67 +131,6 @@ func (e *Engine) judge(m *MonitorSpec, rt *monRuntime, votes []NodeVote, results
 		}
 		e.schedule(m.Name, next)
 	}
-}
-
-// primaryResult picks the result shown for a round: this node's own when it
-// agrees with the verdict, else a participant that does (a failing one for a
-// failure, the fastest answer for success). The reason is the most common
-// failure reason among the failing votes.
-func (e *Engine) primaryResult(votes []NodeVote, results map[string]probe.Result, v Verdict) (probe.Result, string) {
-	if len(votes) == 1 {
-		return results[votes[0].Node], votes[0].Reason
-	}
-	want := probe.VoteOK
-	if v.Kind == VerdictCritical {
-		want = probe.VoteFail
-	}
-	var pick *probe.Result
-	var reason string
-	if r, ok := results[e.self]; ok && r.Vote == want {
-		pick = &r
-	}
-	counts := map[string]int{}
-	for _, nv := range votes {
-		r, ok := results[nv.Node]
-		if !ok || !nv.Present {
-			continue
-		}
-		if nv.Vote == probe.VoteFail {
-			counts[nv.Reason]++
-		}
-		if r.Vote != want {
-			continue
-		}
-		if pick == nil || (want == probe.VoteOK && r.Latency < pick.Latency) {
-			rr := r
-			pick = &rr
-		}
-	}
-	best := 0
-	for k, n := range counts {
-		if n > best || (n == best && k < reason) {
-			reason, best = k, n
-		}
-	}
-	if pick == nil {
-		for _, nv := range votes {
-			if r, ok := results[nv.Node]; ok {
-				rr := r
-				pick = &rr
-				if reason == "" && nv.Vote != probe.VoteOK {
-					reason = nv.Reason
-				}
-				break
-			}
-		}
-	}
-	if pick == nil {
-		return probe.Result{Vote: probe.VoteAbstain}, v.UnknownReason
-	}
-	if v.Kind == VerdictUnknown && reason == "" {
-		reason = v.UnknownReason
-	}
-	return *pick, reason
 }
 
 // schedule sets the next due time of a monitor.

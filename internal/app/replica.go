@@ -1,11 +1,8 @@
 package app
 
-// Every server that joined a cluster is a replica of the master, like a
-// secondary DNS server: it keeps a copy of the master's state (configuration,
-// secrets, data) and, when it cannot reach the master for a while, checks,
-// stores and alerts on its own with the master's configuration. The link
-// only carries the copy and the votes; nothing is ever decided for a site
-// that cannot be reached. Promotion to master stays a manual decision.
+// Every full server keeps the shared configuration but schedules, records and
+// alerts locally at all times. Shared observations never gate local checks.
+// Configuration authority changes only through manual promotion.
 
 import (
 	"context"
@@ -14,7 +11,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -83,6 +79,7 @@ func (a *App) loadReplica() {
 	fi, _ := os.Stat(p)
 	a.replica.mu.Lock()
 	a.replica.cfg = cfg
+	a.replica.local = a.isMember()
 	if fi != nil {
 		a.replica.copied = fi.ModTime()
 	}
@@ -178,51 +175,27 @@ func copySecretStores(src, dst *store.Secrets) error {
 	return errors.Join(errs...)
 }
 
-// watchReplica switches checking on its own on when the master has been
-// out of reach for cluster.replica-after, and off once it is back.
+// watchReplica keeps checking independent of the configuration master's link.
 func (a *App) watchReplica() {
 	a.am.mu.Lock()
 	ag := a.am.agent
 	a.am.mu.Unlock()
 	r := &a.replica
 	r.mu.Lock()
-	want := false
-	if ag != nil && r.cfg != nil {
-		st := ag.Status()
-		// The master's setting counts: it is the one the operator wrote.
-		after := r.cfg.Tunables.Duration("cluster.replica-after")
-		want = !st.Connected && a.now().Sub(st.Since) >= after
-	}
+	want := ag != nil && r.cfg != nil
 	change := want != r.local
-	if change {
-		r.local = want
-		r.since = time.Time{}
-		if want {
-			r.since = a.now()
-		}
+	r.local = want
+	if change && want {
+		r.since = a.now()
 	}
-	local := r.local
 	r.mu.Unlock()
-	if local {
-		a.feedPeers()
-	} else {
-		a.maybePushMerge(change)
-	}
-	if !change {
-		return
-	}
 	if want {
-		a.log.Warn("the master is out of reach: this replica checks and alerts on its own", "site", a.site())
-		_ = a.store.Audit(auditEntry("cluster.replica_local", "system", map[string]any{"site": a.site()}))
-		a.Reapply()
-		st := ag.Status()
-		a.engine.MasterUnreachable(true, strings.TrimPrefix(ag.Server(), "https://"), st.Since)
-		return
+		a.feedPeers()
+		a.maybePushMerge(false)
 	}
-	a.log.Info("the master is back: this replica hands checking back to it", "site", a.site())
-	_ = a.store.Audit(auditEntry("cluster.replica_follow", "system", map[string]any{"site": a.site()}))
-	a.engine.MasterUnreachable(false, "", time.Time{})
-	a.Reapply()
+	if change {
+		a.Reapply()
+	}
 }
 
 // localEngineConfig is what a replica runs on its own: the master's
@@ -238,9 +211,8 @@ func (a *App) localEngineConfig() (engine.Config, bool) {
 	}
 	self := a.nodeName()
 	ec := a.engineConfig(cfg)
-	// The other nodes, the master among them, are judged by majority from
-	// this node's peer checks (feedPeers); monitors are checked here only.
-	ec.Nodes, ec.Self = nil, ""
+	// Peer reachability is informational; each target is checked locally.
+	ec.Nodes, ec.Self = nil, self
 	seenMaster := false
 	for _, n := range cfg.Nodes {
 		seenMaster = seenMaster || n.Name == cfg.MName
@@ -261,8 +233,7 @@ func (a *App) localEngineConfig() (engine.Config, bool) {
 		keep = append(keep, m)
 	}
 	ec.Monitors = keep
-	// The change windows open on the master and its silences hold here
-	// too (this node's own change list is not the master's).
+	// Shared maintenance applies here; ACKs and silences remain source-local.
 	ec.Maints = ec.Maints[:0:0]
 	for _, mt := range cfg.Maints {
 		ec.Maints = append(ec.Maints, engine.MaintSpec{Name: mt.Name, Title: mt.Title, Monitors: mt.Monitors, Schedule: mt.Schedule, Notify: mt.Notify})

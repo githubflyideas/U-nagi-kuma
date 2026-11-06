@@ -16,7 +16,7 @@ import (
 )
 
 func TestAgentEndToEnd(t *testing.T) {
-	a, _, _, _ := newApp(t, testConfig+`bj IN NODE "北京"
+	a, fp, _, _ := newApp(t, testConfig+`bj IN NODE "北京"
 `)
 	tok, err := a.Store().CreateAgentToken("bj")
 	if err != nil {
@@ -38,10 +38,14 @@ func TestAgentEndToEnd(t *testing.T) {
 	defer func() { cancel(); <-runDone }()
 
 	var agentFails atomic.Bool
+	var targetChecks atomic.Int32
 	ag, err := cluster.NewAgent(cluster.AgentOptions{
 		Server: "https://" + raw.Addr().String(), Node: "bj", Token: tok, Fingerprint: a.PKI().Fingerprint(), Version: "e2e",
 		MaxBackoff: 200 * time.Millisecond,
 		Probe: func(_ context.Context, s probe.Spec) probe.Result {
+			if s.Name == "web" {
+				targetChecks.Add(1)
+			}
 			if agentFails.Load() {
 				return probe.Result{Vote: probe.VoteFail, Reason: probe.ReasonConnRefused, Evidence: &probe.Evidence{}}
 			}
@@ -59,27 +63,23 @@ func TestAgentEndToEnd(t *testing.T) {
 	go func() { ag.Run(ctx); close(agentDone) }()
 	defer func() { cancel(); <-agentDone }()
 
-	vote := func(r engine.MonitorRow, node string) string {
-		for _, v := range r.Votes {
-			if v.Node == node {
-				return v.Vote
-			}
-		}
-		return ""
-	}
-	waitFor(t, "both nodes vote ok", 10*time.Second, func() bool {
+	waitFor(t, "control connection and local monitoring", 10*time.Second, func() bool {
 		r, _ := a.Engine().Row("web")
-		return vote(r, "unagikuma") == "ok" && vote(r, "bj") == "ok" && r.Quorum != nil && r.Quorum.Kind == engine.VerdictOK
+		nodes := a.Engine().Nodes()
+		return r.Status == "ok" && len(nodes) == 1 && nodes[0].Online
 	})
 	nodes := a.Engine().Nodes()
 	if len(nodes) != 1 || !nodes[0].Online || nodes[0].Serial != a.Config().Serial || nodes[0].Version != "e2e" {
 		t.Fatalf("nodes: %+v", nodes)
 	}
 
-	// Failing from the agent only is a partial failure, not an outage.
+	// A remote agent's opinion cannot gate the local problem or recovery.
 	agentFails.Store(true)
-	waitFor(t, "partial verdict", 10*time.Second, func() bool {
-		r, _ := a.Engine().Row("web")
-		return vote(r, "bj") == "fail" && r.Quorum != nil && r.Quorum.Kind == engine.VerdictPartial && r.Status == "ok"
-	})
+	fp.set("web", true)
+	waitFor(t, "local problem", 10*time.Second, func() bool { r, _ := a.Engine().Row("web"); return r.Status == "critical" && r.IncidentID != 0 })
+	fp.set("web", false)
+	waitFor(t, "local recovery", 10*time.Second, func() bool { r, _ := a.Engine().Row("web"); return r.Status == "ok" })
+	if targetChecks.Load() != 0 {
+		t.Fatal("legacy remote scheduling remains")
+	}
 }

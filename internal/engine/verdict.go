@@ -1,4 +1,4 @@
-// Package engine is unagikuma's decision core: rounds, quorum verdicts, the
+// Package engine is unagikuma's decision core: local checks, the
 // SOFT/HARD state machine, incidents and notification discipline, local
 // network anomaly and suspend detection.
 //
@@ -49,19 +49,7 @@ type NodeVote struct {
 	Reason  string
 }
 
-// healthy reports whether the node counts for N_h: online, not
-// excluded, and not abstaining for a local reason.
-func (nv NodeVote) healthy() bool {
-	if !nv.Online || nv.Excluded {
-		return false
-	}
-	if nv.Present && nv.Vote == probe.VoteAbstain && probe.LocalAbstain(nv.Reason) {
-		return false
-	}
-	return true
-}
-
-// QuorumRule carries the per-monitor quorum options.
+// QuorumRule is retained only for legacy config/API compatibility; it is not a runtime gate.
 type QuorumRule struct {
 	Spec           string // "majority" (default), "all", "N", "N%"
 	OnNodeLoss     string // "degrade" (default) | "unknown"
@@ -154,80 +142,30 @@ func QuorumOf(spec string, n int) (int, error) {
 	return quorumFor(k, arg, n), nil
 }
 
-// Decide applies the quorum rules to one round: per-monitor healthy nodes,
-// dynamic quorum on node loss (recomputed from the original spec), the weak
-// template floor, UNKNOWN reasons in priority order and on-insufficient.
-func Decide(votes []NodeVote, rule QuorumRule) Verdict {
-	v := Verdict{N: len(votes)}
-	online, excluded := 0, 0
-	for _, nv := range votes {
-		if nv.Online {
-			online++
-			if nv.Excluded {
-				excluded++
-			}
-		}
-		if !nv.healthy() || !nv.Present {
-			if nv.healthy() {
-				v.Healthy++
-			}
-			continue
-		}
-		v.Healthy++
-		switch nv.Vote {
-		case probe.VoteFail:
-			v.Fail++
-			v.FailingNodes = append(v.FailingNodes, nv.Node)
-		case probe.VoteOK:
-			v.OK++
-			v.OKNodes = append(v.OKNodes, nv.Node)
-		}
+// LocalVerdict is the only runtime target verdict. Remote observations never vote.
+func LocalVerdict(nv NodeVote) Verdict {
+	v := Verdict{N: 1, Q: 1, QEff: 1, Kind: VerdictUnknown, UnknownReason: UnknownAllAbstain}
+	if nv.Excluded {
+		v.UnknownReason = UnknownLocalNetwork
+		return v
 	}
-	kind, arg, err := parseQuorum(rule.Spec)
-	if err != nil {
-		kind, arg = qMajority, 0
+	if !nv.Present || !nv.Online {
+		return v
 	}
-	v.Q = quorumFor(kind, arg, v.N)
-	v.QEff = v.Q
-	if v.Healthy < v.N && rule.OnNodeLoss != "unknown" {
-		// Recompute on the healthy nodes with the original semantics so that
-		// losing nodes never blinds the remaining ones, while "all" stays
-		// "all of what is left".
-		switch kind {
-		case qCount:
-			v.QEff = max(1, min(int(arg), v.Healthy/2+1))
-		default:
-			v.QEff = quorumFor(kind, arg, v.Healthy)
-		}
-		v.Degraded = true
-	}
-	// Weak templates need two failing votes when two or more healthy nodes
-	// take part — unless the operator wrote an explicit integer quorum
-	// (e.g. the two-node "avoid misses" mode).
-	if rule.Weak && kind != qCount && v.Healthy >= 2 && v.QEff < 2 {
-		v.QEff = 2
-	}
-	switch {
-	case v.QEff > 0 && v.Fail >= v.QEff:
-		v.Kind = VerdictCritical
-	case v.Fail >= 1 && v.OK >= 1:
-		v.Kind = VerdictPartial
-	case v.Fail == 0 && v.OK >= 1:
+	switch nv.Vote {
+	case probe.VoteOK:
 		v.Kind = VerdictOK
-	case v.Fail >= 1 && v.OK == 0 && rule.OnInsufficient == "critical":
+		v.OK = 1
+		v.Healthy = 1
+		v.OKNodes = []string{nv.Node}
+	case probe.VoteFail:
 		v.Kind = VerdictCritical
-	default:
-		v.Kind = VerdictUnknown
-		switch {
-		case v.Healthy == 0 && excluded > 0:
-			v.UnknownReason = UnknownLocalNetwork
-		case v.Healthy == 0 && online > 0:
-			v.UnknownReason = UnknownAllAbstain
-		case v.Healthy == 0:
-			v.UnknownReason = UnknownNoHealthyNodes
-		default:
-			v.UnknownReason = UnknownInsufficient
-		}
+		v.Fail = 1
+		v.Healthy = 1
+		v.FailingNodes = []string{nv.Node}
+	}
+	if v.Kind != VerdictUnknown {
+		v.UnknownReason = ""
 	}
 	return v
 }

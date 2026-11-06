@@ -107,14 +107,13 @@ func TestNodesAPIAndAgent(t *testing.T) {
 	}
 	waitUntil(t, func() bool {
 		r, _ := e.app.Engine().Row("web")
-		return len(r.Votes) == 2 && r.Votes[1].Node == "bj" && r.Votes[1].Vote == "ok"
+		return !r.LastCheck.IsZero()
 	})
 
 	var det struct {
 		Row rowJSON `json:"row"`
 	}
-	if e.do("GET", "/api/v1/monitors/web", nil, &det) != 200 || len(det.Row.Votes) != 2 || det.Row.Quorum == nil ||
-		det.Row.Quorum.N != 2 || det.Row.Quorum.Verdict != "ok" {
+	if e.do("GET", "/api/v1/monitors/web", nil, &det) != 200 || len(det.Row.Votes) != 0 || det.Row.Quorum != nil {
 		t.Fatalf("row votes: %+v %+v", det.Row.Votes, det.Row.Quorum)
 	}
 	var push struct {

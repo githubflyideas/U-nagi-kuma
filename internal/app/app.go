@@ -305,12 +305,21 @@ func (a *App) applyLocked(cfg *config.Config) {
 		// NODE list in the local file (BUG-9).
 		ec.Nodes, ec.Self = nil, ""
 	}
-	if a.SupersededBy() != nil && !a.isMember() {
-		// Replaced by a newer master: check nothing, notify nothing
-		// (including leftover NODE peer judgements — BUG-15).
-		ec.Monitors, ec.Maints, ec.Nodes, ec.Self = nil, nil, nil, ""
-	}
 	agentEC := ec
+	// Install only monitors assigned to this site; no remote round is scheduled.
+	self := ec.Self
+	if self == "" {
+		self = cfg.MName
+	}
+	keep := ec.Monitors[:0:0]
+	for _, m := range ec.Monitors {
+		if len(m.Nodes) > 0 && !containsStr(m.Nodes, self) {
+			continue
+		}
+		m.Nodes = nil
+		keep = append(keep, m)
+	}
+	ec.Monitors = keep
 	a.addSiteLocal(&ec, siteLocal)
 	a.engine.Apply(ec)
 	a.master.SetConfigs(agentConfigs(cfg, agentEC))

@@ -15,7 +15,6 @@ import (
 // roundResult is what a round goroutine reports back to the loop.
 type roundResult struct {
 	name    string
-	round   string // cluster round id ("" = judged alone)
 	defHash string
 	start   time.Time
 	end     time.Time
@@ -90,15 +89,8 @@ func (e *Engine) dispatchDue(ctx context.Context, wg *sync.WaitGroup) {
 			continue
 		}
 		if !e.participates(m) {
-			// Agents only: no local probe, no local budget.
-			e.spaceAfter(key, now)
-			due := rt.Due
-			if due.IsZero() {
-				due = now
-			}
-			e.startRound(m, rt, now, due, false)
 			continue
-		}
+		} // assigned to a different receiving site
 		if d := e.pps.Delay(now); d > 0 {
 			// Over the packet budget: start it a little later.
 			e.sched.Set(name, now.Add(d))
@@ -142,10 +134,6 @@ func (e *Engine) dispatchDue(ctx context.Context, wg *sync.WaitGroup) {
 		gateTimeout := e.cfg.Tunables.Duration("localnet.gate-timeout")
 		gateTTL := e.cfg.Tunables.Duration("localnet.gate-cache")
 		defHash, secretErr := m.DefHash, m.SecretError
-		round := ""
-		if clustered(m) {
-			round = e.startRound(m, rt, now, due, true)
-		}
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -159,7 +147,7 @@ func (e *Engine) dispatchDue(ctx context.Context, wg *sync.WaitGroup) {
 				res = e.runProbe(rctx, spec)
 				cancel()
 			}
-			rr := roundResult{name: name, round: round, defHash: defHash, start: start, end: e.now(), due: due, res: res}
+			rr := roundResult{name: name, defHash: defHash, start: start, end: e.now(), due: due, res: res}
 			if res.Vote == probe.VoteFail && probe.NetworkClass(res.Reason) && (len(targets) > 0 || fallback != "") {
 				rr.gateLocal, rr.gateObs = e.runGate(ctx, targets, fallback, start, gateTimeout, gateTTL)
 			}

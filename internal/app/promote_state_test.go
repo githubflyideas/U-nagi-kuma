@@ -29,6 +29,10 @@ func TestPromotePreservesLocalRuntime(t *testing.T) {
 	if err := dst.secrets.Put("local-only", "secret", nil); err != nil {
 		t.Fatal(err)
 	}
+	before, err := dst.store.VerifyAudit()
+	if err != nil || !before.OK {
+		t.Fatal(before, err)
+	}
 	dst.store.Close()
 	rec := httptest.NewRecorder()
 	if err := src.writeState(rec); err != nil {
@@ -57,8 +61,8 @@ func TestPromotePreservesLocalRuntime(t *testing.T) {
 	if v, _ := st.Setting("runtime-sentinel"); v != "preserved" {
 		t.Fatal("settings lost")
 	}
-	if _, err := st.VerifyAudit(); err != nil {
-		t.Fatal("audit invalid", err)
+	if after, err := st.VerifyAudit(); err != nil || !after.OK || after.Head != before.Head || after.Entries != before.Entries {
+		t.Fatal("audit changed", before, after, err)
 	}
 	key, err := store.LoadOrCreateKey(dir)
 	if err != nil {

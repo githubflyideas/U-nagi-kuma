@@ -82,8 +82,8 @@ func (a *App) SupersededBy() *Superseded {
 	return &s
 }
 
-// supersede steps this master down: it stops checking and refuses agents
-// so they move on to the newer master. It stays down across restarts.
+// supersede retires configuration authority and refuses agents; local target
+// checking continues. The authority handover survives restarts.
 func (a *App) supersede(term uint64, by string) {
 	if s := a.SupersededBy(); s != nil && s.Term >= term {
 		return
@@ -93,7 +93,7 @@ func (a *App) supersede(term uint64, by string) {
 	if err := os.WriteFile(a.dataPath(supersededFile), b, 0o644); err != nil {
 		a.log.Error("cannot record the handover", "err", err)
 	}
-	a.log.Warn("this master was replaced; it stops checking", "term", term, "by", by)
+	a.log.Warn("configuration authority was transferred; local checks continue", "term", term, "by", by)
 	_ = a.store.Audit(auditEntry("cluster.superseded", by, map[string]any{"term": term}))
 	if c := a.applied.Load(); c != nil {
 		a.applyConfig(c)

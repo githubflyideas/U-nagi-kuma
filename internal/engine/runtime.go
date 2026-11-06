@@ -218,11 +218,9 @@ type Engine struct {
 	share       sharing
 	shareWindow atomic.Int64
 	results     chan roundResult
-	votes       chan RemoteVote
 
-	rounds   map[string]*pendingRound // open cluster rounds by id
-	nodes    map[string]*nodeRuntime  // agents by name
-	agentRT  map[string]*monRuntime   // agent mode: per-monitor network caches
+	nodes    map[string]*nodeRuntime // agents by name
+	agentRT  map[string]*monRuntime  // agent mode: per-monitor network caches
 	attempts chan attemptResult
 	// runCtx ends with Run; background work (event handlers) uses it.
 	runCtx context.Context
@@ -318,10 +316,8 @@ func New(d Deps) *Engine {
 		lowByMon:  map[string]*Incident{},
 		system:    map[string]*Incident{},
 		regional:  map[string]*Incident{},
-		rounds:    map[string]*pendingRound{},
 		nodes:     map[string]*nodeRuntime{},
 		agentRT:   map[string]*monRuntime{},
-		votes:     make(chan RemoteVote, 1024),
 		intents:   map[string]*Intent{},
 		chanRate:  map[string]*ratelimit.Bucket{},
 		sentAt:    map[string][]time.Time{},
@@ -437,8 +433,6 @@ func (e *Engine) Run(ctx context.Context) {
 			}
 		case r := <-e.results:
 			e.onResult(r)
-		case v := <-e.votes:
-			e.onRemoteVote(v)
 		case a := <-e.attempts:
 			e.onAttempt(a)
 		case f := <-e.cmds:
@@ -474,7 +468,6 @@ func (e *Engine) onTick() {
 		e.onOverload(*ev, now)
 	}
 	e.checkPushDeadlines(now)
-	e.expireRounds(now)
 	e.expireDeps(now)
 	e.checkMaint(now)
 	e.checkNodes(now)

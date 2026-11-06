@@ -11,10 +11,8 @@ import (
 	"time"
 )
 
-// Every node checks the others it was told about, so the cluster can judge
-// a node by majority: a node is down only when more than half of the nodes
-// cannot reach it. A check asks the peer's ReachPath, which also returns the
-// peer's own view. Its certificate is authenticated before control data is used.
+// Every site checks known peers for informational reachability and authenticated
+// configuration-authority discovery. Reach never gates target alerts.
 
 // PeerView is what this node knows about one peer.
 type PeerView struct {
@@ -78,7 +76,7 @@ func (a *Agent) Peers() []PeerView {
 	ps.mu.Unlock()
 	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
 	if master != "" {
-		mv := PeerView{Name: master, Addr: hostOf(a.Server()), OK: st.Connected, At: time.Now()}
+		mv := PeerView{Fingerprint: a.pin, Name: master, Addr: hostOf(a.Server()), OK: st.Connected, At: time.Now()}
 		if mr, ok := a.masterView(); ok {
 			mv.Reach = mr
 		}
@@ -134,7 +132,7 @@ func (a *Agent) checkPeers(ctx context.Context) {
 				defer wg.Done()
 				peerClient := &http.Client{Timeout: 3 * time.Second, Transport: &http.Transport{Proxy: nil, TLSClientConfig: PinnedTLSConfig(a.pin, v.Fingerprint)}, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 				res := a.checkPeer(ctx, peerClient, v.Addr)
-				if res.Name != "" && res.Name != v.Name {
+				if res.OK && res.Name != v.Name {
 					res = PeerView{Addr: v.Addr, At: time.Now(), Error: "peer identity mismatch"}
 				}
 				if tr, ok := peerClient.Transport.(*http.Transport); ok {

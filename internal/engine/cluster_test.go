@@ -183,135 +183,61 @@ func clusterCfg(m MonitorSpec, agents ...string) Config {
 	return cfg
 }
 
-func TestClusterMajority(t *testing.T) {
+func TestSitesDoNotVote(t *testing.T) {
 	c := newClusterEnv(t, clusterCfg(clusterMonitor("m", "a", "b"), "a", "b"))
 	c.online("a", "b")
-	r := c.waitRow("web", "all ok", func(r MonitorRow) bool { return r.Status == StatusOK && len(r.Votes) == 3 && r.Votes[1].Vote == "ok" })
-	if r.Quorum == nil || r.Quorum.N != 3 || r.Quorum.QEff != 2 {
-		t.Fatalf("quorum %+v", r.Quorum)
-	}
-	// One node failing is a partial failure, not an outage.
-	c.fc.set("a", probe.VoteFail)
-	c.waitRow("web", "partial", func(r MonitorRow) bool { return r.Partial && r.Status == StatusOK })
-	// Two of three failing is.
-	c.fc.set("b", probe.VoteFail)
-	r = c.waitRow("web", "critical", func(r MonitorRow) bool { return r.Status == StatusCritical })
-	if r.Quorum.Fail != 2 {
-		t.Fatalf("fail votes %+v", r.Quorum)
+	c.fc.set("m", probe.VoteFail)
+	r := c.waitRow("web", "local failure despite healthy peers", func(r MonitorRow) bool { return r.Status == StatusCritical })
+	if r.Partial || r.RegionalID != 0 || r.Quorum != nil {
+		t.Fatalf("legacy judgement: %+v", r)
 	}
 	if _, ok := c.sink.open(IncidentNormal, "web"); !ok {
-		t.Fatal("no incident for a quorum failure")
+		t.Fatal("no local incident")
 	}
-	c.sink.mu.Lock()
-	ev := c.sink.evidence["web/a"]
-	c.sink.mu.Unlock()
-	if ev == 0 {
-		t.Fatal("agent evidence not recorded")
-	}
-}
-
-func TestClusterNodeLossDegrades(t *testing.T) {
-	// b never connects: with two healthy nodes the quorum stays 2, so one
-	// failing node is still only partial…
-	c := newClusterEnv(t, clusterCfg(clusterMonitor("m", "a", "b"), "a", "b"))
-	c.online("a")
 	c.fc.set("a", probe.VoteFail)
-	r := c.waitRow("web", "partial with b offline", func(r MonitorRow) bool { return r.Partial })
-	if r.Votes[2].Vote != "offline" || !r.Quorum.Degraded || r.Quorum.Healthy != 2 {
-		t.Fatalf("votes %+v quorum %+v", r.Votes, r.Quorum)
-	}
-	// …and when a goes away too, the master judges alone.
-	c.e.NodeState(NodeStatus{Node: "a", Online: false})
-	c.fc.set("m", probe.VoteFail)
-	r = c.waitRow("web", "critical alone", func(r MonitorRow) bool { return r.Status == StatusCritical })
-	if r.Quorum.QEff != 1 || r.Quorum.Healthy != 1 {
-		t.Fatalf("quorum %+v", r.Quorum)
-	}
-}
-
-func TestClusterDeadlineAndSilentAgent(t *testing.T) {
-	c := newClusterEnv(t, clusterCfg(clusterMonitor("m", "a", "b"), "a", "b"))
+	c.fc.set("b", probe.VoteFail)
+	c.fc.set("m", probe.VoteOK)
+	c.waitRow("web", "local recovery despite remote failures", func(r MonitorRow) bool { return r.Status == StatusOK })
 	c.fc.mu.Lock()
-	c.fc.silent["b"] = true
+	asked := len(c.fc.asked)
 	c.fc.mu.Unlock()
-	c.online("a", "b")
-	r := c.waitRow("web", "judged at the deadline", func(r MonitorRow) bool { return len(r.Votes) == 3 && r.Votes[1].Vote == "ok" })
-	if r.Votes[2].Vote != "absent" || r.Status != StatusOK {
-		t.Fatalf("votes %+v status %s", r.Votes, r.Status)
+	if asked != 0 {
+		t.Fatal("remote scheduling remains")
 	}
 }
-
-func TestClusterAgentsOnly(t *testing.T) {
+func TestSiteContinuesWithoutPeers(t *testing.T) {
+	c := newClusterEnv(t, clusterCfg(clusterMonitor("m", "a", "b"), "a", "b"))
+	c.fc.set("m", probe.VoteFail)
+	c.waitRow("web", "isolated failure", func(r MonitorRow) bool { return r.Status == StatusCritical })
+	c.fc.set("m", probe.VoteOK)
+	c.waitRow("web", "isolated recovery", func(r MonitorRow) bool { return r.Status == StatusOK })
+}
+func TestMonitorAssignedElsewhereNotScheduled(t *testing.T) {
 	c := newClusterEnv(t, clusterCfg(clusterMonitor("a", "b"), "a", "b"))
-	c.online("a", "b")
-	c.fc.set("m", probe.VoteFail) // the master does not take part
-	r := c.waitRow("web", "agents only", func(r MonitorRow) bool { return len(r.Votes) == 2 && r.Votes[0].Vote == "ok" })
-	if r.Status != StatusOK {
-		t.Fatalf("status %s votes %+v", r.Status, r.Votes)
+	time.Sleep(150 * time.Millisecond)
+	r, _ := c.e.Row("web")
+	if !r.LastCheck.IsZero() {
+		t.Fatalf("non-local monitor checked: %+v", r)
 	}
 }
-
-func TestClusterClockSkew(t *testing.T) {
+func TestRemoteClockCannotChangeLocalVerdict(t *testing.T) {
 	m := clusterMonitor("m", "a", "b")
 	m.TimeSensitive = true
 	c := newClusterEnv(t, clusterCfg(m, "a", "b"))
-	c.online("b")
 	c.e.NodeState(NodeStatus{Node: "a", Online: true, Skew: 5 * time.Second})
-	c.fc.set("a", probe.VoteFail)
-	r := c.waitRow("web", "skewed vote abstains", func(r MonitorRow) bool { return len(r.Votes) == 3 && r.Votes[1].Vote == "abstain" })
-	if r.Votes[1].Reason != probe.ReasonClockSkew || r.Partial {
-		t.Fatalf("votes %+v partial %v", r.Votes, r.Partial)
-	}
+	c.fc.set("m", probe.VoteFail)
+	c.waitRow("web", "own time-sensitive failure", func(r MonitorRow) bool { return r.Status == StatusCritical })
 }
-
-func TestClusterRegionalEscalation(t *testing.T) {
-	m := clusterMonitor("m", "a", "b")
-	m.PartialEscalate = 300 * time.Millisecond
-	c := newClusterEnv(t, clusterCfg(m, "a", "b"))
-	c.online("a", "b")
-	c.fc.set("a", probe.VoteFail)
-	r := c.waitRow("web", "regional incident", func(r MonitorRow) bool { return r.RegionalID != 0 })
-	inc, ok := c.sink.open(IncidentRegional, "web")
-	if !ok || inc.Detail != "a" || !inc.State.Low || r.Status != StatusOK {
-		t.Fatalf("regional %+v ok=%v status %s", inc, ok, r.Status)
-	}
-	c.fc.set("a", probe.VoteOK)
-	c.waitRow("web", "regional resolved", func(r MonitorRow) bool { return r.RegionalID == 0 && !r.Partial })
-	if _, ok := c.sink.open(IncidentRegional, "web"); ok {
-		t.Fatal("regional incident still open")
-	}
-}
-
 func TestClusterNodeOffline(t *testing.T) {
 	cfg := clusterCfg(clusterMonitor("m", "a"), "a")
-	cfg.Nodes[0].Timeout = 300 * time.Millisecond
+	cfg.Nodes[0].Timeout = 100 * time.Millisecond
 	c := newClusterEnv(t, cfg)
-	deadline := time.Now().Add(5 * time.Second)
-	for {
-		// Two nodes: nobody can tell which side is cut off, so the peer is
-		// only reported unreachable, never down.
-		if _, ok := c.sink.open(IncidentSystem, SystemMinority); ok {
-			break
-		}
-		if time.Now().After(deadline) {
-			t.Fatal("no peer-unreachable incident for a node that never connected")
-		}
-		time.Sleep(20 * time.Millisecond)
+	c.waitOpen(nodeOfflineKey("a"), true)
+	if nodeVerdict(c.e, "a") != NodeUnreachable {
+		t.Fatal("path must not claim node death")
 	}
 	c.online("a")
-	deadline = time.Now().Add(5 * time.Second)
-	for {
-		if _, ok := c.sink.open(IncidentSystem, SystemMinority); !ok {
-			break
-		}
-		if time.Now().After(deadline) {
-			t.Fatal("peer-unreachable incident not resolved after reconnect")
-		}
-		time.Sleep(20 * time.Millisecond)
-	}
-	if ns := c.e.Nodes(); len(ns) != 1 || !ns[0].Online {
-		t.Fatalf("nodes %+v", ns)
-	}
+	c.waitOpen(nodeOfflineKey("a"), false)
 }
 
 // waitOpen waits until a system incident is open (or not).
@@ -338,40 +264,21 @@ func nodeVerdict(e *Engine, n string) string {
 	return ""
 }
 
-// Three nodes: one that both others cannot reach is down; one that only
-// this node cannot reach is not; a node alone in the minority judges
-// nobody.
-func TestClusterMajorityNodeStatus(t *testing.T) {
+func TestMinorityDoesNotHideLocalPeerFailure(t *testing.T) {
 	cfg := clusterCfg(clusterMonitor("m", "a", "b"), "a", "b")
-	cfg.Nodes[0].Timeout, cfg.Nodes[1].Timeout = 200*time.Millisecond, 200*time.Millisecond
+	for i := range cfg.Nodes {
+		cfg.Nodes[i].Timeout = 100 * time.Millisecond
+	}
 	c := newClusterEnv(t, cfg)
-	// b is gone; a (connected) cannot reach it either: 2 of 3 → down.
-	c.e.NodeState(NodeStatus{Node: "a", Online: true, Since: time.Now(), Reach: map[string]bool{"b": false, "m": true}})
+	c.waitOpen(nodeOfflineKey("a"), true)
 	c.waitOpen(nodeOfflineKey("b"), true)
-	if v := nodeVerdict(c.e, "b"); v != NodeDown {
-		t.Fatalf("b verdict %q", v)
+	if _, ok := c.sink.open(IncidentSystem, SystemMinority); ok {
+		t.Fatal("obsolete minority incident")
 	}
-	// a still reaches b: only the path from m is broken → not down.
-	c.e.NodeState(NodeStatus{Node: "b", Online: true, Since: time.Now()})
-	c.waitOpen(nodeOfflineKey("b"), false)
-	c.e.NodeState(NodeStatus{Node: "a", Online: true, Since: time.Now(), Reach: map[string]bool{"b": true, "m": true}})
-	c.e.NodeState(NodeStatus{Node: "b", Online: false, Since: time.Now()})
-	time.Sleep(600 * time.Millisecond)
-	if _, ok := c.sink.open(IncidentSystem, nodeOfflineKey("b")); ok {
-		t.Fatal("b reported down although a still reaches it")
-	}
-	if v := nodeVerdict(c.e, "b"); v != NodeUnreachable {
-		t.Fatalf("b verdict %q, want unreachable", v)
-	}
-	// m loses both: it is in the minority and says so instead.
-	c.e.NodeState(NodeStatus{Node: "a", Online: false, Since: time.Now()})
-	c.waitOpen(SystemMinority, true)
-	time.Sleep(400 * time.Millisecond) // past a's timeout too
-	if _, ok := c.sink.open(IncidentSystem, nodeOfflineKey("a")); ok {
-		t.Fatal("a node in the minority reported another one down")
-	}
-	if v := nodeVerdict(c.e, "a"); v != NodeUnknown {
-		t.Fatalf("a verdict %q, want unknown", v)
+	for _, n := range []string{"a", "b"} {
+		if nodeVerdict(c.e, n) != NodeUnreachable {
+			t.Fatal(n, nodeVerdict(c.e, n))
+		}
 	}
 }
 
