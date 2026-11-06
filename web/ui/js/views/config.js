@@ -91,7 +91,7 @@ function HistoryTab() {
   </div>`;
 }
 
-// ImportTab converts an Uptime Kuma backup or Nagios object files:
+// ImportTab converts another tool's monitors: an Uptime Kuma backup, Nagios object files, a Checkmate export or a Gatus file:
 // preview first, then add.
 function ImportTab() {
   const [source, setSource] = useState('kuma');
@@ -109,7 +109,7 @@ function ImportTab() {
   const send = async (apply) => {
     setBusy(true);
     try {
-      const q = new URLSearchParams({ area: area.trim(), role, manager });
+      const q = new URLSearchParams({ area: area.trim(), role, manager: source === 'kuma' || source === 'nagios' ? manager : '' });
       if (apply) q.set('apply', '1');
       const r = await fetch('/api/v1/import/' + source + '?' + q, { method: 'POST', credentials: 'same-origin', headers: { 'X-Unagikuma-CSRF': getCSRF() }, body: file });
       const body = await r.json();
@@ -122,12 +122,12 @@ function ImportTab() {
   return html`<div class="col" style=${{ gap: '12px' }}>
     <div class="card"><div class="bd form">
       <${Field} label=${t('ui.import.source')}>
-        <div class="src-cards" role="radiogroup">${[['kuma', 'Uptime Kuma', 'ui.import.src_kuma'], ['nagios', 'Nagios', 'ui.import.src_nagios']].map(([k, name, hint]) => html`
+        <div class="src-cards" role="radiogroup">${[['kuma', 'Uptime Kuma', 'ui.import.src_kuma'], ['nagios', 'Nagios', 'ui.import.src_nagios'], ['checkmate', 'Checkmate', 'ui.import.src_checkmate'], ['gatus', 'Gatus', 'ui.import.src_gatus']].map(([k, name, hint]) => html`
           <button type="button" role="radio" aria-checked=${source === k} class=${'src-card' + (source === k ? ' on' : '')} onClick=${() => { setSource(k); setFile(null); reset(); }}>
             <b>${name}</b><span class="small muted">${t(hint)}</span></button>`)}</div><//>
-      <p class="small muted" style=${{ margin: 0 }}>${t(source === 'kuma' ? 'ui.import.intro' : 'ui.import.nagios_intro')}</p>
-      ${source === 'kuma'
-        ? html`<input key="kuma" type="file" accept=".db,.json,application/json,application/vnd.sqlite3" onChange=${(e) => { setFile(e.target.files[0] || null); reset(); }} />`
+      <p class="small muted" style=${{ margin: 0 }}>${t(source === 'kuma' ? 'ui.import.intro' : source === 'nagios' ? 'ui.import.nagios_intro' : 'ui.import.adapter_intro')}</p>
+      ${source !== 'nagios'
+        ? html`<input key=${source} type="file" accept=${source === 'kuma' ? '.db,.json,application/json,application/vnd.sqlite3' : source === 'checkmate' ? '.json,application/json' : '.yaml,.yml,text/yaml'} onChange=${(e) => { setFile(e.target.files[0] || null); reset(); }} />`
         : html`<input key="nagios" type="file" multiple accept=".cfg,text/plain" onChange=${(e) => {
           // Several object files are simply joined, as Nagios reads them.
           const fs = [...e.target.files];
@@ -139,7 +139,7 @@ function ImportTab() {
           <input type="text" class="ltr" list="import-areas" value=${area} placeholder="region:north" onInput=${(e) => { setArea(e.target.value); reset(); }} />
           <datalist id="import-areas">${areas.map(a => html`<option value=${a} />`)}</datalist><//>
         <${Field} label=${t('ui.import.manager')} hint=${t('ui.import.manager_hint')}>
-          <select value=${manager} disabled=${!area.trim()} onChange=${(e) => setManager(e.target.value)}>
+          <select value=${manager} disabled=${!area.trim() || source === 'checkmate' || source === 'gatus'} onChange=${(e) => setManager(e.target.value)}>
             <option value="">—</option>
             ${((users.data && users.data.items) || []).map(u => html`<option value=${u.username}>${u.username} (${t('ui.user.role.' + u.role)})</option>`)}
           </select><//>
@@ -154,7 +154,7 @@ function ImportTab() {
     ${done && html`<div class="banner ok"><div class="spacer">${t('ui.import.done', { monitors: done.monitors, channels: done.channels })}
       ${done.users && done.users.length > 0 && html`<ul class="small">${done.users.map(u => html`<li><span class="ltr">${u.username}</span>: ${t('ui.import.user.' + u.result)}</li>`)}</ul>`}</div></div>`}
     ${prev && html`<div class="card"><div class="hd"><h2>${t('ui.import.summary', { monitors: prev.monitors, channels: prev.channels })}${userList.length > 0 ? ' · ' + t('ui.import.accounts', { n: userList.length }) : ''}</h2><div class="spacer"></div>
-        <button class="btn primary" disabled=${busy} onClick=${() => send(true)}>${t('ui.import.apply')}</button></div>
+        <button class="btn primary" disabled=${busy || prev.blocked} onClick=${() => send(true)}>${t('ui.import.apply')}</button></div>
       <div class="bd col" style=${{ gap: '10px' }}>
         ${prev.notes && prev.notes.length > 0 && html`<div class="banner warning"><div class="spacer"><b>${t('ui.import.notes')}</b>
           <ul class="small">${prev.notes.map(n => html`<li>${n}</li>`)}</ul></div></div>`}

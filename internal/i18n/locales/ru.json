@@ -1528,5 +1528,8 @@
 "ui.theme.mist": "Туман (светло-серый)",
 "ui.theme.slate": "Сланец (серый)",
 "ui.theme.graphite": "Графит (тёмно-серый)",
-"ui.theme.ink": "Чернила (чёрный)"
+"ui.theme.ink": "Чернила (чёрный)",
+"ui.import.src_checkmate": "monitors.json · HTTP",
+"ui.import.src_gatus": "config.yaml · HTTP",
+"ui.import.adapter_intro": "Выберите экспорт Checkmate monitors.json или YAML Gatus (подмножество HTTP, до 1 MiB). Неподдерживаемые элементы блокируют применение. Учетные записи, арендаторы, оповещения и переменные среды не импортируются. Проверьте все примечания."
 }

@@ -20,6 +20,7 @@ import (
 
 // Result is a conversion: records to add, secrets to store, and the report.
 type Result struct {
+	Blocked  bool                `json:"blocked,omitempty"` // bounded adapters: any unsupported item blocks apply
 	Records  []config.RecordSpec `json:"-"`
 	Secrets  map[string]string   `json:"-"`
 	Text     string              `json:"text"` // the records as they will be written

@@ -1504,5 +1504,8 @@
 "ui.theme.mist": "미스트 (밝은 회색)",
 "ui.theme.slate": "슬레이트 (회색)",
 "ui.theme.graphite": "그래파이트 (진한 회색)",
-"ui.theme.ink": "잉크 (검정)"
+"ui.theme.ink": "잉크 (검정)",
+"ui.import.src_checkmate": "monitors.json · HTTP",
+"ui.import.src_gatus": "config.yaml · HTTP",
+"ui.import.adapter_intro": "Checkmate monitors.json 또는 Gatus YAML 파일을 선택하세요(HTTP 일부 기능, 최대 1 MiB). 지원하지 않는 항목은 적용을 차단합니다. 계정, 테넌트, 알림, 환경 변수는 가져오지 않습니다. 적용 전에 모든 설명을 확인하세요."
 }

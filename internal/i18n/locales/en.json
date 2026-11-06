@@ -1514,5 +1514,8 @@
 "ui.theme.mist": "Mist (light grey)",
 "ui.theme.slate": "Slate (mid grey)",
 "ui.theme.graphite": "Graphite (dark grey)",
-"ui.theme.ink": "Ink (black)"
+"ui.theme.ink": "Ink (black)",
+"ui.import.src_checkmate": "monitors.json · HTTP",
+"ui.import.src_gatus": "config.yaml · HTTP",
+"ui.import.adapter_intro": "Choose one Checkmate monitors.json export or Gatus YAML file (HTTP subset, 1 MiB maximum). Unsupported items block apply. No accounts, tenants, alerts or environment variables are imported. Review every note before applying."
 }

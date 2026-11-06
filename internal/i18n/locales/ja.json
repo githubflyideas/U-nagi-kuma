@@ -1504,5 +1504,8 @@
 "ui.theme.mist": "ミスト（ライトグレー）",
 "ui.theme.slate": "スレート（グレー）",
 "ui.theme.graphite": "グラファイト（ダークグレー）",
-"ui.theme.ink": "インク（黒）"
+"ui.theme.ink": "インク（黒）",
+"ui.import.src_checkmate": "monitors.json · HTTP",
+"ui.import.src_gatus": "config.yaml · HTTP",
+"ui.import.adapter_intro": "Checkmate の monitors.json または Gatus の YAML を選択（HTTP の一部、最大 1 MiB）。未対応項目があると適用できません。アカウント、テナント、通知、環境変数は移行しません。適用前に説明を確認してください。"
 }

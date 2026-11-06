@@ -1504,5 +1504,8 @@
 "ui.theme.mist": "雾灰",
 "ui.theme.slate": "石板灰",
 "ui.theme.graphite": "石墨",
-"ui.theme.ink": "墨黑"
+"ui.theme.ink": "墨黑",
+"ui.import.src_checkmate": "monitors.json · HTTP",
+"ui.import.src_gatus": "config.yaml · HTTP",
+"ui.import.adapter_intro": "选择一个 Checkmate monitors.json 导出或 Gatus YAML 文件（仅 HTTP 子集，最大 1 MiB）。不支持的项目会阻止应用。不导入账户、租户、告警或环境变量。应用前请检查所有说明。"
 }

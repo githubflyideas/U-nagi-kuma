@@ -159,12 +159,16 @@ func (s *Server) maintDelete(w http.ResponseWriter, r *http.Request) (any, error
 // kumaImport previews (?apply=0) or applies an Uptime Kuma backup or a
 // Nagios object configuration sent as the request body.
 func (s *Server) kumaImport(w http.ResponseWriter, r *http.Request) (any, error) {
-	if src := r.PathValue("source"); src != "kuma" && src != "nagios" {
+	if src := r.PathValue("source"); src != "kuma" && src != "nagios" && src != "checkmate" && src != "gatus" {
 		return nil, notFound("import source")
 	}
-	data, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 32<<20))
+	limit := int64(32 << 20)
+	if r.PathValue("source") == "gatus" || r.PathValue("source") == "checkmate" {
+		limit = 1 << 20
+	}
+	data, err := io.ReadAll(http.MaxBytesReader(w, r.Body, limit))
 	if err != nil {
-		return nil, Errorf(http.StatusRequestEntityTooLarge, CodeTooLarge, "the upload is larger than 32 MB")
+		return nil, Errorf(http.StatusRequestEntityTooLarge, CodeTooLarge, "the upload exceeds the source size limit (%d bytes)", limit)
 	}
 	q := r.URL.Query()
 	o := app.KumaOptions{Area: strings.TrimSpace(q.Get("area")), Role: q.Get("role"), Manager: q.Get("manager"), Source: r.PathValue("source")}

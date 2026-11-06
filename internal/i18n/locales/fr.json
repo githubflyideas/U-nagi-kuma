@@ -1513,5 +1513,8 @@
 "ui.theme.mist": "Brume (gris clair)",
 "ui.theme.slate": "Ardoise (gris moyen)",
 "ui.theme.graphite": "Graphite (gris foncé)",
-"ui.theme.ink": "Encre (noir)"
+"ui.theme.ink": "Encre (noir)",
+"ui.import.src_checkmate": "monitors.json · HTTP",
+"ui.import.src_gatus": "config.yaml · HTTP",
+"ui.import.adapter_intro": "Choisissez un export Checkmate monitors.json ou un fichier YAML Gatus (sous-ensemble HTTP, 1 MiB maximum). Les éléments non pris en charge bloquent l’application. Aucun compte, locataire, alerte ni variable d’environnement n’est importé. Vérifiez toutes les notes."
 }

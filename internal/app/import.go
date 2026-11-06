@@ -28,10 +28,18 @@ type KumaOptions struct {
 func (a *App) convert(data []byte, o KumaOptions) (*importer.Result, error) {
 	opts := importer.Options{Area: o.Area, File: "upload", SecretExists: a.secrets.Has,
 		UserExists: func(name string) bool { _, err := a.store.UserID(name); return err == nil }}
-	if o.Source == "nagios" {
+	switch o.Source {
+	case "nagios":
 		return importer.Nagios(data, a.Config().Config, opts)
+	case "gatus":
+		return importer.Gatus(data, a.Config().Config, opts)
+	case "checkmate":
+		return importer.Checkmate(data, a.Config().Config, opts)
+	case "", "kuma":
+		return importer.Kuma(data, a.Config().Config, opts)
+	default:
+		return nil, fmt.Errorf("unknown import source")
 	}
-	return importer.Kuma(data, a.Config().Config, opts)
 }
 
 // UserNote is what happened to one account during an import.
@@ -69,7 +77,13 @@ func (a *App) ImportKuma(data []byte, author string, o KumaOptions) (ConfigState
 	if err != nil {
 		return ConfigState{}, nil, nil, err
 	}
-	from := "Uptime Kuma"
+	if err := res.ActivationError(); err != nil {
+		return ConfigState{}, nil, nil, err
+	}
+	if (o.Source == "gatus" || o.Source == "checkmate") && o.Manager != "" {
+		return ConfigState{}, nil, nil, fmt.Errorf("account grants are not supported for this import source")
+	}
+	from := res.Source
 	if o.Source == "nagios" {
 		from = "Nagios"
 	}
