@@ -19,7 +19,7 @@ Einfaches, selbst gehostetes Monitoring: Sie wissen sofort, wenn Ihre Websites o
 - **Prüft, was zählt.** Websites, Server, Ports, Ping, DNS, SSL-Zertifikate und den Ablauf von Domains.
 - **Alarme dort, wo Sie ohnehin sind.** E-Mail, Telegram, Slack, Discord, Feishu, DingTalk, WeCom, Webhooks und mehr.
 - **Statusseiten**, damit Ihre Nutzer immer Bescheid wissen.
-- **Einfacher Umstieg.** Übernehmen Sie Ihre Monitore aus Uptime Kuma oder Nagios.
+- **Einfacher Umstieg.** Monitore aus Uptime Kuma, Nagios, Checkmate oder Gatus übernehmen, in der Weboberfläche oder auf der Kommandozeile.
 - **Spricht Ihre Sprache.** Die Oberfläche gibt es in 15 Sprachen.
 
 ## Schnellstart
@@ -54,37 +54,22 @@ Unter Windows starten Sie `unagikuma.exe`.
 - **Host ausgefallen?** Seine Dienste werden nicht einzeln gemeldet.
 - **Höchstens drei Alarme pro Minute und Kanal;** der Rest kommt als eine Zusammenfassung. Entwarnungen gehen immer sofort raus.
 
-## Umstieg von Uptime Kuma
+## Umstieg von einem anderen Werkzeug
 
-Uptime Kuma beenden und zuerst ansehen (es wird nichts geändert):
+Öffne in der Weboberfläche **Konfiguration › Importieren**, wähle Uptime Kuma, Nagios, Checkmate oder Gatus, lade die Datei hoch, prüfe die Vorschau und füge sie hinzu.
 
-```sh
-./unagikuma import kuma --dry-run /path/to/uptime-kuma/data/kuma.db
-```
+![Import aus Uptime Kuma, Nagios, Checkmate oder Gatus in der Weboberfläche](docs/images/import.png)
 
-Wenn alles passt, importieren:
+Oder auf der Kommandozeile: erst mit `--dry-run` ansehen (nichts wird geändert), dann denselben Befehl ohne ausführen.
 
 ```sh
-./unagikuma import kuma /path/to/uptime-kuma/data/kuma.db
+./unagikuma import kuma      --dry-run /path/to/kuma.db
+./unagikuma import nagios    --dry-run /etc/nagios4/nagios.cfg
+./unagikuma import checkmate --dry-run monitors.json
+./unagikuma import gatus     --dry-run config.yaml
 ```
 
-Der Bericht zeigt, was importiert wurde, was man prüfen sollte und was nicht importiert werden konnte, jeweils mit dem nächsten Schritt. Er wird auch in `data/import-reports/` gespeichert. Ein erneuter Aufruf fügt nur Neues hinzu.
-
-## Umstieg von Nagios
-
-Geben Sie `nagios.cfg` an und sehen Sie zuerst nach (es wird nichts geändert):
-
-```sh
-./unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
-```
-
-Wenn alles passt, importieren:
-
-```sh
-./unagikuma import nagios /etc/nagios4/nagios.cfg
-```
-
-Der Bericht zeigt, was importiert wurde, was man prüfen sollte und was nicht importiert werden konnte, jeweils mit dem nächsten Schritt. Er wird auch in `data/import-reports/` gespeichert. Ein erneuter Aufruf fügt nur Neues hinzu.
+Checkmate und Gatus: HTTP-Prüfungen werden übernommen. Was sich nicht genau übernehmen lässt, wird aufgelistet und stoppt den Import, damit nichts halb übernommen wird.
 
 ## Passwort vergessen?
 

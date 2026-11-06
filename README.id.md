@@ -19,7 +19,7 @@ Pemantauan self-hosted yang mudah: langsung tahu saat situs atau server Anda mat
 - **Memeriksa hal yang penting.** Situs web, server, port, ping, DNS, sertifikat SSL, dan masa berlaku domain.
 - **Peringatan di tempat Anda biasa berada.** Email, Telegram, Slack, Discord, Feishu, DingTalk, WeCom, webhook, dan lainnya.
 - **Halaman status** agar pengguna Anda selalu tahu kabar terbaru.
-- **Mudah pindah.** Bawa monitor Anda dari Uptime Kuma atau Nagios.
+- **Mudah pindah.** Bawa monitor Anda dari Uptime Kuma, Nagios, Checkmate, atau Gatus, lewat halaman web atau baris perintah.
 - **Berbicara dalam bahasa Anda.** Antarmuka tersedia dalam 15 bahasa.
 
 ## Mulai cepat
@@ -54,37 +54,22 @@ Di Windows, jalankan `unagikuma.exe`.
 - **Host mati?** Layanan di atasnya tidak dilaporkan satu per satu.
 - **Paling banyak tiga peringatan per menit per kanal;** sisanya datang sebagai satu ringkasan. Pemulihan selalu langsung dikirim.
 
-## Pindah dari Uptime Kuma
+## Pindah dari alat lain
 
-Hentikan Uptime Kuma, lalu lihat dulu (tidak ada yang diubah):
+Di halaman web, buka **Konfigurasi › Impor**, pilih Uptime Kuma, Nagios, Checkmate, atau Gatus, unggah file-nya, periksa pratinjau, lalu tambahkan.
 
-```sh
-./unagikuma import kuma --dry-run /path/to/uptime-kuma/data/kuma.db
-```
+![Impor dari Uptime Kuma, Nagios, Checkmate, atau Gatus di halaman web](docs/images/import.png)
 
-Jika sudah sesuai, impor:
+Atau lewat baris perintah: lihat dulu dengan `--dry-run` (tidak ada yang diubah), lalu jalankan perintah yang sama tanpa itu.
 
 ```sh
-./unagikuma import kuma /path/to/uptime-kuma/data/kuma.db
+./unagikuma import kuma      --dry-run /path/to/kuma.db
+./unagikuma import nagios    --dry-run /etc/nagios4/nagios.cfg
+./unagikuma import checkmate --dry-run monitors.json
+./unagikuma import gatus     --dry-run config.yaml
 ```
 
-Laporan menampilkan apa yang diimpor, apa yang perlu dicek, dan apa yang tidak bisa diimpor, beserta langkah yang perlu dilakukan. Laporan juga disimpan di `data/import-reports/`. Menjalankannya lagi hanya menambahkan yang baru.
-
-## Pindah dari Nagios
-
-Arahkan ke `nagios.cfg` dan lihat dulu (tidak ada yang diubah):
-
-```sh
-./unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
-```
-
-Jika sudah sesuai, impor:
-
-```sh
-./unagikuma import nagios /etc/nagios4/nagios.cfg
-```
-
-Laporan menampilkan apa yang diimpor, apa yang perlu dicek, dan apa yang tidak bisa diimpor, beserta langkah yang perlu dilakukan. Laporan juga disimpan di `data/import-reports/`. Menjalankannya lagi hanya menambahkan yang baru.
+Checkmate dan Gatus: pemeriksaan HTTP dipindahkan. Yang tidak bisa dipindahkan persis akan dicantumkan dan menghentikan impor, jadi tidak ada yang setengah jadi.
 
 ## Lupa kata sandi?
 

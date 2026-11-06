@@ -19,7 +19,7 @@ Une supervision auto-hébergée et simple : sachez dès qu’un site ou un serve
 - **Surveille l’essentiel.** Sites web, serveurs, ports, ping, DNS, certificats SSL et expiration des noms de domaine.
 - **Des alertes là où vous êtes.** E-mail, Telegram, Slack, Discord, Feishu, DingTalk, WeCom, webhooks et plus encore.
 - **Des pages de statut** pour tenir vos utilisateurs informés.
-- **Facile à adopter.** Récupérez vos sondes depuis Uptime Kuma ou Nagios.
+- **Facile de changer.** Récupérez vos moniteurs depuis Uptime Kuma, Nagios, Checkmate ou Gatus, dans l'interface web ou en ligne de commande.
 - **Parle votre langue.** L’interface existe en 15 langues.
 
 ## Démarrage rapide
@@ -54,37 +54,22 @@ Sous Windows, lancez `unagikuma.exe`.
 - **Un hôte est en panne ?** Ses services ne sont pas signalés un par un.
 - **Au plus trois alertes par minute et par canal ;** le reste arrive en un seul résumé. Les rétablissements partent toujours immédiatement.
 
-## Venir d'Uptime Kuma
+## Venir d'un autre outil
 
-Arrêtez Uptime Kuma, puis regardez d'abord (rien n'est modifié) :
+Dans l'interface web, ouvrez **Configuration › Importer**, choisissez Uptime Kuma, Nagios, Checkmate ou Gatus, envoyez le fichier, vérifiez l'aperçu et ajoutez.
 
-```sh
-./unagikuma import kuma --dry-run /path/to/uptime-kuma/data/kuma.db
-```
+![Import depuis Uptime Kuma, Nagios, Checkmate ou Gatus dans l'interface web](docs/images/import.png)
 
-Si tout est bon, importez :
+Ou en ligne de commande : regardez d'abord avec `--dry-run` (rien n'est modifié), puis relancez la même commande sans.
 
 ```sh
-./unagikuma import kuma /path/to/uptime-kuma/data/kuma.db
+./unagikuma import kuma      --dry-run /path/to/kuma.db
+./unagikuma import nagios    --dry-run /etc/nagios4/nagios.cfg
+./unagikuma import checkmate --dry-run monitors.json
+./unagikuma import gatus     --dry-run config.yaml
 ```
 
-Le rapport indique ce qui a été importé, ce qu'il faut vérifier et ce qui n'a pas pu l'être, avec quoi faire. Il est aussi enregistré dans `data/import-reports/`. Relancer la commande n'ajoute que ce qui est nouveau.
-
-## Venir de Nagios
-
-Indiquez votre `nagios.cfg` et regardez d'abord (rien n'est modifié) :
-
-```sh
-./unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
-```
-
-Si tout est bon, importez :
-
-```sh
-./unagikuma import nagios /etc/nagios4/nagios.cfg
-```
-
-Le rapport indique ce qui a été importé, ce qu'il faut vérifier et ce qui n'a pas pu l'être, avec quoi faire. Il est aussi enregistré dans `data/import-reports/`. Relancer la commande n'ajoute que ce qui est nouveau.
+Checkmate et Gatus : les vérifications HTTP sont reprises. Ce qui ne peut pas être repris à l'identique est listé et arrête l'import, pour que rien ne soit fait à moitié.
 
 ## Mot de passe oublié ?
 

@@ -19,7 +19,7 @@
 - **该查的都能查。** 网站、服务器、端口、Ping、DNS、SSL 证书,以及域名到期时间。
 - **告警发到你常用的地方。** 邮件、Telegram、Slack、Discord、飞书、钉钉、企业微信、Webhook 等。
 - **状态页**,让你的用户随时了解服务状态。
-- **从白到黑五种色调。** 纸白、雾灰、石板灰、石墨、墨黑,配上 Nagios 式的状态颜色,一眼看清。
+- **轻松迁移。** 可以把 Uptime Kuma、Nagios、Checkmate 或 Gatus 里的监控搬过来,网页上或命令行都行。
 - **轻松迁移。** 可以把 Uptime Kuma 或 Nagios 里的监控搬过来。
 - **说你的语言。** 界面支持 15 种语言。
 
@@ -55,37 +55,22 @@ Windows 上运行 `unagikuma.exe`。
 - **主机宕机?** 它上面的服务不会一个个分别报警。
 - **每个通道每分钟最多三条告警,** 其余汇成一条摘要。恢复通知总是立即发出。
 
-## 从 Uptime Kuma 迁移
+## 从其他工具迁移
 
-先停止 Uptime Kuma，然后预览一下（不会做任何更改）：
+在网页上打开 **配置 › 导入**,选 Uptime Kuma、Nagios、Checkmate 或 Gatus,上传文件,看一眼预览,确认添加即可。
 
-```sh
-./unagikuma import kuma --dry-run /path/to/uptime-kuma/data/kuma.db
-```
+![在网页上从 Uptime Kuma、Nagios、Checkmate 或 Gatus 导入](docs/images/import.png)
 
-确认无误后正式导入：
+也可以用命令行:先加 `--dry-run` 预览(不做任何改动),确认没问题后去掉它再运行一次。
 
 ```sh
-./unagikuma import kuma /path/to/uptime-kuma/data/kuma.db
+./unagikuma import kuma      --dry-run /path/to/kuma.db
+./unagikuma import nagios    --dry-run /etc/nagios4/nagios.cfg
+./unagikuma import checkmate --dry-run monitors.json
+./unagikuma import gatus     --dry-run config.yaml
 ```
 
-报告会列出已导入的、需要查看的和无法导入的内容，并说明该怎么做。报告也会保存在 `data/import-reports/` 中。再次运行只会添加新的内容。
-
-## 从 Nagios 迁移
-
-指向 `nagios.cfg`，先预览一下（不会做任何更改）：
-
-```sh
-./unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
-```
-
-确认无误后正式导入：
-
-```sh
-./unagikuma import nagios /etc/nagios4/nagios.cfg
-```
-
-报告会列出已导入的、需要查看的和无法导入的内容，并说明该怎么做。报告也会保存在 `data/import-reports/` 中。再次运行只会添加新的内容。
+Checkmate 和 Gatus 迁移的是 HTTP 检测。无法原样迁移的项目会列出来并阻止导入,不会只导入一半。
 
 ## 忘记密码？
 

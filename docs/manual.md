@@ -340,7 +340,7 @@ Without a licence everything works except reading the audit log, and nothing is 
 
 A licence may limit the number of nodes (the master included) and of accounts. Within the limit nothing changes; beyond it, adding a node, a joining machine, a new account or an imported account is refused with a message saying so. Nothing already in use is switched off, for example after a smaller licence replaces a larger one; the registration page shows the usage against each limit.
 
-## Moving from Uptime Kuma or Nagios
+## Moving from Uptime Kuma, Nagios, Checkmate or Gatus
 
 The import adds what Unagikuma can run and lists everything else with the reason and what to do instead. It never changes or deletes monitors that are already here, so running it twice is safe. Always look first with `--dry-run`. On a new machine you can import before the first start: the import creates the data directory.
 
@@ -362,7 +362,16 @@ unagikuma import nagios /etc/nagios4/nagios.cfg
 
 A folder or single `.cfg` files work too. Templates are resolved; hosts become ping checks that their services depend on (`parent=`); `check_http`, `check_tcp`, `check_ssh`, `check_dns`, `check_dig`, `check_ntp`, `check_snmp` (uptime), `check_mysql`, `check_pgsql` and similar plugins become built-in checks; other plugins become script checks that start paused until you copy the plugin into the check-scripts directory. `$USERn$` values from `resource.cfg` become secrets, passive-only services become push monitors, contacts with an e-mail address become e-mail channels (sent through this machine's sendmail command, as Nagios sent them; on a machine without one, to its SMTP port on localhost, which the report points out), contact groups become group channels, and time periods become `PERIOD` records.
 
-**The report.** Both print a summary (imported / needs a look / not imported), a table of what was imported, and for each item that needs a look or was not imported the reason and what to do. The same report is saved as text and Markdown in `<data>/import-reports/`. The new records go in one block at the end of `monitors.bind`, in sections headed by where they came from; `title=` keeps the original names. The web UI does the same under **Configuration › Import**. Options: `--area SECTION` puts the monitors in a section, `--role` sets the role of imported accounts, `--report DIR` saves the report elsewhere. Exit status: 0 done (or nothing new), 1 failed (nothing changed), 2 wrong usage.
+**From Checkmate** (bluewave-labs/Checkmate: **Settings › Export monitors**, the `monitors.json` file) **or Gatus** (its YAML configuration file):
+
+```sh
+unagikuma import checkmate --dry-run monitors.json
+unagikuma import gatus --dry-run config.yaml
+```
+
+HTTP checks come over: name, group, address, method, interval, paused state and the expected status codes, plus TLS and redirect settings, headers, request body and Checkmate's bearer token, which are stored as secrets. For Gatus, an endpoint must have exactly one `[STATUS] == N` condition. Anything that would not behave the same here (other check types, body or response-time conditions, alerting, proxies, addresses with a query string or credentials) is listed and stops the whole import, so nothing is half-imported: change it in the source file or add it by hand. A name that is already used here also stops it; rename the source monitor. No accounts or notification channels are created. The file may be up to 1 MiB.
+
+**The report.** All of them print a summary (imported / needs a look / not imported), a table of what was imported, and for each item that needs a look or was not imported the reason and what to do. The same report is saved as text and Markdown in `<data>/import-reports/`. The new records go in one block at the end of `monitors.bind`, in sections headed by where they came from; `title=` keeps the original names. The web UI does the same under **Configuration › Import**. Options: `--area SECTION` puts the monitors in a section, `--role` sets the role of imported accounts, `--report DIR` saves the report elsewhere. Exit status: 0 done (or nothing new), 1 failed (nothing changed), 2 wrong usage.
 
 ## Forgot your password?
 

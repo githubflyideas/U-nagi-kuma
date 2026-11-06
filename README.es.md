@@ -19,7 +19,7 @@ Monitorización autoalojada y sencilla: entérate en cuanto tus webs o servidore
 - **Vigila lo importante.** Sitios web, servidores, puertos, ping, DNS, certificados SSL y caducidad de dominios.
 - **Alertas donde ya estás.** Correo, Telegram, Slack, Discord, Feishu, DingTalk, WeCom, webhooks y más.
 - **Páginas de estado** para mantener informados a tus usuarios.
-- **Cambiarse es fácil.** Trae tus monitores desde Uptime Kuma o Nagios.
+- **Fácil de cambiar.** Trae tus monitores desde Uptime Kuma, Nagios, Checkmate o Gatus, en la página web o en la línea de comandos.
 - **Habla tu idioma.** La interfaz está disponible en 15 idiomas.
 
 ## Primeros pasos
@@ -54,37 +54,22 @@ En Windows, ejecuta `unagikuma.exe`.
 - **¿Se cayó un host?** Sus servicios no se avisan uno por uno.
 - **Como mucho tres alertas por minuto y canal;** el resto llega en un solo resumen. Las recuperaciones salen siempre al instante.
 
-## Cambiar desde Uptime Kuma
+## Cambiar desde otra herramienta
 
-Detén Uptime Kuma y revisa primero (no se cambia nada):
+En la página web abre **Configuración › Importar**, elige Uptime Kuma, Nagios, Checkmate o Gatus, sube el archivo, revisa la vista previa y añádelo.
 
-```sh
-./unagikuma import kuma --dry-run /path/to/uptime-kuma/data/kuma.db
-```
+![Importar desde Uptime Kuma, Nagios, Checkmate o Gatus en la página web](docs/images/import.png)
 
-Si todo se ve bien, importa:
+O en la línea de comandos: mira primero con `--dry-run` (no se cambia nada) y luego ejecuta el mismo comando sin él.
 
 ```sh
-./unagikuma import kuma /path/to/uptime-kuma/data/kuma.db
+./unagikuma import kuma      --dry-run /path/to/kuma.db
+./unagikuma import nagios    --dry-run /etc/nagios4/nagios.cfg
+./unagikuma import checkmate --dry-run monitors.json
+./unagikuma import gatus     --dry-run config.yaml
 ```
 
-El informe muestra qué se importó, qué conviene revisar y qué no se pudo importar, con qué hacer en cada caso. También se guarda en `data/import-reports/`. Si lo ejecutas de nuevo, solo añade lo nuevo.
-
-## Cambiar desde Nagios
-
-Indica tu `nagios.cfg` y revisa primero (no se cambia nada):
-
-```sh
-./unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
-```
-
-Si todo se ve bien, importa:
-
-```sh
-./unagikuma import nagios /etc/nagios4/nagios.cfg
-```
-
-El informe muestra qué se importó, qué conviene revisar y qué no se pudo importar, con qué hacer en cada caso. También se guarda en `data/import-reports/`. Si lo ejecutas de nuevo, solo añade lo nuevo.
+Checkmate y Gatus: se traen las comprobaciones HTTP. Lo que no se puede traer exactamente se muestra y detiene la importación, así nada queda a medias.
 
 ## ¿Olvidaste tu contraseña?
 

@@ -19,7 +19,7 @@
 - **중요한 것을 확인합니다.** 웹사이트, 서버, 포트, ping, DNS, SSL 인증서, 도메인 만료일.
 - **늘 쓰는 곳으로 알림.** 이메일, Telegram, Slack, Discord, Feishu, DingTalk, WeCom, 웹훅 등.
 - **상태 페이지**로 사용자에게 언제나 상황을 알려 줍니다.
-- **옮겨 오기 쉽습니다.** Uptime Kuma나 Nagios의 모니터를 가져올 수 있습니다.
+- **옮겨 오기 쉽습니다.** Uptime Kuma, Nagios, Checkmate, Gatus의 모니터를 웹 화면이나 명령줄에서 가져올 수 있습니다.
 - **내 언어로.** 화면은 15개 언어를 지원합니다.
 
 ## 빠른 시작
@@ -54,37 +54,22 @@ Windows에서는 `unagikuma.exe`를 실행합니다.
 - **호스트가 다운됐다면?** 그 위의 서비스를 하나하나 알리지 않습니다.
 - **채널마다 1분에 최대 3건,** 나머지는 요약 하나로 옵니다. 복구 알림은 항상 즉시 나갑니다.
 
-## Uptime Kuma에서 옮겨 오기
+## 다른 도구에서 옮겨 오기
 
-Uptime Kuma를 멈춘 뒤 먼저 확인합니다(아무것도 바뀌지 않음):
+웹 화면에서 **설정 파일 › 가져오기** 를 열고 Uptime Kuma, Nagios, Checkmate, Gatus 중 하나를 고른 뒤 파일을 올리고, 미리 보기를 확인한 다음 추가하세요.
 
-```sh
-./unagikuma import kuma --dry-run /path/to/uptime-kuma/data/kuma.db
-```
+![웹 화면에서 Uptime Kuma, Nagios, Checkmate, Gatus 가져오기](docs/images/import.png)
 
-문제가 없으면 가져옵니다:
+명령줄에서도 됩니다. 먼저 `--dry-run` 으로 확인하고(아무것도 바뀌지 않음), 괜찮으면 빼고 같은 명령을 실행하세요.
 
 ```sh
-./unagikuma import kuma /path/to/uptime-kuma/data/kuma.db
+./unagikuma import kuma      --dry-run /path/to/kuma.db
+./unagikuma import nagios    --dry-run /etc/nagios4/nagios.cfg
+./unagikuma import checkmate --dry-run monitors.json
+./unagikuma import gatus     --dry-run config.yaml
 ```
 
-보고서에는 가져온 항목, 확인이 필요한 항목, 가져오지 못한 항목과 해야 할 일이 나옵니다. `data/import-reports/`에도 저장됩니다. 다시 실행하면 새 항목만 추가됩니다.
-
-## Nagios에서 옮겨 오기
-
-`nagios.cfg`를 지정하고 먼저 확인합니다(아무것도 바뀌지 않음):
-
-```sh
-./unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
-```
-
-문제가 없으면 가져옵니다:
-
-```sh
-./unagikuma import nagios /etc/nagios4/nagios.cfg
-```
-
-보고서에는 가져온 항목, 확인이 필요한 항목, 가져오지 못한 항목과 해야 할 일이 나옵니다. `data/import-reports/`에도 저장됩니다. 다시 실행하면 새 항목만 추가됩니다.
+Checkmate와 Gatus는 HTTP 검사를 옮깁니다. 그대로 옮길 수 없는 항목은 목록에 표시되고 가져오기를 멈추므로, 절반만 가져오는 일은 없습니다.
 
 ## 비밀번호를 잊으셨나요?
 

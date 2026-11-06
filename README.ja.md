@@ -19,7 +19,7 @@
 - **大事なところをしっかり監視。** Web サイト、サーバー、ポート、Ping、DNS、SSL 証明書、ドメインの有効期限。
 - **いつも使っている場所に通知。** メール、Telegram、Slack、Discord、Feishu、DingTalk、WeCom、Webhook など。
 - **ステータスページ**で、利用者にいつでも状況を伝えられます。
-- **乗り換えもかんたん。** Uptime Kuma や Nagios から監視設定を取り込めます。
+- **乗り換えもかんたん。** Uptime Kuma、Nagios、Checkmate、Gatus から、Web 画面でもコマンドラインでも監視を取り込めます。
 - **あなたの言語で。** 画面は 15 の言語に対応しています。
 
 ## クイックスタート
@@ -54,37 +54,22 @@ Windows では `unagikuma.exe` を実行します。
 - **ホストが落ちた？** その上のサービスを 1 つずつ通知しません。
 - **チャンネルごとに 1 分あたり最大 3 件。** 残りは 1 通のまとめで届きます。復旧通知は常にすぐ送られます。
 
-## Uptime Kuma からの移行
+## 他のツールからの移行
 
-Uptime Kuma を止めてから、まず確認します(何も変更されません):
+Web 画面で **設定ファイル › インポート** を開き、Uptime Kuma、Nagios、Checkmate、Gatus のいずれかを選んでファイルをアップロードし、プレビューを確認して追加します。
 
-```sh
-./unagikuma import kuma --dry-run /path/to/uptime-kuma/data/kuma.db
-```
+![Web 画面で Uptime Kuma、Nagios、Checkmate、Gatus から取り込む](docs/images/import.png)
 
-問題なければ取り込みます:
+コマンドラインでも可能です。まず `--dry-run` で確認し(何も変更されません)、問題なければ外して同じコマンドを実行します。
 
 ```sh
-./unagikuma import kuma /path/to/uptime-kuma/data/kuma.db
+./unagikuma import kuma      --dry-run /path/to/kuma.db
+./unagikuma import nagios    --dry-run /etc/nagios4/nagios.cfg
+./unagikuma import checkmate --dry-run monitors.json
+./unagikuma import gatus     --dry-run config.yaml
 ```
 
-レポートには、取り込んだもの、確認が必要なもの、取り込めなかったものと、その対処方法が表示されます。`data/import-reports/` にも保存されます。もう一度実行しても新しいものだけが追加されます。
-
-## Nagios からの移行
-
-`nagios.cfg` を指定して、まず確認します(何も変更されません):
-
-```sh
-./unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
-```
-
-問題なければ取り込みます:
-
-```sh
-./unagikuma import nagios /etc/nagios4/nagios.cfg
-```
-
-レポートには、取り込んだもの、確認が必要なもの、取り込めなかったものと、その対処方法が表示されます。`data/import-reports/` にも保存されます。もう一度実行しても新しいものだけが追加されます。
+Checkmate と Gatus は HTTP チェックを移行します。そのまま移せない項目は一覧に出て取り込みを止めるので、中途半端に取り込まれることはありません。
 
 ## パスワードを忘れたら
 

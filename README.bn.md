@@ -19,7 +19,7 @@
 - **যা দরকার তা-ই দেখে।** ওয়েবসাইট, সার্ভার, পোর্ট, পিং, DNS, SSL সার্টিফিকেট আর ডোমেনের মেয়াদ।
 - **অ্যালার্ট পৌঁছায় যেখানে আপনি আছেন।** ইমেইল, Telegram, Slack, Discord, Feishu, DingTalk, WeCom, ওয়েবহুক ও আরও অনেক কিছু।
 - **স্ট্যাটাস পেজ**, যাতে আপনার ব্যবহারকারীরা সবসময় খবর পান।
-- **বদলানো সহজ।** Uptime Kuma বা Nagios থেকে আপনার মনিটরগুলো নিয়ে আসুন।
+- **সহজে সরে আসুন।** Uptime Kuma, Nagios, Checkmate বা Gatus থেকে মনিটর নিয়ে আসুন, ওয়েব পেজে বা কমান্ড লাইনে।
 - **আপনার ভাষায়।** ইন্টারফেসটি ১৫টি ভাষায় পাওয়া যায়।
 
 ## দ্রুত শুরু
@@ -54,37 +54,22 @@ Windows-এ `unagikuma.exe` চালান।
 - **হোস্ট ডাউন?** তার উপরের সার্ভিসগুলো এক এক করে জানানো হয় না।
 - **প্রতি চ্যানেলে প্রতি মিনিটে সর্বোচ্চ তিনটি অ্যালার্ট;** বাকিগুলো একটি সারাংশে আসে। পুনরুদ্ধারের বার্তা সবসময় সঙ্গে সঙ্গে যায়।
 
-## Uptime Kuma থেকে আসা
+## অন্য টুল থেকে আসা
 
-Uptime Kuma বন্ধ করুন, তারপর আগে দেখে নিন (কিছুই বদলানো হয় না):
+ওয়েব পেজে **কনফিগারেশন › আমদানি** খুলুন, Uptime Kuma, Nagios, Checkmate বা Gatus বেছে নিন, ফাইল আপলোড করুন, প্রিভিউ দেখে যোগ করুন।
 
-```sh
-./unagikuma import kuma --dry-run /path/to/uptime-kuma/data/kuma.db
-```
+![ওয়েব পেজে Uptime Kuma, Nagios, Checkmate বা Gatus থেকে ইমপোর্ট](docs/images/import.png)
 
-সব ঠিক থাকলে ইমপোর্ট করুন:
+অথবা কমান্ড লাইনে: আগে `--dry-run` দিয়ে দেখুন (কিছুই বদলায় না), তারপর সেটি বাদ দিয়ে একই কমান্ড চালান।
 
 ```sh
-./unagikuma import kuma /path/to/uptime-kuma/data/kuma.db
+./unagikuma import kuma      --dry-run /path/to/kuma.db
+./unagikuma import nagios    --dry-run /etc/nagios4/nagios.cfg
+./unagikuma import checkmate --dry-run monitors.json
+./unagikuma import gatus     --dry-run config.yaml
 ```
 
-রিপোর্টে দেখা যায় কী ইমপোর্ট হলো, কী দেখে নেওয়া দরকার আর কী ইমপোর্ট করা যায়নি, সঙ্গে কী করতে হবে। এটি `data/import-reports/`-এও সেভ হয়। আবার চালালে শুধু নতুনগুলো যোগ হয়।
-
-## Nagios থেকে আসা
-
-এটিকে `nagios.cfg` দেখিয়ে দিন এবং আগে দেখে নিন (কিছুই বদলানো হয় না):
-
-```sh
-./unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
-```
-
-সব ঠিক থাকলে ইমপোর্ট করুন:
-
-```sh
-./unagikuma import nagios /etc/nagios4/nagios.cfg
-```
-
-রিপোর্টে দেখা যায় কী ইমপোর্ট হলো, কী দেখে নেওয়া দরকার আর কী ইমপোর্ট করা যায়নি, সঙ্গে কী করতে হবে। এটি `data/import-reports/`-এও সেভ হয়। আবার চালালে শুধু নতুনগুলো যোগ হয়।
+Checkmate ও Gatus: HTTP চেক আনা হয়। যা হুবহু আনা যায় না তা তালিকায় দেখানো হয় এবং ইমপোর্ট থামিয়ে দেয়, তাই কিছুই অর্ধেক হয়ে থাকে না।
 
 ## পাসওয়ার্ড ভুলে গেছেন?
 

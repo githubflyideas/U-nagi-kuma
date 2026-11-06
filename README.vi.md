@@ -19,7 +19,7 @@ Giám sát tự lưu trữ, dễ dùng: biết ngay khi website hay máy chủ c
 - **Kiểm tra những gì quan trọng.** Website, máy chủ, cổng, ping, DNS, chứng chỉ SSL và hạn tên miền.
 - **Cảnh báo đến đúng nơi bạn dùng.** Email, Telegram, Slack, Discord, Feishu, DingTalk, WeCom, webhook và nhiều kênh khác.
 - **Trang trạng thái** giúp người dùng của bạn luôn nắm được tình hình.
-- **Chuyển sang dễ dàng.** Mang các mục giám sát từ Uptime Kuma hoặc Nagios sang.
+- **Dễ chuyển sang.** Mang các mục giám sát từ Uptime Kuma, Nagios, Checkmate hoặc Gatus sang, trên trang web hoặc bằng dòng lệnh.
 - **Nói ngôn ngữ của bạn.** Giao diện có sẵn 15 ngôn ngữ.
 
 ## Bắt đầu nhanh
@@ -54,37 +54,22 @@ Trên Windows, chạy `unagikuma.exe`.
 - **Máy chủ sập?** Các dịch vụ trên nó không bị báo từng cái một.
 - **Mỗi kênh tối đa ba cảnh báo mỗi phút;** phần còn lại đến thành một bản tóm tắt. Thông báo khôi phục luôn được gửi ngay.
 
-## Chuyển từ Uptime Kuma
+## Chuyển từ công cụ khác
 
-Dừng Uptime Kuma, rồi xem trước (không thay đổi gì):
+Trên trang web, mở **Cấu hình › Nhập**, chọn Uptime Kuma, Nagios, Checkmate hoặc Gatus, tải tệp lên, xem bản xem trước rồi thêm vào.
 
-```sh
-./unagikuma import kuma --dry-run /path/to/uptime-kuma/data/kuma.db
-```
+![Nhập từ Uptime Kuma, Nagios, Checkmate hoặc Gatus trên trang web](docs/images/import.png)
 
-Nếu mọi thứ ổn, nhập vào:
+Hoặc bằng dòng lệnh: xem trước với `--dry-run` (không thay đổi gì), rồi chạy lại cùng lệnh nhưng bỏ nó đi.
 
 ```sh
-./unagikuma import kuma /path/to/uptime-kuma/data/kuma.db
+./unagikuma import kuma      --dry-run /path/to/kuma.db
+./unagikuma import nagios    --dry-run /etc/nagios4/nagios.cfg
+./unagikuma import checkmate --dry-run monitors.json
+./unagikuma import gatus     --dry-run config.yaml
 ```
 
-Báo cáo cho biết những gì đã nhập, những gì cần xem lại và những gì không nhập được, kèm cách xử lý. Báo cáo cũng được lưu trong `data/import-reports/`. Chạy lại chỉ thêm những gì mới.
-
-## Chuyển từ Nagios
-
-Chỉ đến `nagios.cfg` và xem trước (không thay đổi gì):
-
-```sh
-./unagikuma import nagios --dry-run /etc/nagios4/nagios.cfg
-```
-
-Nếu mọi thứ ổn, nhập vào:
-
-```sh
-./unagikuma import nagios /etc/nagios4/nagios.cfg
-```
-
-Báo cáo cho biết những gì đã nhập, những gì cần xem lại và những gì không nhập được, kèm cách xử lý. Báo cáo cũng được lưu trong `data/import-reports/`. Chạy lại chỉ thêm những gì mới.
+Checkmate và Gatus: chuyển các kiểm tra HTTP. Những gì không chuyển được chính xác sẽ được liệt kê và dừng việc nhập, nên không có gì bị nhập dở dang.
 
 ## Quên mật khẩu?
 
