@@ -43,6 +43,8 @@ On Windows, run `unagikuma.exe`.
 
 ## One machine, two machines, a cluster
 
+> **Have your cake and eat it too.** Most tools make you choose: a small one that is easy to start but stays on one box, or a big one that scales but needs a database, agents and an afternoon of setup. Unagikuma is both. Start with one file on one machine; when you want more, join more machines to it. Same program, same page, nothing to migrate.
+
 Unagikuma is built for one machine first. Everything works there: checks, alerts, status pages, history. More machines only add more points of view.
 
 ### One machine: ready at once
