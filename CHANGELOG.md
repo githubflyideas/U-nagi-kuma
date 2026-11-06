@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.2.1 — 2026-11-06
+
+**Fixed**
+- Incident reports for a team member no longer show configuration changes to other teams' monitors. A change that touched both this monitor and another one used to carry the whole change into the report, with the other monitor's name and values; now only this monitor's part of the change is kept.
+
 ## v2.2.0 — 2026-11-06
 
 - Each site in a cluster now monitors and sends alerts independently, even when the main server is available. A problem may produce alerts from more than one site.

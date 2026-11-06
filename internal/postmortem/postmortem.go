@@ -176,7 +176,7 @@ func Build(st *store.Store, id int64, o Options) (*Report, error) {
 		var own []store.AuditEntry
 		for _, a := range changes {
 			if mentions(a, r.Incident.Monitor) {
-				own = append(own, a)
+				own = append(own, ownPart(a, r.Incident.Monitor))
 			}
 		}
 		changes = own
@@ -245,6 +245,22 @@ func (r *Report) leadUpChanges(st *store.Store) []store.AuditEntry {
 }
 
 // mentions reports whether an audit entry touched the monitor.
+// ownPart is the part of an entry that concerns one monitor: its own
+// record changes from the diff, and no other detail of the entry, which
+// can name the other records changed in the same action.
+func ownPart(a store.AuditEntry, monitor string) store.AuditEntry {
+	kept := []any{}
+	if diff, ok := a.Detail["diff"].([]any); ok {
+		for _, d := range diff {
+			if m, ok := d.(map[string]any); ok && m["record"] == monitor {
+				kept = append(kept, m)
+			}
+		}
+	}
+	a.Detail = map[string]any{"diff": kept}
+	return a
+}
+
 func mentions(a store.AuditEntry, monitor string) bool {
 	if monitor == "" {
 		return false
