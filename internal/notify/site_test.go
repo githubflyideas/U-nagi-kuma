@@ -21,3 +21,13 @@ func TestSiteInMessages(t *testing.T) {
 		t.Fatalf("single machine shows a site: %q / %q", title, body)
 	}
 }
+
+// A site that kept the product's own name would repeat it next to the
+// [Unagikuma] tag: "[unagikuma] [Unagikuma] Peer …".
+func TestDefaultSiteNameIsNotRepeated(t *testing.T) {
+	m := &Message{Kind: "SYSTEM", Title: "Peer N2 (n2) unreachable", Body: "y", Lang: "en", Site: "unagikuma"}
+	title, _ := Render(m)
+	if strings.Contains(strings.ToLower(title), "[unagikuma] [unagikuma]") || strings.Count(title, "[") != 1 {
+		t.Fatalf("title %q", title)
+	}
+}

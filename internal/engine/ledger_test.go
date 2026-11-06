@@ -71,7 +71,7 @@ func TestClassOf(t *testing.T) {
 
 // No channel gets more than three alerts a minute: the rest wait for one
 // digest that names how many, the monitors and the worst. Escalations
-// always go through, and new incidents up to their own share.
+// and recoveries always go through, and new incidents up to their own share.
 func TestBackstopFoldsIntoDigest(t *testing.T) {
 	e, sink := ledgerEngine(t, nil)
 	now := t0
@@ -88,17 +88,17 @@ func TestBackstopFoldsIntoDigest(t *testing.T) {
 	esc := mk(2, NoticeEscalate, 0, "db")
 	rep := mk(3, NoticeRepeat, 2, "api")
 	rec := mk(4, NoticeRecovery, 1, "mail")
-	for _, in := range []*Intent{fresh, esc} {
+	for _, in := range []*Intent{fresh, esc, rec} {
 		if e.backstop(in, now) {
 			t.Errorf("%s must go through", in.Kind)
 		}
 	}
-	for _, in := range []*Intent{rep, rec} {
+	for _, in := range []*Intent{rep} {
 		if !e.backstop(in, now) {
 			t.Errorf("%s should be folded", in.Kind)
 		}
 	}
-	if e.intents[rep.ID] != nil || len(e.folded["default"].ins) != 2 {
+	if e.intents[rep.ID] != nil || len(e.folded["default"].ins) != 1 {
 		t.Fatal("folded alerts leave the queue")
 	}
 	e.flushBackstop(now.Add(30 * time.Second))
@@ -116,11 +116,9 @@ func TestBackstopFoldsIntoDigest(t *testing.T) {
 		t.Fatal("no digest")
 	}
 	b := dg.Message.Body
-	if !strings.Contains(dg.Message.Title, "2") || !strings.Contains(b, "Total alerts: 2") || !strings.Contains(b, "api") || !strings.Contains(b, "mail") {
+	// A recovery is never folded: it tells people they can stop.
+	if !strings.Contains(dg.Message.Title, "1") || !strings.Contains(b, "Total alerts: 1") || !strings.Contains(b, "api") || strings.Contains(b, "mail") {
 		t.Errorf("digest %q / %q", dg.Message.Title, b)
-	}
-	if strings.Index(b, "- Problem") > strings.Index(b, "- Recovered") && strings.Contains(b, "- Recovered") {
-		t.Errorf("worst first: %q", b)
 	}
 	if len(dg.Covers) != 1 || dg.Covers[0] != 3 {
 		t.Errorf("the digest stands for the repeated problem: %v", dg.Covers)
@@ -134,7 +132,7 @@ func TestBackstopFoldsIntoDigest(t *testing.T) {
 			folded++
 		}
 	}
-	if folded != 2 {
+	if folded != 1 {
 		t.Errorf("ledger: %d backstop entries", folded)
 	}
 	// New incidents have a share of their own: once three went out this

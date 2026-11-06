@@ -53,7 +53,9 @@ func Render(m *Message) (title, body string) {
 	if m.DryRun {
 		prefix = append(prefix, i18n.T(lang, "msg.drill"))
 	}
-	if m.Site != "" && m.Kind != "STATUS" {
+	// A site still carrying the product's own name adds nothing next to the
+	// [Unagikuma] tag every subject has, so it is left out.
+	if m.Site != "" && m.Kind != "STATUS" && !strings.EqualFold(m.Site, "unagikuma") {
 		prefix = append(prefix, "["+sanitize(m.Site, 60)+"]")
 	}
 	if m.Kind == "STATUS" {

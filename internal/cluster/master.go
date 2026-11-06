@@ -350,7 +350,7 @@ func (m *Master) session(node, token string, conn net.Conn, r *bufio.Reader, add
 		m: m, node: node, token: token, addr: addr, conn: conn, log: log, ping: ping,
 		out: make(chan outFrame, sendQueue), cfgReady: make(chan struct{}, 1), closed: make(chan struct{}),
 		pings: map[uint64]time.Time{}, caps: capSet(h.Caps),
-		status: engine.NodeStatus{Node: node, Online: true, Since: now, LastSeen: now, Skew: h.Time.Sub(now),
+		status: engine.NodeStatus{Node: node, Online: !h.NeedState, Since: now, LastSeen: now, Skew: h.Time.Sub(now),
 			Version: h.Version, Platform: h.Platform, Addr: addr, Listen: listenAddr(h.Listen, addr), PeerFingerprint: h.PeerFingerprint},
 	}
 	m.mu.Lock()
@@ -374,6 +374,10 @@ func (m *Master) session(node, token string, conn net.Conn, r *bufio.Reader, add
 	log.Info("agent connected", "version", h.Version, "platform", h.Platform)
 	if cfg != nil {
 		p.setConfig(cfg)
+	}
+	if h.NeedState && m.o.Standby != nil && m.o.Standby(node) {
+		// A new member checks nothing until it has the state: send it now.
+		p.send(msgState, struct{}{})
 	}
 	go p.writer()
 	go p.pinger()
@@ -637,6 +641,10 @@ func (p *peer) reader(r *bufio.Reader, maxMsg int) error {
 			p.mu.Lock()
 			p.status.Serial, p.status.Health, p.status.Scripts = st.Serial, st.Health, st.Scripts
 			p.status.Reach, p.status.Gateway = st.Reach, st.Gateway
+			if st.Synced != nil && *st.Synced && !p.status.Online {
+				// The new member has the state and checks from now on.
+				p.status.Online, p.status.Since = true, now
+			}
 			p.mu.Unlock()
 			p.report()
 		case msgPong:

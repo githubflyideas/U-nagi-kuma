@@ -1415,8 +1415,8 @@
 "sys.peer_unreachable": "このサイトは {node} に到達できません。2 サイト構成ではどちらが切断されたか判断できないため、{node} をダウンとは報告しません。両サイトがそれぞれ監視と通知を続けます。",
 "sys.minority_title": "他のノードに到達できません: 状態は不明です",
 "sys.minority": "このノードは {total} ノード中 {reach} ノードにしか到達できず少数派のため、{nodes} がダウンしたのか自分が切り離されたのか判断できません。ここからはダウンを報告しません。このサイトは対象の監視と通知を続けます。",
-  "sys.two_masters_title": "Two masters of this cluster are running",
-  "sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
+"sys.two_masters_title": "Two masters of this cluster are running",
+"sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
 "ui.rep.mode": "レプリカ",
 "ui.rep.local": "単独で監視中",
 "ui.rep.local_hint": "各拠点は独立して監視・通知します。共有観測は参考情報です。",
@@ -1499,5 +1499,10 @@
 "ui.inc.archive": "履歴スナップショット。操作は発生元サイトに送信されます",
 "detail.push_site": "PUSH の受信サイトは1つだけ指定してください",
 "detail.config_read_only": "このサイトの共有設定は読み取り専用です",
-"detail.incident_source_unavailable": "インシデントの発生元に接続できません"
+"detail.incident_source_unavailable": "インシデントの発生元に接続できません",
+"ui.theme.paper": "ペーパー（白）",
+"ui.theme.mist": "ミスト（ライトグレー）",
+"ui.theme.slate": "スレート（グレー）",
+"ui.theme.graphite": "グラファイト（ダークグレー）",
+"ui.theme.ink": "インク（黒）"
 }

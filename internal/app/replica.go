@@ -318,3 +318,11 @@ func (a *App) site() string {
 func (a *App) runReplica(ctx context.Context) {
 	a.every(ctx, 2*time.Second, a.watchReplica)
 }
+
+// replicaSynced reports whether this server has its copy of the master's
+// state, without which it checks nothing.
+func (a *App) replicaSynced() bool {
+	a.replica.mu.Lock()
+	defer a.replica.mu.Unlock()
+	return a.replica.cfg != nil
+}

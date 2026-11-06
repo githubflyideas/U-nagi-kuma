@@ -1,64 +1,84 @@
-/* unagikuma UI. Logical properties keep the layout correct in RTL. */
-:root {
-  --bg: #f4f6f8;
-  --panel: #ffffff;
-  --panel-2: #f8fafc;
-  --border: #e2e8f0;
-  --border-strong: #cbd5e1;
-  --text: #0f172a;
-  --muted: #64748b;
-  --faint: #94a3b8;
-  --accent: #1f7a4d;
-  --accent-soft: #e5f3eb;
-  --accent-text: #ffffff;
-  --link: #1d6b44;
-  --ok: #16a34a;
-  --ok-soft: #dcfce7;
-  --degraded: #d97706;
-  --degraded-soft: #fef3c7;
-  --critical: #dc2626;
-  --critical-soft: #fee2e2;
-  --unknown: #7c3aed;
-  --unknown-soft: #ede9fe;
-  --pending: #64748b;
-  --pending-soft: #e2e8f0;
-  --maint: #2563eb;
-  --maint-soft: #dbeafe;
-  --empty: #e5e7eb;
-  --shadow: 0 1px 2px rgba(15, 23, 42, .06), 0 1px 3px rgba(15, 23, 42, .05);
-  --radius: 10px;
-  --bg-image: none;
+/* unagikuma UI. Logical properties keep the layout correct in RTL.
+   Five tones from white to black: paper, mist, slate, graphite, ink.
+   "light" and "dark" stay as names for paper and ink (older settings and
+   status pages). Status colours are Nagios-style: solid blocks that read
+   at a glance, tuned per tone so they stay calm on white and bright on black. */
+:root, :root[data-theme="paper"], :root[data-theme="light"] {
+  --bg: #f6f7f9; --panel: #ffffff; --panel-2: #f8fafb; --border: #e3e7ec; --border-strong: #c9d1da;
+  --text: #17202b; --muted: #5f6b7a; --faint: #98a3b0;
+  --accent: #1f7a4d; --accent-soft: #e4f2ea; --accent-text: #ffffff; --link: #1d6b44;
+  --ok: #1f9d55; --ok-soft: #e1f5e8; --degraded: #c98a12; --degraded-soft: #fdf2d6;
+  --critical: #d93a3a; --critical-soft: #fde4e4; --unknown: #8a5cf0; --unknown-soft: #efe8fe;
+  --pending: #6b7787; --pending-soft: #e6eaef; --maint: #2f74e0; --maint-soft: #e0ebfd;
+  --on-status: #ffffff; --on-degraded: #2a1c00;
+  --empty: #e6e9ed; --stripe: rgba(23, 32, 43, .025);
+  --shadow: 0 1px 2px rgba(15, 23, 42, .05), 0 1px 3px rgba(15, 23, 42, .04);
+  --radius: 8px; --bg-image: none;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "PingFang SC", "Microsoft YaHei", "Noto Sans Arabic", sans-serif;
   color-scheme: light;
 }
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #070b11; --panel: #0d131b; --panel-2: #111923; --border: #1a2330; --border-strong: #2a3545;
-    --text: #e7eef7; --muted: #8796aa; --faint: #536173; --accent: #2dd4bf; --accent-soft: #0f2e2b; --accent-text: #04221d; --link: #5eead4;
-    --ok: #2fe3a0; --ok-soft: #0d2c22; --degraded: #ffb547; --degraded-soft: #33270f; --critical: #ff4f6e; --critical-soft: #3a1520;
-    --unknown: #a98bff; --unknown-soft: #231c3d; --pending: #8796aa; --pending-soft: #18202b; --maint: #5fa8ff; --maint-soft: #12233a;
-    --empty: #1a2230; --shadow: none; color-scheme: dark;
-    --bg-image: radial-gradient(1200px 600px at 75% -10%, rgba(94,234,212,.07), transparent 60%),
-      radial-gradient(900px 500px at -10% 110%, rgba(95,168,255,.06), transparent 60%),
-      linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
-  }
+:root[data-theme="mist"] {
+  --bg: #e9edf1; --panel: #f6f8fa; --panel-2: #eef1f4; --border: #d3dae2; --border-strong: #b9c3ce;
+  --text: #1a2430; --muted: #556273; --faint: #8b97a5;
+  --accent: #1d7350; --accent-soft: #dcece3; --accent-text: #ffffff; --link: #1a6646;
+  --ok: #1c8f4e; --ok-soft: #d8eee0; --degraded: #b97d0e; --degraded-soft: #f5e9c9;
+  --critical: #cc3434; --critical-soft: #f5dcdc; --unknown: #7c52de; --unknown-soft: #e6def8;
+  --pending: #627082; --pending-soft: #dde3e9; --maint: #2a69cc; --maint-soft: #d9e4f6;
+  --on-status: #ffffff; --on-degraded: #241800;
+  --empty: #d9dfe5; --stripe: rgba(26, 36, 48, .03);
+  --shadow: 0 1px 2px rgba(15, 23, 42, .06); color-scheme: light;
 }
-:root[data-theme="dark"] {
-  --bg: #070b11; --panel: #0d131b; --panel-2: #111923; --border: #1a2330; --border-strong: #2a3545;
-  --text: #e7eef7; --muted: #8796aa; --faint: #536173; --accent: #2dd4bf; --accent-soft: #0f2e2b; --accent-text: #04221d; --link: #5eead4;
-  --ok: #2fe3a0; --ok-soft: #0d2c22; --degraded: #ffb547; --degraded-soft: #33270f; --critical: #ff4f6e; --critical-soft: #3a1520;
-  --unknown: #a98bff; --unknown-soft: #231c3d; --pending: #8796aa; --pending-soft: #18202b; --maint: #5fa8ff; --maint-soft: #12233a;
-  --empty: #1a2230; --shadow: none; color-scheme: dark;
-  --bg-image: radial-gradient(1200px 600px at 75% -10%, rgba(94,234,212,.07), transparent 60%),
-    radial-gradient(900px 500px at -10% 110%, rgba(95,168,255,.06), transparent 60%),
-    linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+:root[data-theme="slate"] {
+  --bg: #29313b; --panel: #313a46; --panel-2: #38424f; --border: #434e5c; --border-strong: #566273;
+  --text: #e8edf2; --muted: #a9b4c1; --faint: #7c8796;
+  --accent: #46c69a; --accent-soft: #2c4a44; --accent-text: #10241d; --link: #7fdcbc;
+  --ok: #45cc85; --ok-soft: #2d4a3d; --degraded: #f0bd4b; --degraded-soft: #4d4430;
+  --critical: #ff6b6b; --critical-soft: #553a40; --unknown: #b39cff; --unknown-soft: #443f5f;
+  --pending: #9aa6b4; --pending-soft: #3d4754; --maint: #74aef7; --maint-soft: #344660;
+  --on-status: #13181e; --on-degraded: #1d1600;
+  --empty: #3b4552; --stripe: rgba(255, 255, 255, .025);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .18); color-scheme: dark;
+}
+:root[data-theme="graphite"] {
+  --bg: #15181c; --panel: #1c2025; --panel-2: #22272d; --border: #2c3239; --border-strong: #3b434c;
+  --text: #e6e9ed; --muted: #959fab; --faint: #646e7a;
+  --accent: #34d0a6; --accent-soft: #163029; --accent-text: #06231b; --link: #6fe0c0;
+  --ok: #3ddc84; --ok-soft: #15301f; --degraded: #f6c343; --degraded-soft: #362c12;
+  --critical: #ff5c6c; --critical-soft: #3c1a20; --unknown: #b197fc; --unknown-soft: #2b2442;
+  --pending: #8f99a5; --pending-soft: #262c33; --maint: #6aa8ff; --maint-soft: #18273d;
+  --on-status: #0e1114; --on-degraded: #1d1600;
+  --empty: #262b31; --stripe: rgba(255, 255, 255, .02);
+  --shadow: none; color-scheme: dark;
+}
+:root[data-theme="ink"], :root[data-theme="dark"] {
+  --bg: #050608; --panel: #0b0d10; --panel-2: #111418; --border: #1b1f25; --border-strong: #2a3038;
+  --text: #e9edf1; --muted: #8a94a1; --faint: #565f6b;
+  --accent: #2dd4bf; --accent-soft: #0e2a27; --accent-text: #04221d; --link: #5eead4;
+  --ok: #2fe3a0; --ok-soft: #0c271d; --degraded: #ffb547; --degraded-soft: #2e230e; --critical: #ff4f6e; --critical-soft: #34131c;
+  --unknown: #a98bff; --unknown-soft: #201a38; --pending: #8a94a1; --pending-soft: #15191e; --maint: #5fa8ff; --maint-soft: #102037;
+  --on-status: #050608; --on-degraded: #1d1600;
+  --empty: #171b21; --stripe: rgba(255, 255, 255, .018);
+  --shadow: none; color-scheme: dark;
+  --bg-image: radial-gradient(1200px 600px at 75% -10%, rgba(94,234,212,.05), transparent 60%);
+}
+/* "System" follows the device: paper by day, ink at night. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg: #050608; --panel: #0b0d10; --panel-2: #111418; --border: #1b1f25; --border-strong: #2a3038;
+    --text: #e9edf1; --muted: #8a94a1; --faint: #565f6b;
+    --accent: #2dd4bf; --accent-soft: #0e2a27; --accent-text: #04221d; --link: #5eead4;
+    --ok: #2fe3a0; --ok-soft: #0c271d; --degraded: #ffb547; --degraded-soft: #2e230e; --critical: #ff4f6e; --critical-soft: #34131c;
+    --unknown: #a98bff; --unknown-soft: #201a38; --pending: #8a94a1; --pending-soft: #15191e; --maint: #5fa8ff; --maint-soft: #102037;
+    --on-status: #050608; --on-degraded: #1d1600;
+    --empty: #171b21; --stripe: rgba(255, 255, 255, .018);
+    --shadow: none; color-scheme: dark;
+  }
 }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
-body { background-color: var(--bg); background-image: var(--bg-image); background-size: auto, auto, 32px 32px, 32px 32px; background-attachment: fixed; color: var(--text); font: 14px/1.45 var(--sans); -webkit-font-smoothing: antialiased; }
+body { background-color: var(--bg); background-image: var(--bg-image); background-attachment: fixed; color: var(--text); font: 14px/1.45 var(--sans); -webkit-font-smoothing: antialiased; }
 a { color: var(--link); text-decoration: none; }
 a:hover { text-decoration: underline; }
 code, pre, .mono { font-family: var(--mono); font-size: 12.5px; }
@@ -553,3 +573,24 @@ tr.risk-high td:first-child { box-shadow: inset 3px 0 0 var(--degraded); }
 .oc-c0 { --c: #3b82f6; } .oc-c1 { --c: #10b981; } .oc-c2 { --c: #f59e0b; } .oc-c3 { --c: #ec4899; }
 .oc-c4 { --c: #8b5cf6; } .oc-c5 { --c: #14b8a6; } .oc-c6 { --c: #ef4444; } .oc-c7 { --c: #84cc16; }
 @media (max-width: 720px) { .oc-day { min-height: 56px; padding: 3px; } .oc-seg { font-size: 11px; padding: 1px 3px; } .oc-time { display: none; } }
+
+/* ---- Nagios-style status: solid blocks, striped tables ----
+   The state is the first thing an operator looks for, so it is a filled
+   block rather than a tinted label; rows are striped and the header is a
+   plain bar so long service lists stay easy to follow. */
+.pill { border-radius: 4px; padding: 1px 8px; text-transform: uppercase; letter-spacing: .04em; font-size: 11px; }
+.pill.ok { background: var(--ok); color: var(--on-status); }
+.pill.degraded { background: var(--degraded); color: var(--on-degraded); }
+.pill.critical { background: var(--critical); color: var(--on-status); }
+.pill.unknown { background: var(--unknown); color: var(--on-status); }
+.pill.maintenance { background: var(--maint); color: var(--on-status); }
+.pill.soft { background: transparent; }
+.pill.soft.ok { color: var(--ok); }
+.pill.soft.degraded { color: var(--degraded); }
+.pill.soft.critical { color: var(--critical); }
+.pill.soft.unknown { color: var(--unknown); }
+.pill.soft.maintenance { color: var(--maint); }
+.tbl th { background: var(--panel-2); border-bottom: 1px solid var(--border-strong); }
+.tbl tbody tr:nth-child(even) td { background: var(--stripe); }
+.tbl tr.critical td { background: color-mix(in srgb, var(--critical) 6%, transparent); }
+.tbl tr.click:hover td { background: color-mix(in srgb, var(--link) 8%, transparent); }

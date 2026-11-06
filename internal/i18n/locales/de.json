@@ -1424,8 +1424,8 @@
 "sys.peer_unreachable": "Dieser Standort erreicht {node} nicht. Bei zwei Standorten ist nicht feststellbar, welche Seite abgeschnitten ist; {node} wird daher nicht als ausgefallen gemeldet. Beide Standorte prüfen und alarmieren weiter selbst.",
 "sys.minority_title": "Andere Knoten nicht erreichbar: ihr Zustand ist unbekannt",
 "sys.minority": "Dieser Knoten erreicht nur {reach} von {total} Knoten, ist also in der Minderheit und kann nicht unterscheiden, ob {nodes} ausgefallen sind oder er selbst abgeschnitten ist. Von hier wird kein Ausfall gemeldet; dieser Standort prüft und alarmiert seine Ziele weiter.",
-  "sys.two_masters_title": "Two masters of this cluster are running",
-  "sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
+"sys.two_masters_title": "Two masters of this cluster are running",
+"sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
 "ui.rep.mode": "Replikat",
 "ui.rep.local": "Prüft selbst",
 "ui.rep.local_hint": "Jeder Standort prüft und alarmiert unabhängig. Gemeinsame Beobachtungen dienen nur zur Information.",
@@ -1508,5 +1508,10 @@
 "ui.inc.archive": "Historischer Stand; Aktionen gehen an den Ursprungsstandort",
 "detail.push_site": "PUSH benötigt genau einen Empfangsstandort",
 "detail.config_read_only": "Die gemeinsame Konfiguration ist hier schreibgeschützt",
-"detail.incident_source_unavailable": "Der Ursprungsstandort des Vorfalls ist nicht erreichbar"
+"detail.incident_source_unavailable": "Der Ursprungsstandort des Vorfalls ist nicht erreichbar",
+"ui.theme.paper": "Papier (weiß)",
+"ui.theme.mist": "Nebel (hellgrau)",
+"ui.theme.slate": "Schiefer (mittelgrau)",
+"ui.theme.graphite": "Graphit (dunkelgrau)",
+"ui.theme.ink": "Tinte (schwarz)"
 }

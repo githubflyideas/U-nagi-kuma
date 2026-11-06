@@ -72,6 +72,9 @@ type AgentOptions struct {
 	// to take over as master.
 	OnState   func()
 	OnPromote func(term uint64)
+	// Synced reports whether this node has its copy of the master's
+	// state; nil means it keeps none and is ready as soon as it connects.
+	Synced func() bool
 	// Replica: this node is a full server that keeps a copy of the
 	// master's state and checks on its own while the master is away.
 	Replica bool
@@ -115,6 +118,7 @@ type Agent struct {
 	peersKick  chan struct{}
 	sessMu     sync.Mutex
 	sessCancel context.CancelFunc
+	live       *agentSession // the live session, for PushStatus
 }
 
 // AgentStatus is the agent's view of its connection, for its local UI.
@@ -355,7 +359,8 @@ func (a *Agent) session(ctx context.Context) error {
 	maxMsg := a.ts.Int("cluster.max-message")
 	a.mu.Unlock()
 	if err := writeFrame(conn, msgHello, Hello{Proto: ProtoVersion, Node: a.o.Node, Version: a.o.Version,
-		Platform: runtime.GOOS + "/" + runtime.GOARCH, Time: time.Now(), Term: a.Term(), Caps: a.caps(), Listen: a.o.Listen, PeerFingerprint: a.o.PeerFingerprint}); err != nil {
+		Platform: runtime.GOOS + "/" + runtime.GOARCH, Time: time.Now(), Term: a.Term(), Caps: a.caps(), Listen: a.o.Listen, PeerFingerprint: a.o.PeerFingerprint,
+		NeedState: a.o.Synced != nil && !a.o.Synced()}); err != nil {
 		return err
 	}
 	f, err := readFrame(br, maxMsg)
@@ -395,7 +400,17 @@ func (a *Agent) session(ctx context.Context) error {
 
 	s := &agentSession{a: a, conn: conn, ping: w.Ping, out: make(chan outFrame, sendQueue), done: make(chan struct{}), dead: make(chan struct{})}
 	go s.writer()
-	defer close(s.done)
+	a.sessMu.Lock()
+	a.live = s
+	a.sessMu.Unlock()
+	defer func() {
+		a.sessMu.Lock()
+		if a.live == s {
+			a.live = nil
+		}
+		a.sessMu.Unlock()
+		close(s.done)
+	}()
 	return s.reader(sctx, br)
 }
 
@@ -576,6 +591,10 @@ func (a *Agent) status() Status {
 	h := a.eng.Overview().Health
 	st.Health, st.Time, st.Scripts = &h, time.Now(), probe.Scripts()
 	st.Reach = a.Reach()
+	if a.o.Synced != nil {
+		ok := a.o.Synced()
+		st.Synced = &ok
+	}
 	if a.o.Gateway != nil {
 		st.Gateway = a.o.Gateway()
 	}
@@ -854,5 +873,16 @@ func (a *Agent) cancelSession() {
 	a.sessMu.Unlock()
 	if c != nil {
 		c()
+	}
+}
+
+// PushStatus sends this node's status now instead of with the next ping
+// answer, e.g. once it has its copy of the master's state.
+func (a *Agent) PushStatus() {
+	a.sessMu.Lock()
+	s := a.live
+	a.sessMu.Unlock()
+	if s != nil {
+		go s.send(msgStatus, a.status())
 	}
 }

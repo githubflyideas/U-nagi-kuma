@@ -1455,8 +1455,8 @@
 "sys.peer_unreachable": "لا يستطيع هذا الموقع الوصول إلى {node}. مع موقعين فقط لا يمكن معرفة أي جانب انقطع، لذلك لا يُبلَّغ عن {node} كمتعطل؛ يواصل الموقعان الفحص والتنبيه كلٌّ بمفرده.",
 "sys.minority_title": "تعذر الوصول إلى العقد الأخرى: حالتها غير معروفة",
 "sys.minority": "هذه العقدة تصل إلى {reach} فقط من {total} عقد، فهي في الأقلية ولا تستطيع معرفة ما إذا كانت {nodes} متعطلة أم أنها هي المعزولة. لا يُبلَّغ عن أي تعطل من هنا؛ يواصل هذا الموقع فحص أهدافه والتنبيه.",
-  "sys.two_masters_title": "Two masters of this cluster are running",
-  "sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
+"sys.two_masters_title": "Two masters of this cluster are running",
+"sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
 "ui.rep.mode": "النسخة المتماثلة",
 "ui.rep.local": "يفحص بمفرده",
 "ui.rep.local_hint": "يراقب كل موقع وينبه بشكل مستقل. الملاحظات المشتركة للمعلومات فقط.",
@@ -1539,5 +1539,10 @@
 "ui.inc.archive": "لقطة تاريخية؛ تُرسل الإجراءات إلى الموقع المصدر",
 "detail.push_site": "يتطلب PUSH موقع استقبال واحدًا فقط",
 "detail.config_read_only": "الإعدادات المشتركة للقراءة فقط في هذا الموقع",
-"detail.incident_source_unavailable": "موقع مصدر الحادث غير متاح"
+"detail.incident_source_unavailable": "موقع مصدر الحادث غير متاح",
+"ui.theme.paper": "ورقي (أبيض)",
+"ui.theme.mist": "ضباب (رمادي فاتح)",
+"ui.theme.slate": "أردوازي (رمادي متوسط)",
+"ui.theme.graphite": "جرافيت (رمادي داكن)",
+"ui.theme.ink": "حبر (أسود)"
 }

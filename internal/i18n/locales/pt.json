@@ -1424,8 +1424,8 @@
 "sys.peer_unreachable": "Este site não alcança {node}. Com dois sites não dá para saber qual lado ficou isolado, então {node} não é dado como fora; os dois sites continuam verificando e alertando por conta própria.",
 "sys.minority_title": "Não é possível alcançar os outros nós: estado desconhecido",
 "sys.minority": "Este nó só alcança {reach} de {total} nós; está em minoria e não sabe se {nodes} caíram ou se ele próprio ficou isolado. Nada é dado como fora a partir daqui; este site continua verificando e alertando sobre seus alvos.",
-  "sys.two_masters_title": "Two masters of this cluster are running",
-  "sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
+"sys.two_masters_title": "Two masters of this cluster are running",
+"sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
 "ui.rep.mode": "Réplica",
 "ui.rep.local": "Verificando por conta própria",
 "ui.rep.local_hint": "Cada local monitora e alerta de forma independente. As observações compartilhadas são informativas.",
@@ -1508,5 +1508,10 @@
 "ui.inc.archive": "Registro histórico; ações são enviadas ao local de origem",
 "detail.push_site": "PUSH exige exatamente um local receptor",
 "detail.config_read_only": "A configuração compartilhada é somente leitura neste local",
-"detail.incident_source_unavailable": "O local de origem do incidente está indisponível"
+"detail.incident_source_unavailable": "O local de origem do incidente está indisponível",
+"ui.theme.paper": "Papel (branco)",
+"ui.theme.mist": "Névoa (cinza claro)",
+"ui.theme.slate": "Ardósia (cinza médio)",
+"ui.theme.graphite": "Grafite (cinza escuro)",
+"ui.theme.ink": "Tinta (preto)"
 }

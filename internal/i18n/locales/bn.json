@@ -1415,8 +1415,8 @@
 "sys.peer_unreachable": "এই সাইট {node}-এ পৌঁছাতে পারছে না। মাত্র দুটি সাইটে বোঝা যায় না কোন দিক বিচ্ছিন্ন, তাই {node}-কে ডাউন বলা হয় না; দুটি সাইটই নিজে পরীক্ষা ও সতর্ক করা চালিয়ে যায়।",
 "sys.minority_title": "অন্য নোডগুলিতে পৌঁছানো যাচ্ছে না: তাদের অবস্থা অজানা",
 "sys.minority": "এই নোড {total}টির মধ্যে কেবল {reach}টিতে পৌঁছায়, তাই সংখ্যালঘু এবং বলতে পারে না {nodes} ডাউন নাকি এটি নিজেই বিচ্ছিন্ন। এখান থেকে কিছুই ডাউন বলা হয় না; এই সাইট লক্ষ্য পরীক্ষা ও সতর্ক করা চালিয়ে যায়।",
-  "sys.two_masters_title": "Two masters of this cluster are running",
-  "sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
+"sys.two_masters_title": "Two masters of this cluster are running",
+"sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
 "ui.rep.mode": "প্রতিলিপি",
 "ui.rep.local": "নিজে পরীক্ষা করছে",
 "ui.rep.local_hint": "প্রতিটি সাইট স্বাধীনভাবে পর্যবেক্ষণ ও সতর্ক করে। ভাগ করা পর্যবেক্ষণ শুধু তথ্যের জন্য।",
@@ -1499,5 +1499,10 @@
 "ui.inc.archive": "ঐতিহাসিক স্ন্যাপশট; পদক্ষেপ উৎস সাইটে পাঠানো হয়",
 "detail.push_site": "PUSH-এর জন্য ঠিক একটি গ্রহণকারী সাইট প্রয়োজন",
 "detail.config_read_only": "এই সাইটের যৌথ কনফিগারেশন কেবল পড়া যায়",
-"detail.incident_source_unavailable": "ঘটনার উৎস সাইট অনুপলব্ধ"
+"detail.incident_source_unavailable": "ঘটনার উৎস সাইট অনুপলব্ধ",
+"ui.theme.paper": "কাগজ (সাদা)",
+"ui.theme.mist": "কুয়াশা (হালকা ধূসর)",
+"ui.theme.slate": "স্লেট (মাঝারি ধূসর)",
+"ui.theme.graphite": "গ্রাফাইট (গাঢ় ধূসর)",
+"ui.theme.ink": "কালি (কালো)"
 }

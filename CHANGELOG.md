@@ -1,5 +1,16 @@
 # Changelog
 
+## v2.2.2 — 2026-11-06
+
+**Fixed**
+- A newly joined site starts checking and alerting right after it joins. It used to wait for the next periodic copy of the main server's state, up to five minutes. The main server now sends the copy as soon as the site connects, and lists the site as online only once it has that copy.
+- Recovery messages are never held back by the flood guard. When many alerts went out in a short time, a recovery could be folded into the "alerts held back" summary, leaving people unsure whether the problem was over.
+- Messages from a server still using the default site name no longer repeat the product name in the subject ("[unagikuma] [Unagikuma] …").
+
+**Changed**
+- Five display tones from white to black: Paper, Mist, Slate, Graphite and Ink, plus "System", which follows the device. Earlier "light" and "dark" settings carry over as Paper and Ink.
+- Status labels are solid colour blocks, and tables have alternating row shading, so states read at a glance in long lists.
+
 ## v2.2.1 — 2026-11-06
 
 **Fixed**

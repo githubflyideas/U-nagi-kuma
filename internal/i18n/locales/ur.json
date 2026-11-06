@@ -1423,8 +1423,8 @@
 "sys.peer_unreachable": "یہ سائٹ {node} تک نہیں پہنچ سکتی۔ صرف دو سائٹس میں یہ معلوم نہیں ہو سکتا کہ کون سا حصہ کٹا ہے، اس لیے {node} کو بند نہیں بتایا جاتا؛ دونوں سائٹس خود جانچ اور الرٹ جاری رکھتی ہیں۔",
 "sys.minority_title": "دوسرے نوڈز تک رسائی نہیں: ان کی حالت نامعلوم ہے",
 "sys.minority": "یہ نوڈ {total} میں سے صرف {reach} نوڈز تک پہنچتا ہے، اس لیے اقلیت میں ہے اور نہیں بتا سکتا کہ {nodes} بند ہیں یا یہ خود کٹا ہوا ہے۔ یہاں سے کچھ بھی بند نہیں بتایا جاتا؛ یہ سائٹ اپنے اہداف کی جانچ اور الرٹ جاری رکھتی ہے۔",
-  "sys.two_masters_title": "Two masters of this cluster are running",
-  "sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
+"sys.two_masters_title": "Two masters of this cluster are running",
+"sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
 "ui.rep.mode": "ریپلیکا",
 "ui.rep.local": "خود جانچ رہا ہے",
 "ui.rep.local_hint": "ہر سائٹ آزادانہ نگرانی اور اطلاع دیتی ہے۔ مشترکہ مشاہدات صرف معلومات کے لیے ہیں۔",
@@ -1507,5 +1507,10 @@
 "ui.inc.archive": "تاریخی عکس؛ کارروائیاں اصل سائٹ کو بھیجی جاتی ہیں",
 "detail.push_site": "PUSH کے لیے صرف ایک وصول کنندہ سائٹ ضروری ہے",
 "detail.config_read_only": "اس سائٹ پر مشترکہ ترتیب صرف پڑھی جا سکتی ہے",
-"detail.incident_source_unavailable": "واقعے کی اصل سائٹ دستیاب نہیں"
+"detail.incident_source_unavailable": "واقعے کی اصل سائٹ دستیاب نہیں",
+"ui.theme.paper": "کاغذ (سفید)",
+"ui.theme.mist": "دھند (ہلکا سرمئی)",
+"ui.theme.slate": "سلیٹ (درمیانہ سرمئی)",
+"ui.theme.graphite": "گریفائٹ (گہرا سرمئی)",
+"ui.theme.ink": "سیاہی (سیاہ)"
 }

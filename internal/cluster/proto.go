@@ -135,6 +135,10 @@ type Hello struct {
 	// unspecified host means the address it connects from).
 	Listen          string `json:"listen,omitempty"`
 	PeerFingerprint string `json:"peer_fingerprint,omitempty"`
+	// NeedState: this server joined but has no copy of the master's state
+	// yet, so it checks nothing. The master sends it one at once instead
+	// of at the next periodic sync, and counts it online only once it has.
+	NeedState bool `json:"need_state,omitempty"`
 }
 
 // ReachPath answers peers checking this node: its name and which nodes
@@ -248,6 +252,9 @@ type Status struct {
 	// notifications went out.
 	Reach   map[string]bool       `json:"reach,omitempty"`
 	Gateway []engine.GatewayState `json:"gateway,omitempty"`
+	// Synced tells whether the node has its copy of the master's state
+	// (nil: the node does not keep one, or predates this field).
+	Synced *bool `json:"synced,omitempty"`
 }
 
 // Ping measures round-trip time and clock skew.

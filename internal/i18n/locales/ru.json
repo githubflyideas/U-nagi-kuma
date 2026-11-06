@@ -1439,8 +1439,8 @@
 "sys.peer_unreachable": "Эта площадка не может достучаться до {node}. При двух площадках нельзя понять, какая сторона отрезана, поэтому {node} не объявляется упавшим; обе площадки продолжают проверять и оповещать сами.",
 "sys.minority_title": "Нет связи с другими узлами: их состояние неизвестно",
 "sys.minority": "Этот узел видит только {reach} из {total} узлов — он в меньшинстве и не может понять, упали ли {nodes} или отрезан он сам. Отсюда никто не объявляется упавшим; площадка продолжает проверять цели и оповещать.",
-  "sys.two_masters_title": "Two masters of this cluster are running",
-  "sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
+"sys.two_masters_title": "Two masters of this cluster are running",
+"sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
 "ui.rep.mode": "Реплика",
 "ui.rep.local": "Проверяет сама",
 "ui.rep.local_hint": "Каждая площадка проверяет и оповещает независимо. Общие наблюдения носят справочный характер.",
@@ -1523,5 +1523,10 @@
 "ui.inc.archive": "Исторический снимок; действия отправляются на исходную площадку",
 "detail.push_site": "Для PUSH нужна ровно одна принимающая площадка",
 "detail.config_read_only": "Общая конфигурация на этой площадке доступна только для чтения",
-"detail.incident_source_unavailable": "Исходная площадка инцидента недоступна"
+"detail.incident_source_unavailable": "Исходная площадка инцидента недоступна",
+"ui.theme.paper": "Бумага (белый)",
+"ui.theme.mist": "Туман (светло-серый)",
+"ui.theme.slate": "Сланец (серый)",
+"ui.theme.graphite": "Графит (тёмно-серый)",
+"ui.theme.ink": "Чернила (чёрный)"
 }

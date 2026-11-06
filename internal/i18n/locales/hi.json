@@ -1420,8 +1420,8 @@
 "sys.peer_unreachable": "यह साइट {node} तक नहीं पहुँच सकती। केवल दो साइटों में यह तय नहीं हो सकता कि कौन-सा पक्ष कटा है, इसलिए {node} को डाउन नहीं बताया जाता; दोनों साइटें स्वयं जाँच और अलर्ट जारी रखती हैं।",
 "sys.minority_title": "अन्य नोड तक पहुँच नहीं: उनकी स्थिति अज्ञात है",
 "sys.minority": "यह नोड {total} में से केवल {reach} नोड तक पहुँचता है, इसलिए यह अल्पमत में है और तय नहीं कर सकता कि {nodes} डाउन हैं या यह स्वयं कटा है। यहाँ से कुछ भी डाउन नहीं बताया जाता; यह साइट अपने लक्ष्यों की जाँच और अलर्ट जारी रखती है।",
-  "sys.two_masters_title": "Two masters of this cluster are running",
-  "sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
+"sys.two_masters_title": "Two masters of this cluster are running",
+"sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
 "ui.rep.mode": "प्रतिकृति",
 "ui.rep.local": "स्वयं जाँच रहा है",
 "ui.rep.local_hint": "हर साइट स्वतंत्र रूप से निगरानी और चेतावनी देती है। साझा अवलोकन केवल जानकारी के लिए हैं।",
@@ -1504,5 +1504,10 @@
 "ui.inc.archive": "ऐतिहासिक स्नैपशॉट; कार्रवाइयाँ स्रोत साइट पर भेजी जाती हैं",
 "detail.push_site": "PUSH के लिए ठीक एक प्राप्तकर्ता साइट चाहिए",
 "detail.config_read_only": "इस साइट पर साझा कॉन्फ़िगरेशन केवल पढ़ने के लिए है",
-"detail.incident_source_unavailable": "घटना की स्रोत साइट उपलब्ध नहीं है"
+"detail.incident_source_unavailable": "घटना की स्रोत साइट उपलब्ध नहीं है",
+"ui.theme.paper": "पेपर (सफ़ेद)",
+"ui.theme.mist": "मिस्ट (हल्का धूसर)",
+"ui.theme.slate": "स्लेट (मध्यम धूसर)",
+"ui.theme.graphite": "ग्रेफ़ाइट (गहरा धूसर)",
+"ui.theme.ink": "इंक (काला)"
 }

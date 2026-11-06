@@ -1415,8 +1415,8 @@
 "sys.peer_unreachable": "이 사이트는 {node}에 연결할 수 없습니다. 사이트가 두 개뿐이면 어느 쪽이 끊겼는지 알 수 없으므로 {node}를 다운으로 보고하지 않습니다. 두 사이트 모두 각자 점검과 알림을 계속합니다.",
 "sys.minority_title": "다른 노드에 연결할 수 없음: 상태를 알 수 없음",
 "sys.minority": "이 노드는 {total}개 중 {reach}개 노드에만 연결되어 소수에 속하므로 {nodes}가 다운인지 자신이 고립된 것인지 알 수 없습니다. 여기서는 다운을 보고하지 않으며, 이 사이트는 대상 점검과 알림을 계속합니다.",
-  "sys.two_masters_title": "Two masters of this cluster are running",
-  "sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
+"sys.two_masters_title": "Two masters of this cluster are running",
+"sys.two_masters": "Another master ({peer}, term {term}) is reachable. Only one master may run; promote or shut one down.",
 "ui.rep.mode": "복제본",
 "ui.rep.local": "단독 점검 중",
 "ui.rep.local_hint": "각 사이트는 독립적으로 모니터링하고 알립니다. 공유 관측은 참고용입니다.",
@@ -1499,5 +1499,10 @@
 "ui.inc.archive": "기록 스냅샷입니다. 작업은 원본 사이트로 전송됩니다",
 "detail.push_site": "PUSH 수신 사이트는 하나만 지정해야 합니다",
 "detail.config_read_only": "이 사이트의 공유 설정은 읽기 전용입니다",
-"detail.incident_source_unavailable": "사건 원본 사이트를 사용할 수 없습니다"
+"detail.incident_source_unavailable": "사건 원본 사이트를 사용할 수 없습니다",
+"ui.theme.paper": "페이퍼 (흰색)",
+"ui.theme.mist": "미스트 (밝은 회색)",
+"ui.theme.slate": "슬레이트 (회색)",
+"ui.theme.graphite": "그래파이트 (진한 회색)",
+"ui.theme.ink": "잉크 (검정)"
 }

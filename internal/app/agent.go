@@ -82,6 +82,7 @@ func (a *App) startAgent() error {
 		OnTerm:    func(t uint64) { a.updateMembership(func(m *Membership) { m.Term = t }) },
 		OnMasters: func(l []string) { a.updateMembership(func(m *Membership) { m.Server, m.Servers = l[0], l[1:] }) },
 		OnState:   a.onStateNotice,
+		Synced:    a.replicaSynced,
 		OnPromote: func(t uint64) {
 			if _, err := a.Promote(context.Background(), t, "handover"); err != nil {
 				a.log.Error("handover from the master failed", "err", err)
@@ -402,4 +403,5 @@ func (a *App) onStateNotice() {
 		return
 	}
 	a.stateRetries.Store(0)
+	ag.PushStatus() // the master counts a new member online once it has the state
 }

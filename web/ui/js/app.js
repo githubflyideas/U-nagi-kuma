@@ -21,11 +21,19 @@ import { IncidentReport } from './views/incident.js';
 import { DrawerHost } from './views/drawer.js';
 import { PaletteHost, openPalette } from './views/palette.js';
 
-// The console is dark unless the user picks light or the system setting.
+// Five tones from white to black; "auto" follows the device. The console
+// is ink (black) unless the user picks another. The old light/dark settings
+// map to paper/ink.
+const TONES = ['paper', 'mist', 'slate', 'graphite', 'ink'];
+function toneOf(v) {
+  if (v === 'light') return 'paper';
+  if (v === 'dark' || !v) return 'ink';
+  return v === 'auto' || TONES.includes(v) ? v : 'ink';
+}
 function applyTheme(v) {
-  v = v || 'dark';
-  if (v === 'light' || v === 'dark') document.documentElement.dataset.theme = v;
-  else delete document.documentElement.dataset.theme;
+  v = toneOf(v);
+  if (v === 'auto') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = v;
 }
 
 function storage(k, v) {
@@ -137,7 +145,7 @@ function Shell({ user, onLogout, onLang }) {
   const route = useRoute();
   const [open, setOpen] = useState(false);
   const [live, setLive] = useState(false);
-  const [theme, setTheme] = useState(storage('unagikuma.theme') || 'dark');
+  const [theme, setTheme] = useState(toneOf(storage('unagikuma.theme')));
   const [mini, setMini] = useState(storage('unagikuma.side') === 'mini');
   const ov = useFetch(() => get('/overview'), []);
   useLive(['incident', 'state', 'serial', 'banner', 'directory'], ov.reload, 1500);
@@ -205,8 +213,7 @@ function Shell({ user, onLogout, onLang }) {
         <${LangSelect} onChange=${onLang} />
         <select aria-label=${t('ui.theme')} value=${theme} onChange=${(e) => changeTheme(e.target.value)}>
           <option value="auto">${t('ui.theme.auto')}</option>
-          <option value="light">${t('ui.theme.light')}</option>
-          <option value="dark">${t('ui.theme.dark')}</option>
+          ${TONES.map((v) => html`<option value=${v}>${t('ui.theme.' + v)}</option>`)}
         </select>
         <div class="row"><span class="ellipsis">${user}</span><div class="spacer"></div><button class="btn sm ghost" onClick=${onLogout}>${t('ui.logout')}</button></div>
         ${ov.data && ov.data.instance && html`<div class="host ellipsis" title=${ov.data.instance}>${ov.data.instance}</div>`}

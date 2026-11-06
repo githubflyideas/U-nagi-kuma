@@ -15,7 +15,9 @@ import (
 // than notify.backstop-max alerts per notify.backstop-window. Further
 // alerts are folded and sent as one digest when the window has passed,
 // naming how many there were, the monitors involved and the worst ones.
-// Escalations, system notices and digests always go through. The first
+// Escalations, recoveries, system notices and digests always go through:
+// a recovery is the message that lets people stop working on a problem,
+// so holding it back would keep them busy for nothing. The first
 // alert of a new incident is not held back by repeats and reminders: new
 // incidents have a share of their own, so a new problem goes out at once
 // unless notify.backstop-max new problems already went out this window —
@@ -32,9 +34,9 @@ func backstopExempt(in *Intent) bool {
 		return true
 	}
 	switch NoticeKind(in.Kind) {
-	case NoticeEscalate:
+	case NoticeEscalate, NoticeRecovery:
 		return true
-	case NoticeProblem, NoticeRepeat, NoticeReopen, NoticeRecovery:
+	case NoticeProblem, NoticeRepeat, NoticeReopen:
 		return false
 	}
 	return true // digests, reports, drills, tests
