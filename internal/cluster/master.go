@@ -743,3 +743,16 @@ func (m *Master) Reach(nodes []string) map[string]bool {
 	}
 	return out
 }
+
+// PeerListens returns host:port where each known agent last announced it listens.
+func (m *Master) PeerListens() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := make([]string, 0, len(m.listens))
+	for _, l := range m.listens {
+		if l != "" {
+			out = append(out, l)
+		}
+	}
+	return out
+}

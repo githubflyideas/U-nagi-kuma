@@ -238,6 +238,31 @@ func (a *App) Standby() StandbyState {
 // with.
 var ErrNoState = errors.New("this server holds no copy of the master's state: it is not a standby, or has not fetched it yet")
 
+
+// ErrPromoteRefused means a reachable master already holds term >= the
+// term this promote would take (Rule 1 / BUG-11).
+var ErrPromoteRefused = errors.New("another master is already running at an equal or higher term; promote refused")
+
+// PromoteRefused carries the competing master for API/UI messages.
+type PromoteRefused struct {
+	Peer string
+	Term uint64
+}
+
+func (e *PromoteRefused) Error() string {
+	return ErrPromoteRefused.Error()
+}
+
+func (e *PromoteRefused) Unwrap() error { return ErrPromoteRefused }
+
+// promoteDelay returns how long a manual promote waits before checking
+// peers (random 1–10 s). Tests override promoteDelayFn.
+var promoteDelayFn = func() time.Duration {
+	var b [1]byte
+	_, _ = rand.Read(b[:])
+	return time.Duration(1+int(b[0])%10) * time.Second
+}
+
 // promoteRequest is left for the next start, which restores the state
 // before opening anything.
 type promoteRequest struct {
@@ -248,6 +273,12 @@ type promoteRequest struct {
 // Promote turns this standby into the master with term (0: the copy's term
 // plus one) and asks for a restart. With a connection to the master the
 // state is refreshed first.
+//
+// Manual promote (Rule 1 / BUG-11): wait a random 1–10 s, repeatedly asking
+// every known peer and the master address list via Reach; if any reachable
+// node reports a master with term >= the term this node would take, refuse.
+// A handover from the current master (author "handover") skips the delay
+// but still refuses a strictly newer foreign master.
 func (a *App) Promote(ctx context.Context, term uint64, author string) (uint64, error) {
 	a.am.mu.Lock()
 	ag := a.am.agent
@@ -269,6 +300,38 @@ func (a *App) Promote(ctx context.Context, term uint64, author string) (uint64, 
 		if ag != nil {
 			term = max(meta.Term, ag.Term()) + 1
 		}
+	}
+	// Remember peer listens before restart so the new master and any
+	// concurrent promoter can discover each other after heal.
+	a.persistPeerListens()
+	manual := author != "handover"
+	if manual {
+		deadline := a.now().Add(promoteDelayFn())
+		for {
+			if peer, t, ok := a.competingMaster(term); ok {
+				a.log.Warn("promote refused: another master is already running", "peer", peer, "term", t, "want", term)
+				return 0, &PromoteRefused{Peer: peer, Term: t}
+			}
+			left := deadline.Sub(a.now())
+			if left <= 0 {
+				break
+			}
+			step := time.Second
+			if left < step {
+				step = left
+			}
+			timer := time.NewTimer(step)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return 0, ctx.Err()
+			case <-timer.C:
+			}
+		}
+	}
+	if peer, t, ok := a.competingMaster(term); ok {
+		a.log.Warn("promote refused: another master is already running", "peer", peer, "term", t, "want", term)
+		return 0, &PromoteRefused{Peer: peer, Term: t}
 	}
 	if err := writePromote(a.opts.DataDir, term, a.now()); err != nil {
 		return 0, err

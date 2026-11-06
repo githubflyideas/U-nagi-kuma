@@ -764,6 +764,7 @@
 "ui.ha.term": "Amtszeit {n}",
 "ui.ha.promote": "Als Master übernehmen",
 "ui.ha.promote_confirm": "Diesen Server mit seiner Kopie zum Master machen? Nur wenn der Master {master} endgültig ausgefallen ist oder ersetzt wird. Der Server startet neu.",
+"ui.ha.promote_refused": "Ein anderer Master ({peer}, Term {term}) läuft bereits; Übernahme abgelehnt.",
 "ui.ha.promote_hint": "Fällt der Master endgültig aus, kann dieser Server mit seiner Kopie übernehmen.",
 "ui.ha.promoting": "Übernahme läuft (Amtszeit {term}); die Seite verbindet sich nach dem Neustart neu",
 "ui.ha.superseded": "Dieser Server ist nicht mehr Master: Amtszeit {term} ging am {at} an {by}. Er prüft und benachrichtigt nicht mehr; ändern Sie die Konfiguration auf dem neuen Master.",

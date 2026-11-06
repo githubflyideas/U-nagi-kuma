@@ -764,6 +764,7 @@
 "ui.ha.term": "term {n}",
 "ui.ha.promote": "Take over as master",
 "ui.ha.promote_confirm": "Make this server the master with its copy of the state? Do this only when the master at {master} is down for good or is being replaced. This server restarts.",
+"ui.ha.promote_refused": "Another master ({peer}, term {term}) is already running; promote refused.",
 "ui.ha.promote_hint": "When the master is gone for good, this server can take over with its copy of the master's state.",
 "ui.ha.promoting": "Taking over (term {term}); the page reconnects after the restart",
 "ui.ha.superseded": "This server is no longer the master: term {term} went to {by} on {at}. It no longer checks or notifies; change the configuration on the new master.",

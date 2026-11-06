@@ -7,6 +7,7 @@ import (
 
 	"github.com/githubflyideas/unagikuma/internal/app"
 	"github.com/githubflyideas/unagikuma/internal/cluster"
+	"github.com/githubflyideas/unagikuma/internal/i18n"
 	"github.com/githubflyideas/unagikuma/internal/store"
 )
 
@@ -101,6 +102,12 @@ func (s *Server) clusterAgent(w http.ResponseWriter, r *http.Request) (any, erro
 func (s *Server) clusterPromote(w http.ResponseWriter, r *http.Request) (any, error) {
 	term, err := s.app.Promote(r.Context(), 0, authOf(r).user)
 	if err != nil {
+		var refused *app.PromoteRefused
+		if errors.As(err, &refused) {
+			lang := i18n.Normalize(firstLang(r.Header.Get("Accept-Language")))
+			msg := i18n.T(lang, "ui.ha.promote_refused", "peer", refused.Peer, "term", refused.Term)
+			return nil, Errorf(http.StatusConflict, CodeConflict, "%s", msg)
+		}
 		return nil, Errorf(http.StatusConflict, CodeConflict, "%v", err)
 	}
 	auditOf(r).note("term", term)

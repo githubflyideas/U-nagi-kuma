@@ -14,6 +14,8 @@ import (
 	"github.com/githubflyideas/unagikuma/internal/cluster"
 )
 
+const peersFile = "cluster-peers.json"
+
 // FullReachView is what this node answers on ReachPath: name, reach, term
 // and role, so peers can detect a concurrent promote.
 func (a *App) FullReachView() cluster.ReachView {
@@ -39,7 +41,9 @@ func (a *App) FullReachView() cluster.ReachView {
 // watchForeignMasters looks at peer Reach answers for another master. A
 // higher term (or the same term with a lexicographically smaller name)
 // wins: this server steps down. Equal-or-foreign masters also raise a
-// CRITICAL "two masters" notice so the split is not silent.
+// CRITICAL "two masters" notice so the split is not silent. The lower
+// term never auto-promotes; it only steps down to replica via supersede
+// (and a later retire/join).
 func (a *App) watchForeignMasters() {
 	if a.isMember() || a.SupersededBy() != nil {
 		return
@@ -70,7 +74,9 @@ func (a *App) watchForeignMasters() {
 }
 
 // peerListenAddrs lists places other nodes of this cluster may be listening:
-// NODE standby= URLs and the previous-master list left by a promote.
+// NODE standby= URLs, the previous-master list left by a promote, the
+// membership master address list, live agent peer checks, the master's
+// remembered agent listens, and cluster-peers.json persisted across restarts.
 func (a *App) peerListenAddrs() []string {
 	seen := map[string]bool{}
 	var out []string
@@ -109,6 +115,33 @@ func (a *App) peerListenAddrs() []string {
 			}
 		}
 	}
+	if b, err := os.ReadFile(a.dataPath(peersFile)); err == nil {
+		var addrs []string
+		if json.Unmarshal(b, &addrs) == nil {
+			for _, s := range addrs {
+				add(s)
+			}
+		}
+	}
+	a.am.mu.Lock()
+	ag, member := a.am.agent, a.am.member
+	a.am.mu.Unlock()
+	if member != nil {
+		add(member.Server)
+		for _, s := range member.Servers {
+			add(s)
+		}
+	}
+	if ag != nil {
+		for _, v := range ag.Peers() {
+			add(v.Addr)
+		}
+	}
+	if a.master != nil {
+		for _, l := range a.master.PeerListens() {
+			add(l)
+		}
+	}
 	return out
 }
 
@@ -137,9 +170,44 @@ func probeReach(addr string) (cluster.ReachView, bool) {
 	return rv, true
 }
 
+// persistPeerListens writes known peer listen addresses so a returning
+// master (or a promote restart) can Reach them after a process restart.
+func (a *App) persistPeerListens() {
+	addrs := a.peerListenAddrs()
+	if len(addrs) == 0 {
+		return
+	}
+	b, _ := json.Marshal(addrs)
+	_ = os.WriteFile(a.dataPath(peersFile), b, 0o644)
+}
+
+// competingMaster reports a reachable master whose term is >= wantTerm.
+func (a *App) competingMaster(wantTerm uint64) (peer string, term uint64, ok bool) {
+	self := ""
+	a.am.mu.Lock()
+	if a.am.member != nil {
+		self = a.am.member.Node
+	}
+	a.am.mu.Unlock()
+	if self == "" {
+		self = a.nodeName()
+	}
+	for _, addr := range a.peerListenAddrs() {
+		rv, reach := probeReach(addr)
+		if !reach || rv.Role != "master" || rv.Node == "" || rv.Node == self {
+			continue
+		}
+		if rv.Term >= wantTerm {
+			return rv.Node, rv.Term, true
+		}
+	}
+	return "", 0, false
+}
+
 // probeForeignMastersAtStart runs once before system notices fire for a
 // returning old master: if a peer already has a newer term, step down
-// immediately so this node does not briefly act as master (BUG-15).
+// immediately so this node does not briefly act as master (BUG-15 / Rule 2).
+// It never auto-reclaims mastership; only a manual promote does.
 func (a *App) probeForeignMastersAtStart() {
 	if a.isMember() || a.SupersededBy() != nil {
 		return

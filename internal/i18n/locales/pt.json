@@ -764,6 +764,7 @@
 "ui.ha.term": "mandato {n}",
 "ui.ha.promote": "Assumir como mestre",
 "ui.ha.promote_confirm": "Tornar este servidor o mestre com sua cópia do estado? Só se o mestre em {master} caiu de vez ou será substituído. O servidor reinicia.",
+"ui.ha.promote_refused": "Outro mestre ({peer}, termo {term}) já está em execução; promoção recusada.",
 "ui.ha.promote_hint": "Se o mestre sumir de vez, este servidor pode assumir com sua cópia do estado.",
 "ui.ha.promoting": "Assumindo (mandato {term}); a página reconecta após reiniciar",
 "ui.ha.superseded": "Este servidor não é mais o mestre: o mandato {term} passou para {by} em {at}. Não verifica nem notifica; altere a configuração no novo mestre.",

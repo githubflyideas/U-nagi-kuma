@@ -764,6 +764,7 @@
 "ui.ha.term": "mandat {n}",
 "ui.ha.promote": "Prendre le relais comme maître",
 "ui.ha.promote_confirm": "Faire de ce serveur le maître avec sa copie de l'état ? Uniquement si le maître {master} est définitivement arrêté ou remplacé. Le serveur redémarre.",
+"ui.ha.promote_refused": "Un autre maître ({peer}, terme {term}) est déjà en cours d’exécution ; promotion refusée.",
 "ui.ha.promote_hint": "Si le maître disparaît, ce serveur peut prendre le relais avec sa copie de l'état.",
 "ui.ha.promoting": "Prise de relais (mandat {term}) ; la page se reconnecte après le redémarrage",
 "ui.ha.superseded": "Ce serveur n'est plus le maître : le mandat {term} est passé à {by} le {at}. Il ne contrôle ni ne notifie plus ; modifiez la configuration sur le nouveau maître.",

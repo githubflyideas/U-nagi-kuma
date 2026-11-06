@@ -756,6 +756,7 @@
 "ui.ha.term": "masa {n}",
 "ui.ha.promote": "Ambil alih sebagai master",
 "ui.ha.promote_confirm": "Jadikan server ini master dengan salinan statusnya? Lakukan hanya bila master di {master} mati permanen atau diganti. Server akan mulai ulang.",
+"ui.ha.promote_refused": "Master lain ({peer}, term {term}) sudah berjalan; promote ditolak.",
 "ui.ha.promote_hint": "Bila master hilang permanen, server ini dapat mengambil alih dengan salinan statusnya.",
 "ui.ha.promoting": "Mengambil alih (masa {term}); halaman tersambung lagi setelah mulai ulang",
 "ui.ha.superseded": "Server ini bukan master lagi: masa {term} berpindah ke {by} pada {at}. Tidak lagi memeriksa atau memberi notifikasi; ubah konfigurasi di master baru.",
