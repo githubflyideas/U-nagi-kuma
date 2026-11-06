@@ -139,7 +139,7 @@ func New(o Options) (*App, error) {
 	a.sender = &notify.Sender{Log: o.Log, Instance: a.instance(), Client: &http.Client{Transport: &http.Transport{Proxy: nil, ForceAttemptHTTP2: true, DialContext: (&net.Dialer{Timeout: 10 * time.Second}).DialContext},
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}}
 	a.cfg = &configManager{app: a, path: o.ConfigPath}
-	if a.pki, err = cluster.LoadOrCreatePKI(o.DataDir, o.Now()); err != nil {
+	if a.pki, err = loadSitePKI(o.DataDir, o.Now()); err != nil {
 		st.Close()
 		return nil, err
 	}
@@ -165,9 +165,10 @@ func New(o Options) (*App, error) {
 			}
 			return ""
 		},
-		Superseded: func(term uint64, node string) { a.supersede(term, node) },
-		Standby:    a.isStandby,
-		WriteState: a.writeState,
+		Superseded:      func(term uint64, node string) { a.supersede(term, node) },
+		Standby:         a.isStandby,
+		WriteState:      a.writeState,
+		PeerFingerprint: func() string { return a.pki.PeerIdentity().Fingerprint() },
 		Self: func() string {
 			if c := a.applied.Load(); c != nil {
 				return c.MName
@@ -362,6 +363,7 @@ func (a *App) Run(ctx context.Context) error {
 	run(func() { a.heartbeat.Run(ctx) })
 	run(func() { a.runAgentMode(ctx) })
 	run(func() { a.runReplica(ctx) })
+	run(func() { a.runSiteObservations(ctx) })
 	run(func() { a.every(ctx, 2*time.Second, a.cfg.check) })
 	run(func() { a.every(ctx, 30*time.Second, func() { _ = a.store.Beat() }) })
 	run(func() { a.every(ctx, 15*time.Second, a.watchStorage) })

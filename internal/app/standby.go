@@ -341,7 +341,7 @@ func PromoteOffline(dir string, now time.Time) (uint64, StandbyState, error) {
 	}
 	a := &App{opts: Options{DataDir: dir, Now: time.Now}}
 	a.loadMembership()
-	pki, err := cluster.LoadOrCreatePKI(dir, now)
+	pki, err := loadSitePKI(dir, now)
 	if err != nil {
 		return 0, meta, err
 	}

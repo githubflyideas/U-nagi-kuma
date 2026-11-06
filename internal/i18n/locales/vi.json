@@ -1492,5 +1492,8 @@
 "ui.field.via": "Gửi qua",
 "ui.field.program": "Lệnh sendmail",
 "ui.ch.program_hint": "Tự tìm thấy (/usr/sbin/sendmail và các vị trí thông thường); postfix, sendmail, exim, msmtp và tương tự đều cung cấp. Chỉ điền khi nằm ở vị trí lạ.",
-"ui.ch.from_sendmail_hint": "Có thể để trống: khi đó hệ thống thư gửi dưới tên máy này, giống như với Nagios."
+"ui.ch.from_sendmail_hint": "Có thể để trống: khi đó hệ thống thư gửi dưới tên máy này, giống như với Nagios.",
+"ui.obs.stale": "Đã cũ",
+"ui.obs.local": "Địa điểm này",
+"msg.observations": "Quan sát: {table}; cổng: {gateway}; đường lên: {uplink}"
 }

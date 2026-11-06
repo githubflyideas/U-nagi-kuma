@@ -314,7 +314,10 @@ func (e *Engine) message(inc *Incident, n PlannedNotice, now time.Time) notify.M
 		msg.Type, msg.Target, msg.Depth, msg.Tags = m.Probe.Type, m.Probe.Target, m.Depth, m.Tags
 		if rt := e.states[m.Name]; rt != nil {
 			msg.Status = rt.State.Display()
-			msg.Quorum = rt.LastVerdict.Summary()
+			msg.Observations = e.siteObservationSnapshot(m.Name)
+			if len(e.cfg.Nodes) > 0 {
+				msg.Site = e.cfg.SourceNode
+			}
 		}
 		if e.cfg.BaseURL != "" {
 			msg.DetailURL = strings.TrimRight(e.cfg.BaseURL, "/") + "/#/monitors/" + url.PathEscape(m.Name)

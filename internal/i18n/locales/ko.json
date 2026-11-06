@@ -1492,5 +1492,8 @@
 "ui.field.via": "보내는 방법",
 "ui.field.program": "sendmail 명령",
 "ui.ch.program_hint": "자동으로 찾습니다(/usr/sbin/sendmail 등 일반적인 위치). postfix, sendmail, exim, msmtp 등이 모두 제공합니다. 특이한 위치에 있을 때만 지정하세요.",
-"ui.ch.from_sendmail_hint": "비워 두어도 됩니다. 그러면 메일 시스템이 이 서버 이름으로 보냅니다(Nagios와 같음)."
+"ui.ch.from_sendmail_hint": "비워 두어도 됩니다. 그러면 메일 시스템이 이 서버 이름으로 보냅니다(Nagios와 같음).",
+"ui.obs.stale": "오래된 정보",
+"ui.obs.local": "이 사이트",
+"msg.observations": "사이트 관측: {table}; 게이트웨이: {gateway}; 업링크: {uplink}"
 }

@@ -1502,5 +1502,8 @@
 "ui.field.via": "Send through",
 "ui.field.program": "sendmail command",
 "ui.ch.program_hint": "Found by itself (/usr/sbin/sendmail and the usual places); postfix, sendmail, exim, msmtp and the like all provide it. Set only for an unusual place.",
-"ui.ch.from_sendmail_hint": "May stay empty: the mail system then sends as this machine, as it does for Nagios."
+"ui.ch.from_sendmail_hint": "May stay empty: the mail system then sends as this machine, as it does for Nagios.",
+"ui.obs.stale": "Stale",
+"ui.obs.local": "This site",
+"msg.observations": "Observations: {table}; gateway: {gateway}; uplink: {uplink}"
 }

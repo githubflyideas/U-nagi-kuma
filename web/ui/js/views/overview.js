@@ -4,6 +4,7 @@ import { html, useState } from '../lib.js';
 import { t, tn, dur, fmtNum } from '../i18n.js';
 import { get, post, me } from '../api.js';
 import { useFetch, useLive, Card, Loading, ErrorBox, Dot, Ago, Empty, Pill, Seg, msText, reasonText, quorumText, pct, openMonitor, enc, toast, toastError, useDocTitle, gwBad } from '../ui.js';
+import { ObservationCell, observationSummary } from '../observations.js';
 import { IncidentList } from './problems.js';
 
 
@@ -318,27 +319,20 @@ export function Hive({ rows }) {
     <div class="row nowrap"><b class="ellipsis">${tip.r.title}</b><${Pill} status=${tip.r.status} /><span class="tag">${tip.r.depth}</span></div>
     <div class="mono muted ltr" style=${{ margin: '4px 0' }}>${tip.r.target}</div>
     ${tip.r.status !== 'ok' && (tip.r.reason || tip.r.unknown_reason) && html`<div>${reasonText(tip.r.reason || tip.r.unknown_reason, tip.r.detail)}</div>`}
-    ${(tip.r.votes || []).map(v => html`<div class="row nowrap" style=${{ justifyContent: 'space-between' }}><span class="muted">${v.node}</span>${voteCell(v)}</div>`)}
+    ${(tip.r.observations?.rows || []).map(v => html`<div class="row nowrap" style=${{ justifyContent: 'space-between' }}><span class="muted">${v.node_id}</span><${ObservationCell} value=${v} /></div>`)}
   </div>`}
   </div>`;
 }
 
 function Matrix({ rows, nodes }) {
-  const voted = rows.filter(r => r.votes && r.votes.length);
-  const odd = voted.filter(r => r.status !== 'ok' || r.votes.some(v => v.vote !== 'ok'));
-  const list = odd.length ? odd : voted.slice(0, 12);
-  if (!list.length) return html`<${Empty}>${t('ui.ov.matrix_none')}<//>`;
-  return html`<div class="tbl-wrap"><table class="tbl">
-    <thead><tr><th>${t('ui.ov.matrix_monitor')}</th>${nodes.map(n => html`<th>${n.title || n.name}</th>`)}<th>${t('ui.ov.matrix_verdict')}</th></tr></thead>
-    <tbody>${list.map(r => {
-      const by = Object.fromEntries(r.votes.map(v => [v.node, v]));
-      return html`<tr class="click" onClick=${() => openMonitor(r.name)}>
-        <td><div class="name">${r.title}</div><div class="sub mono ltr">${r.target}</div></td>
-        ${nodes.map(n => html`<td>${voteCell(by[n.name])}</td>`)}
-        <td><${Pill} status=${r.status} /> <span class="small muted">${quorumText(r.quorum)}</span></td>
-      </tr>`;
-    })}</tbody>
-  </table>${!odd.length && html`<p class="small muted" style=${{ padding: '0 12px' }}>${t('ui.ov.matrix_same')}</p>`}</div>`;
+ const list = rows.filter(r => r.observations?.rows?.length);
+ if (!list.length) return html`<${Empty}>${t('ui.ov.matrix_none')}<//>`;
+ const names = [...new Set(list.flatMap(r => r.observations.rows.map(o => o.node_id)))].sort();
+ return html`<div class="tbl-wrap"><p class="small muted">${t('ui.node.intro')}</p><table class="tbl"><thead><tr><th>${t('ui.ov.matrix_monitor')}</th>${names.map(n => html`<th>${n}</th>`)}<th>${t('ui.obs.local')}</th></tr></thead>
+ <tbody>${list.map(r => {
+ const by = Object.fromEntries(r.observations.rows.map(o => [o.node_id, o]));
+ return html`<tr class="click" onClick=${() => openMonitor(r.name)}><td>${r.title}<div class="small mono">${observationSummary(r.observations)}</div></td>${names.map(n => html`<td><${ObservationCell} value=${by[n]} /></td>`)}<td><${Pill} status=${r.status} /></td></tr>`;
+ })}</tbody></table></div>`;
 }
 
 export function Legend() {

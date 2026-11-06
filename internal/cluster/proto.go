@@ -143,8 +143,9 @@ const ReachPath = "/api/v1/agent/reach"
 
 // Peers lists the nodes an agent checks besides its master.
 type Peers struct {
-	Master string     `json:"master"` // the master's node name
-	Nodes  []PeerAddr `json:"nodes"`
+	MasterFingerprint string     `json:"master_fingerprint,omitempty"`
+	Master            string     `json:"master"` // the master's node name
+	Nodes             []PeerAddr `json:"nodes"`
 }
 
 // PeerAddr is one node and where it listens.

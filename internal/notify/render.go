@@ -124,6 +124,9 @@ func Render(m *Message) (title, body string) {
 			lines = append(lines, sanitize(m.Body, detailCap))
 		}
 	}
+	if m.Observations != nil {
+		lines = append(lines, i18n.T(lang, "msg.observations", "table", m.Observations.Summary(), "gateway", m.Observations.Gateway, "uplink", m.Observations.Uplink))
+	}
 	if u := m.DetailURL; u != "" {
 		lines = append(lines, i18n.T(lang, "msg.details", "url", u))
 	}

@@ -111,6 +111,7 @@ func (e *Engine) judge(m *MonitorSpec, rt *monRuntime, nv NodeVote, res probe.Re
 	if res.Evidence != nil {
 		e.deps.Sink.Evidence(m.Name, e.self, end, res)
 	}
+	e.recordSiteObservation(m, rt, nv, res, end)
 	e.onTransition(m, rt, t, v, now)
 	e.afterJudge(m, rt, t, now)
 

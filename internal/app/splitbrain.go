@@ -146,7 +146,7 @@ func (a *App) peerListenAddrs() []string {
 
 func (a *App) probeReach(addr string) (cluster.ReachView, bool) {
 	pins, expected := a.peerTrust(addr)
-	tr := &http.Transport{Proxy: nil, TLSClientConfig: cluster.PinnedTLSConfig(pins...)}
+	tr := &http.Transport{Proxy: nil, TLSClientConfig: cluster.PinnedPeerTLSConfig(pins...)}
 	defer tr.CloseIdleConnections()
 	client := &http.Client{Timeout: 3 * time.Second, Transport: tr, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)

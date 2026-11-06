@@ -6,33 +6,36 @@ package notify
 
 import (
 	"encoding/json"
+	"github.com/githubflyideas/unagikuma/internal/observation"
 	"time"
 )
 
 // Message is one notification.
 type Message struct {
-	Kind       string        `json:"kind"`     // PROBLEM REPEAT REOPEN RECOVERY DRILL SYSTEM DIGEST TEST
-	Priority   string        `json:"priority"` // high, low
-	Monitor    string        `json:"monitor"`
-	Title      string        `json:"title"` // display name
-	Type       string        `json:"type"`
-	Target     string        `json:"target"`
-	Depth      string        `json:"depth"`
-	Status     string        `json:"status"`
-	Reason     string        `json:"reason"`
-	Detail     string        `json:"detail"`
-	Quorum     string        `json:"quorum,omitempty"`
-	Count      int           `json:"count"`
-	Max        int           `json:"max"`
-	IncidentID int64         `json:"incident_id"`
-	Duration   time.Duration `json:"duration"`
-	DetailURL  string        `json:"detail_url,omitempty"`
-	AckURL     string        `json:"ack_url,omitempty"`
-	Tags       []string      `json:"tags,omitempty"`
-	Time       time.Time     `json:"time"`
-	Delayed    time.Duration `json:"delayed,omitempty"` // >0 when delivered late
-	DryRun     bool          `json:"dry_run,omitempty"`
-	Instance   string        `json:"instance"` // unagikuma instance name (multi-instance setups)
+	Observations *observation.Snapshot `json:"observations,omitempty"`
+	Kind         string                `json:"kind"`     // PROBLEM REPEAT REOPEN RECOVERY DRILL SYSTEM DIGEST TEST
+	Priority     string                `json:"priority"` // high, low
+	Monitor      string                `json:"monitor"`
+	Title        string                `json:"title"` // display name
+	Type         string                `json:"type"`
+	Target       string                `json:"target"`
+	Depth        string                `json:"depth"`
+	Status       string                `json:"status"`
+	Reason       string                `json:"reason"`
+	Detail       string                `json:"detail"`
+	Quorum       string                `json:"quorum,omitempty"`
+	Count        int                   `json:"count"`
+	Max          int                   `json:"max"`
+	IncidentID   int64                 `json:"incident_id"`
+	Duration     time.Duration         `json:"duration"`
+	DetailURL    string                `json:"detail_url,omitempty"`
+	AckURL       string                `json:"ack_url,omitempty"`
+	Tags         []string              `json:"tags,omitempty"`
+	Time         time.Time             `json:"time"
+"github.com/githubflyideas/unagikuma/internal/observation"`
+	Delayed  time.Duration `json:"delayed,omitempty"` // >0 when delivered late
+	DryRun   bool          `json:"dry_run,omitempty"`
+	Instance string        `json:"instance"` // unagikuma instance name (multi-instance setups)
 	// Site names the site (cluster node) that sent the message; empty on
 	// a single machine. Sites never deduplicate each other's messages.
 	Site       string `json:"site,omitempty"`

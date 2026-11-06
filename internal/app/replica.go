@@ -211,6 +211,7 @@ func (a *App) localEngineConfig() (engine.Config, bool) {
 	}
 	self := a.nodeName()
 	ec := a.engineConfig(cfg)
+	ec.SourceNode = self
 	// Peer reachability is informational; each target is checked locally.
 	ec.Nodes, ec.Self = nil, self
 	seenMaster := false

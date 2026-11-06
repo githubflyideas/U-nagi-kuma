@@ -134,6 +134,9 @@ var coreMigrations = []string{
 	// How the system reaches a person directly (a team manager, say): the
 	// channels that deliver to them, by name.
 	`ALTER TABLE people ADD COLUMN notify TEXT NOT NULL DEFAULT '';`,
+	`CREATE TABLE site_observations(node TEXT NOT NULL,monitor TEXT NOT NULL,epoch TEXT NOT NULL,seq INTEGER NOT NULL,data TEXT NOT NULL,PRIMARY KEY(node,monitor));
+ CREATE INDEX site_observations_delta ON site_observations(node,epoch,seq);
+ CREATE TABLE site_observation_cursors(node TEXT PRIMARY KEY,epoch TEXT NOT NULL,seq INTEGER NOT NULL);`,
 }
 
 var historyMigrations = []string{

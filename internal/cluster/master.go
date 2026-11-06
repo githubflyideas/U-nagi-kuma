@@ -51,7 +51,8 @@ type MasterOptions struct {
 	// the passphrase it returns first.
 	WriteState func(w http.ResponseWriter) error
 	// Self is the master's own node name (for the peer lists).
-	Self func() string
+	Self            func() string
+	PeerFingerprint func() string
 }
 
 // Master accepts agent connections, forwards probe requests and configs
@@ -733,7 +734,11 @@ func (m *Master) sendPeers() {
 				others = append(others, a)
 			}
 		}
-		p.send(msgPeers, Peers{Master: self, Nodes: others})
+		pin := ""
+		if m.o.PeerFingerprint != nil {
+			pin = m.o.PeerFingerprint()
+		}
+		p.send(msgPeers, Peers{Master: self, MasterFingerprint: pin, Nodes: others})
 	}
 }
 

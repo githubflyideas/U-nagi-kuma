@@ -3,6 +3,7 @@ import { html, useState, useEffect, useRef } from '../lib.js';
 import { t, tn, dur, fmtTime, fmtNum, currentLang, detailText, axisTimes } from '../i18n.js';
 import { get, post, del, ifMatch, me } from '../api.js';
 import { useFetch, useLive, Card, Loading, ErrorBox, Empty, Pill, Dot, quorumText, Beats, Ago, Copy, Seg, pct, msText, reasonText, enc, go, toast, toastError, confirmDialog, useDocTitle, gwBad } from '../ui.js';
+import { ObservationTable } from '../observations.js';
 import { IncidentList } from './problems.js';
 import { EventRows } from './events.js';
 
@@ -33,21 +34,6 @@ export function Path({ row, path, bare }) {
         <div><b>${h.label}</b>${h.addr && html`<span class="ltr mono">${h.addr}</span>`}${h.note && html`<span>${h.note}</span>`}</div>
       </div>`)}</div>`;
   return bare ? hopsView : html`<${Card} title=${t('ui.path.title')}>${hopsView}<//>`;
-}
-
-// Votes shows how each node saw the last round and how the vote went.
-function Votes({ row }) {
-  const q = row.quorum;
-  const dot = { ok: 'ok', fail: 'critical', abstain: 'unknown', absent: 'pending', offline: 'pending' };
-  return html`<${Card} title=${t('ui.drawer.decide')} flush actions=${q && html`<span class="small muted">${quorumText(q)}</span>`}>
-    <table class="tbl"><tbody>${row.votes.map(v => html`<tr>
-      <td class="name nowrap"><a href=${'#/nodes'}>${v.node}</a></td>
-      <td class="nowrap"><i class=${'dot ' + (dot[v.vote] || 'unknown')}></i> ${t('ui.vote.' + v.vote)}</td>
-      <td class="small">${v.vote === 'ok' || v.vote === 'fail' || v.vote === 'abstain' ? reasonText(v.reason, v.detail) : ''}
-        ${v.excluded && html` <span class="tag weak">${t('ui.vote.excluded')}</span>`}</td>
-      <td class="right nowrap">${v.vote === 'ok' ? msText(v.latency_ms) : ''}</td>
-    </tr>`)}</tbody></table>
-  <//>`;
 }
 
 function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
@@ -239,7 +225,7 @@ export function MonitorDetail({ name }) {
 
     ${d.data.path && html`<${Path} row=${row} path=${d.data.path} />`}
 
-    ${row.votes && html`<${Votes} row=${row} />`}
+    ${row.observations && html`<${ObservationTable} snapshot=${row.observations} />`}
 
     <${Card} title=${t('ui.mon.history')} actions=${html`<${Seg} value=${range} onChange=${setRange} options=${['1h', '6h', '24h', '7d', '30d'].map(r => [r, r])} />`}>
       <div class="col" style=${{ gap: '14px' }}>

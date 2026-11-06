@@ -1492,5 +1492,8 @@
 "ui.field.via": "发送方式",
 "ui.field.program": "sendmail 命令",
 "ui.ch.program_hint": "自动查找（/usr/sbin/sendmail 等常见位置）；postfix、sendmail、exim、msmtp 等都会提供它。只有放在特殊位置时才需要填写。",
-"ui.ch.from_sendmail_hint": "可以留空：由本机的邮件系统决定发件人，和 Nagios 发出的邮件一样。"
+"ui.ch.from_sendmail_hint": "可以留空：由本机的邮件系统决定发件人，和 Nagios 发出的邮件一样。",
+"ui.obs.stale": "已过期",
+"ui.obs.local": "本站状态",
+"msg.observations": "各站观测：{table}；网关：{gateway}；上联：{uplink}"
 }

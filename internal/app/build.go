@@ -211,7 +211,10 @@ func (a *App) engineConfig(cfg *config.Config) engine.Config {
 	resolve := a.resolver()
 	degradedMax := cfg.Tunables.Int("notify.degraded-max")
 	selfProbes, probers := clusterNodes(cfg, &ec)
+	ec.SourceNode = cfg.MName
+	ec.ObservationSites = map[string][]string{}
 	for _, m := range cfg.Monitors {
+		ec.ObservationSites[m.Name] = participants(m.Nodes, cfg.MName, selfProbes, probers)
 		spec, err := ProbeSpec(m, resolve)
 		certDefaults(&spec, cfg.Tunables)
 		pingDefaults(&spec, cfg.Tunables)

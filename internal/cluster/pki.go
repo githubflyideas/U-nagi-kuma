@@ -40,7 +40,10 @@ const (
 )
 
 // PKI is the master's private CA and the certificate agents connect to.
+const PeerServerName = "peer.unagikuma.invalid"
+
 type PKI struct {
+	Peer  *PKI // stable site identity, never replaced by authority promotion
 	CA    *x509.Certificate
 	Leaf  tls.Certificate
 	caKey *ecdsa.PrivateKey
@@ -96,8 +99,12 @@ func (p *PKI) TLSConfig(ui *tls.Certificate) *tls.Config {
 	leaf := p.Leaf
 	return &tls.Config{
 		MinVersion: tls.VersionTLS12,
+		ClientAuth: tls.RequestClientCert,
 		NextProtos: []string{"h2", "http/1.1"},
 		GetCertificate: func(h *tls.ClientHelloInfo) (*tls.Certificate, error) {
+			if h.ServerName == PeerServerName && p.Peer != nil {
+				return &p.Peer.Leaf, nil
+			}
 			if ui == nil || h.ServerName == AgentServerName {
 				return &leaf, nil
 			}
@@ -253,4 +260,21 @@ func PinnedTLSConfig(pins ...string) *tls.Config {
 			return errors.New("peer does not match an authenticated cluster identity")
 		},
 	}
+}
+
+func (p *PKI) PeerIdentity() *PKI {
+	if p.Peer != nil {
+		return p.Peer
+	}
+	return p
+}
+func PinnedPeerTLSConfig(pins ...string) *tls.Config {
+	c := PinnedTLSConfig(pins...)
+	c.ServerName = PeerServerName
+	return c
+}
+
+// VerifyPeerIdentity authenticates the certificate and possession proved by TLS.
+func VerifyPeerIdentity(cs tls.ConnectionState, pin string) error {
+	return PinnedTLSConfig(pin).VerifyConnection(cs)
 }

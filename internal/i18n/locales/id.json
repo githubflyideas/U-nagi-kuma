@@ -1492,5 +1492,8 @@
 "ui.field.via": "Kirim melalui",
 "ui.field.program": "Perintah sendmail",
 "ui.ch.program_hint": "Ditemukan sendiri (/usr/sbin/sendmail dan lokasi umum); postfix, sendmail, exim, msmtp dan sejenisnya menyediakannya. Isi hanya jika letaknya tidak biasa.",
-"ui.ch.from_sendmail_hint": "Boleh kosong: sistem surel lalu mengirim atas nama mesin ini, seperti untuk Nagios."
+"ui.ch.from_sendmail_hint": "Boleh kosong: sistem surel lalu mengirim atas nama mesin ini, seperti untuk Nagios.",
+"ui.obs.stale": "Kedaluwarsa",
+"ui.obs.local": "Situs ini",
+"msg.observations": "Pengamatan: {table}; gerbang: {gateway}; uplink: {uplink}"
 }

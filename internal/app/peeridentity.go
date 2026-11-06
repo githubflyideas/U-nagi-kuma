@@ -37,7 +37,7 @@ func (a *App) peerTrust(addr string) ([]string, string) {
 	var pins []string
 	name := ""
 	if a.pki != nil {
-		pins = append(pins, a.pki.Fingerprint())
+		pins = append(pins, a.pki.Fingerprint(), a.pki.PeerIdentity().Fingerprint())
 	}
 	a.am.mu.Lock()
 	if m := a.am.member; m != nil {

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/githubflyideas/unagikuma/internal/app"
 	"github.com/githubflyideas/unagikuma/internal/cluster"
 	"github.com/githubflyideas/unagikuma/internal/license"
 	"github.com/githubflyideas/unagikuma/internal/store"
@@ -175,6 +176,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /healthz", s.healthz)
 	s.mux.HandleFunc("GET /metrics", s.metrics)
 	s.mux.HandleFunc("GET "+cluster.ConnectPath, s.agentConnect)
+	s.mux.HandleFunc("GET "+app.SiteObservationPath, s.app.ServeSiteObservations)
 	s.mux.HandleFunc("GET "+cluster.StatePath, s.agentState)
 	s.mux.HandleFunc("GET "+cluster.MergePath, s.agentMerge)
 	s.mux.HandleFunc("POST "+cluster.MergePath, s.agentMerge)

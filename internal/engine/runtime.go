@@ -129,11 +129,13 @@ type EscalationStep struct {
 
 // Config is everything the engine runs with; Apply swaps it atomically.
 type Config struct {
-	Serial   uint32
-	Instance string
-	Lang     string // message language: zh | en
-	BaseURL  string // for links in messages ("" = none)
-	Location *time.Location
+	SourceNode       string
+	ObservationSites map[string][]string
+	Serial           uint32
+	Instance         string
+	Lang             string // message language: zh | en
+	BaseURL          string // for links in messages ("" = none)
+	Location         *time.Location
 	// Overrides are the stand-ins of on-call rotations.
 	Overrides []oncall.Override
 	Monitors  []MonitorSpec

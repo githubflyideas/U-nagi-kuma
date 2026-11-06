@@ -123,5 +123,8 @@ func digestLine(in *Intent) string {
 	if m.Duration >= time.Minute {
 		line += " (" + i18n.Duration(m.Duration.Round(time.Minute), m.Lang) + ")"
 	}
+	if m.Observations != nil {
+		line += " — " + i18n.T(m.Lang, "msg.observations", "table", m.Observations.Summary(), "gateway", m.Observations.Gateway, "uplink", m.Observations.Uplink)
+	}
 	return line
 }

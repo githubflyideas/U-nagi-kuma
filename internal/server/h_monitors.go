@@ -14,12 +14,14 @@ import (
 	"github.com/githubflyideas/unagikuma/internal/app"
 	"github.com/githubflyideas/unagikuma/internal/config"
 	"github.com/githubflyideas/unagikuma/internal/engine"
+	"github.com/githubflyideas/unagikuma/internal/observation"
 	"github.com/githubflyideas/unagikuma/internal/probe"
 	"github.com/githubflyideas/unagikuma/internal/store"
 )
 
 // rowJSON is a monitor row of the API.
 type rowJSON struct {
+	Observations *observation.Snapshot `json:"observations,omitempty"`
 	// ID is stable across renames (the name is what monitors.bind uses).
 	ID          int64              `json:"id"`
 	ETag        string             `json:"etag,omitempty"` // send back in If-Match when changing the record
@@ -120,6 +122,7 @@ func (s *Server) incidentIndex() map[int64]engine.Incident {
 
 func (s *Server) rowFrom(r engine.MonitorRow, cfg *config.Config, incs map[int64]engine.Incident) rowJSON {
 	out := s.rowBase(r, cfg, incs)
+	out.Observations = s.app.ObservationSnapshot(r.Name)
 	if u, err := s.app.Store().UptimeOf(r.Name, s.now().Add(-24*time.Hour), s.now()); err == nil {
 		out.Uptime24h, out.Coverage24h = s.shownRatio(u), u.Coverage
 	}

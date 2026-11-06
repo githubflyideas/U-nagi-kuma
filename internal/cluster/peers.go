@@ -30,6 +30,7 @@ type PeerView struct {
 type peerSet struct {
 	mu          sync.Mutex
 	master      string
+	masterPin   string
 	views       map[string]*PeerView
 	masterReach map[string]bool // the master's own view, as last fetched
 }
@@ -42,6 +43,7 @@ func (a *Agent) setPeers(p Peers) {
 		ps.views = map[string]*PeerView{}
 	}
 	ps.master = p.Master
+	ps.masterPin = p.MasterFingerprint
 	keep := map[string]bool{}
 	for _, n := range p.Nodes {
 		if n.Name == a.o.Node {
@@ -69,6 +71,7 @@ func (a *Agent) Peers() []PeerView {
 	ps.mu.Lock()
 	out := make([]PeerView, 0, len(ps.views)+1)
 	master := ps.master
+	masterPin := ps.masterPin
 	for _, v := range ps.views {
 		c := *v
 		out = append(out, c)
@@ -76,7 +79,7 @@ func (a *Agent) Peers() []PeerView {
 	ps.mu.Unlock()
 	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
 	if master != "" {
-		mv := PeerView{Fingerprint: a.pin, Name: master, Addr: hostOf(a.Server()), OK: st.Connected, At: time.Now()}
+		mv := PeerView{Fingerprint: masterPin, Name: master, Addr: hostOf(a.Server()), OK: st.Connected, At: time.Now()}
 		if mr, ok := a.masterView(); ok {
 			mv.Reach = mr
 		}
@@ -130,7 +133,7 @@ func (a *Agent) checkPeers(ctx context.Context) {
 			wg.Add(1)
 			go func(v PeerView) {
 				defer wg.Done()
-				peerClient := &http.Client{Timeout: 3 * time.Second, Transport: &http.Transport{Proxy: nil, TLSClientConfig: PinnedTLSConfig(a.pin, v.Fingerprint)}, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+				peerClient := &http.Client{Timeout: 3 * time.Second, Transport: &http.Transport{Proxy: nil, TLSClientConfig: PinnedPeerTLSConfig(v.Fingerprint)}, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 				res := a.checkPeer(ctx, peerClient, v.Addr)
 				if res.OK && res.Name != v.Name {
 					res = PeerView{Addr: v.Addr, At: time.Now(), Error: "peer identity mismatch"}

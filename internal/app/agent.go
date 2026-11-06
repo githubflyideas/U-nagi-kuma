@@ -78,7 +78,7 @@ func (a *App) startAgent() error {
 		Server: am.member.Server, Node: am.member.Node, Token: strings.TrimSpace(string(tok)),
 		Fingerprint: am.member.Fingerprint, Version: a.opts.Version, Log: a.log.With("component", "agent"),
 		Probe: a.opts.Probe, Servers: am.member.Servers, Term: am.member.Term, Replica: true,
-		InitialPeers: initialPeers, Listen: a.opts.Listen, PeerFingerprint: a.pki.Fingerprint(), Gateway: a.GatewayStates,
+		InitialPeers: initialPeers, Listen: a.opts.Listen, PeerFingerprint: a.pki.PeerIdentity().Fingerprint(), Gateway: a.GatewayStates,
 		OnTerm:    func(t uint64) { a.updateMembership(func(m *Membership) { m.Term = t }) },
 		OnMasters: func(l []string) { a.updateMembership(func(m *Membership) { m.Server, m.Servers = l[0], l[1:] }) },
 		OnState:   a.onStateNotice,
