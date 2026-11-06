@@ -1,2 +1,7 @@
 # Test fixtures and golden files are compared byte for byte.
 internal/importer/testdata/** -text
+
+# Build, release and CI helpers are not part of the program: leave them
+# out of the repository's language statistics.
+Makefile linguist-detectable=false
+scripts/** linguist-detectable=false
