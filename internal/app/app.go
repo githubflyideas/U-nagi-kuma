@@ -306,8 +306,9 @@ func (a *App) applyLocked(cfg *config.Config) {
 		ec.Nodes, ec.Self = nil, ""
 	}
 	if a.SupersededBy() != nil && !a.isMember() {
-		// Replaced by a newer master: check nothing, notify nothing.
-		ec.Monitors, ec.Maints = nil, nil
+		// Replaced by a newer master: check nothing, notify nothing
+		// (including leftover NODE peer judgements — BUG-15).
+		ec.Monitors, ec.Maints, ec.Nodes, ec.Self = nil, nil, nil, ""
 	}
 	agentEC := ec
 	a.addSiteLocal(&ec, siteLocal)
