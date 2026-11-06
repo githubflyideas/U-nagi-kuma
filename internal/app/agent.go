@@ -182,7 +182,9 @@ func (a *App) JoinCluster(ctx context.Context, o JoinOptions) (cluster.JoinRespo
 		return resp, err
 	}
 	a.am.member = m
-	// The master decides what this node checks from now on.
+	// The master decides what this node checks from now on. Drop local
+	// monitors, maints and NODE rows left from a previous master role so a
+	// demoted master does not keep judging stale peers (BUG-9).
 	if _, err := a.cfg.edit(o.Author, "joined cluster "+info.Server+" as "+resp.Node, func(f *config.File) error {
 		for _, mon := range cur.Config.Monitors {
 			if err := f.DeleteRecord(mon.Name); err != nil {
@@ -191,6 +193,11 @@ func (a *App) JoinCluster(ctx context.Context, o JoinOptions) (cluster.JoinRespo
 		}
 		for _, mt := range cur.Config.Maints {
 			if err := f.DeleteRecord(mt.Name); err != nil {
+				return err
+			}
+		}
+		for _, n := range cur.Config.Nodes {
+			if err := f.DeleteRecord(n.Name); err != nil {
 				return err
 			}
 		}

@@ -191,7 +191,10 @@ func New(o Options) (*App, error) {
 	intents, _ := st.PendingIntents()
 	a.engine.Restore(states, incidents, intents)
 	a.applyConfig(a.cfg.current().Config)
-	if !st.FirstRun {
+	// A returning old master must learn of a higher term before it acts as
+	// master or fires startup/system notices (BUG-15 / Rule 2).
+	a.probeForeignMastersAtStart()
+	if a.SupersededBy() == nil && !st.FirstRun {
 		// A brand-new installation was not "restarted".
 		a.engine.StartupNotice(st.PrevClean, st.PrevBeat)
 	}
@@ -297,6 +300,10 @@ func (a *App) applyLocked(cfg *config.Config) {
 	if local {
 		// A replica that cannot reach its master checks on its own.
 		ec = lec
+	} else if a.isMember() {
+		// Connected member: never judge peers from a leftover master-era
+		// NODE list in the local file (BUG-9).
+		ec.Nodes, ec.Self = nil, ""
 	}
 	if a.SupersededBy() != nil && !a.isMember() {
 		// Replaced by a newer master: check nothing, notify nothing.
@@ -354,9 +361,12 @@ func (a *App) Run(ctx context.Context) error {
 		a.every(ctx, a.Config().Config.Tunables.Duration("cluster.standby-sync"), a.syncStandbys)
 	})
 	run(func() {
-		a.probeForeignMastersAtStart()
 		a.retirePrevious(ctx)
 		a.every(ctx, time.Minute, func() { a.retirePrevious(ctx) })
+	})
+	run(func() {
+		a.persistPeerListens()
+		a.every(ctx, 30*time.Second, a.persistPeerListens)
 	})
 	run(func() {
 		a.every(ctx, 10*time.Second, a.watchForeignMasters)
