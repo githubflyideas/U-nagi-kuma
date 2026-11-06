@@ -108,7 +108,7 @@ func (a *App) keepReplicaCopy(archive, key string) error {
 		return fmt.Errorf("unpack the master's state: %w", err)
 	}
 	if err := a.copySecrets(tmp); err != nil {
-		a.log.Warn("could not copy the master's secrets", "err", err)
+		return fmt.Errorf("copy notification configuration: %w", err)
 	}
 	if c, err := readCarry(tmp, a.now()); err != nil {
 		a.log.Warn("could not read silences and changes from the master's state", "err", err)
@@ -150,7 +150,13 @@ func (a *App) copySecrets(dir string) error {
 		return err
 	}
 	defer st.Close()
-	src := st.Secrets(kek)
+	if err := a.store.CopyControlFrom(st, false); err != nil {
+		return err
+	}
+	return copySecretStores(st.Secrets(kek), a.secrets)
+}
+
+func copySecretStores(src, dst *store.Secrets) error {
 	list, err := src.List()
 	if err != nil {
 		return err
@@ -162,10 +168,10 @@ func (a *App) copySecrets(dir string) error {
 			errs = append(errs, err)
 			continue
 		}
-		if cur, err := a.secrets.Get(si.Name); err == nil && cur == v {
+		if cur, err := dst.Get(si.Name); err == nil && cur == v {
 			continue
 		}
-		if err := a.secrets.Put(si.Name, v, si.Scopes); err != nil {
+		if err := dst.Put(si.Name, v, si.Scopes); err != nil {
 			errs = append(errs, err)
 		}
 	}

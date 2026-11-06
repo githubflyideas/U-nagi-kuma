@@ -399,29 +399,66 @@ func applyPromote(dir, configPath string) (bool, error) {
 			self = m.Node
 		}
 	}
-	// The node's own databases are replaced by the master's; they are kept
-	// aside and what this site wrote on its own is merged in after start.
-	own := filepath.Join(dir, standbyDir, ownDir)
-	_ = os.RemoveAll(own)
-	_ = os.MkdirAll(own, 0o700)
-	for _, name := range []string{"core.db", "history.db"} {
-		for _, suffix := range []string{"", "-wal", "-shm"} {
-			if err := os.Rename(filepath.Join(dir, name+suffix), filepath.Join(own, name+suffix)); err != nil {
-				_ = os.Remove(filepath.Join(dir, name+suffix))
-			}
+	// Restore into isolation: a promotion transfers control, never runtime state.
+	tmp, err := os.MkdirTemp(dir, ".promote-*")
+	if err != nil {
+		return false, err
+	}
+	defer os.RemoveAll(tmp)
+	tmpConfig := filepath.Join(tmp, "config")
+	if _, err := backup.Restore(f, tmp, tmpConfig, meta.Key, true); err != nil {
+		return false, fmt.Errorf("unpack authority snapshot: %w", err)
+	}
+	src, err := store.Open(tmp, store.Options{Tool: true})
+	if err != nil {
+		return false, err
+	}
+	defer src.Close()
+	dst, err := store.Open(dir, store.Options{Tool: true})
+	if err != nil {
+		return false, err
+	}
+	srcKey, err := store.LoadOrCreateKey(tmp)
+	if err != nil {
+		dst.Close()
+		return false, err
+	}
+	dstKey, err := store.LoadOrCreateKey(dir)
+	if err != nil {
+		dst.Close()
+		return false, err
+	}
+	if err = dst.CopyControlFrom(src, true); err == nil {
+		err = copySecretStores(src.Secrets(srcKey), dst.Secrets(dstKey))
+	}
+	dst.Close()
+	if err != nil {
+		return false, err
+	}
+	for _, name := range []string{"cluster-ca.crt", "cluster-ca.key", "cluster.crt", "cluster.key"} {
+		b, err := os.ReadFile(filepath.Join(tmp, name))
+		if err != nil {
+			return false, err
+		}
+		if err := writePeerAtomic(filepath.Join(dir, name), b); err != nil {
+			return false, err
 		}
 	}
-	if _, err := backup.Restore(f, dir, configPath, meta.Key, true); err != nil {
-		return false, fmt.Errorf("restore the master's state: %w", err)
+	cfg, err := os.ReadFile(tmpConfig)
+	if err != nil {
+		return false, err
 	}
-	// A backup taken from a running master carries its "still running"
-	// marker; a planned take-over is not an abnormal exit.
+	if err := writePeerAtomic(configPath, cfg); err != nil {
+		return false, err
+	}
 	markPromotedClean(dir)
 	oldMaster, err := adoptPromotedConfig(configPath, self)
 	if err != nil {
 		return false, fmt.Errorf("adopt the configuration as this node: %w", err)
 	}
-	pb, _ := json.Marshal(promoted{Self: self, OldMaster: oldMaster, Term: req.Term, PrevTerm: meta.Term})
+	base, _ := src.SnapshotsAt(1 << 62)
+	base.Text = ""
+	pb, _ := json.Marshal(promoted{Self: self, OldMaster: oldMaster, Term: req.Term, PrevTerm: meta.Term, Base: base, OwnMerged: true, Marks: map[string]int64{}})
 	if err := os.WriteFile(filepath.Join(dir, promotedFile), pb, 0o600); err != nil {
 		return false, err
 	}

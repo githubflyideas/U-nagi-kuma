@@ -7,8 +7,7 @@ import (
 	"time"
 )
 
-// Silences and open change windows on the master hold on a replica that
-// checks on its own.
+// Shared maintenance propagates; another site's incident silence does not.
 func TestReadCarry(t *testing.T) {
 	dir := t.TempDir()
 	db, err := sql.Open("sqlite", filepath.Join(dir, "core.db"))
@@ -28,13 +27,15 @@ func TestReadCarry(t *testing.T) {
 			t.Fatal(q, err)
 		}
 	}
-	db.Exec(`INSERT INTO changes VALUES(7,'Upgrade','name:web',?,?,'open')`, now.Add(-time.Minute).UnixMilli(), now.Add(time.Hour).UnixMilli())
+	db.Exec(`INSERT INTO changes VALUES(7,'Upgrade','name:web',?,?,'planned')`, now.Add(-time.Minute).UnixMilli(), now.Add(time.Hour).UnixMilli())
+	db.Exec(`INSERT INTO changes VALUES(8,'Live','name:web',?,?,'running')`, now.Add(-time.Minute).UnixMilli(), now.Add(time.Hour).UnixMilli())
+	db.Exec(`INSERT INTO changes VALUES(9,'Done','name:web',?,?,'done')`, now.Add(-time.Minute).UnixMilli(), now.Add(time.Hour).UnixMilli())
 	db.Close()
 	c, err := readCarry(dir, now)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(c.Silences) != 1 || c.Silences[0].Monitor != "flaky" || len(c.Changes) != 1 || c.Changes[0].Sel != "name:web" {
+	if len(c.Silences) != 0 || len(c.Changes) != 2 || c.Changes[0].Sel != "name:web" {
 		t.Fatalf("%+v", c)
 	}
 }
