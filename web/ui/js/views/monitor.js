@@ -2,7 +2,7 @@
 import { html, useState, useEffect, useRef } from '../lib.js';
 import { t, tn, dur, fmtTime, fmtNum, currentLang, detailText, axisTimes } from '../i18n.js';
 import { get, post, del, ifMatch, me } from '../api.js';
-import { useFetch, useLive, Card, Loading, ErrorBox, Empty, Pill, Dot, quorumText, Beats, Ago, Copy, Seg, pct, msText, reasonText, enc, go, toast, toastError, confirmDialog, useDocTitle, gwBad } from '../ui.js';
+import { useFetch, useLive, Card, Loading, ErrorBox, Empty, Pill, Dot, Beats, Ago, Copy, Seg, pct, msText, reasonText, enc, go, toast, toastError, confirmDialog, useDocTitle, gwBad } from '../ui.js';
 import { ObservationTable } from '../observations.js';
 import { IncidentList } from './problems.js';
 import { EventRows } from './events.js';

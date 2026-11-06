@@ -752,13 +752,13 @@ func (d *LocalNet) GateTargets(fam Family, exclude string, n int, now time.Time)
 
 // Health is the "本机健康" card model (overview health card).
 type Health struct {
-	Uplink      string    `json:"uplink"` // ok | wan_down | lan_down | no_route | cannot_judge | unknown
-	UplinkSince time.Time `json:"uplink_since,omitzero"`
-	Suspected   bool      `json:"suspected,omitzero"` // wan_down judged without wan anchors
-	Gateway     string    `json:"gateway,omitempty"`
-	GatewayOK   bool      `json:"gateway_ok"`
+	Uplink      string        `json:"uplink"` // ok | wan_down | lan_down | no_route | cannot_judge | unknown
+	UplinkSince time.Time     `json:"uplink_since,omitzero"`
+	Suspected   bool          `json:"suspected,omitzero"` // wan_down judged without wan anchors
+	Gateway     string        `json:"gateway,omitempty"`
+	GatewayOK   bool          `json:"gateway_ok"`
 	GatewayRTT  time.Duration `json:"gateway_rtt,omitzero"`
-	GatewayNote string    `json:"gateway_note,omitempty"` // container | unresponsive | no_route | ""
+	GatewayNote string        `json:"gateway_note,omitempty"` // container | unresponsive | no_route | ""
 	// GatewayState: ok | down (answered before, stopped) | silent (never
 	// answered ping: many routers ignore it, which is fine) | unsure.
 	GatewayState   string        `json:"gateway_state,omitempty"`

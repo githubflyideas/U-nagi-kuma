@@ -277,13 +277,6 @@ function hexClass(r) {
   return ['hex', st, acked ? 'acked' : '', r.flags.includes('weak') ? 'weak' : ''].join(' ');
 }
 
-function voteCell(v) {
-  if (!v) return html`<span class="faint">–</span>`;
-  if (v.vote === 'ok') return html`<span class="vote ok"><i></i>${msText(v.latency_ms)}</span>`;
-  if (v.vote === 'fail') return html`<span class="vote fail"><i></i>${reasonText(v.reason, v.detail)}</span>`;
-  return html`<span class="vote abstain"><i></i>${t('ui.vote.' + v.vote)}</span>`;
-}
-
 export function Hive({ rows }) {
   const [tip, setTip] = useState(null);
   const groups = [];

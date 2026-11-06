@@ -1,9 +1,12 @@
 # Changelog
 
-## Unreleased
+## v2.2.0 — 2026-11-06
 
-**Removed**
-- The container image is no longer built or published, and Docker is no longer offered as a way to run Unagikuma or its agents (the agent install dialog keeps the shell, systemd and Windows commands). Run the single binary directly or as a service. The DOCKER monitor type, which checks containers on a host, is unchanged.
+- Each site in a cluster now monitors and sends alerts independently, even when the main server is available. A problem may produce alerts from more than one site.
+- Alerts and recovery messages include other sites' latest results, with out-of-date results marked. This information provides context; it does not control alerts.
+- Acknowledging an alert affects its source site. Changing the main server is still manual.
+- Back up before upgrading. Older probe-only nodes need manual migration to full servers. See the [cluster upgrade guide](https://github.com/githubflyideas/U-nagi-kuma/blob/v2.2.0/docs/per-site-upgrade.md).
+- Container images are no longer published. Use the downloadable application or run it as a system service.
 
 ## v2.1.1 — 2026-11-05
 

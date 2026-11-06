@@ -44,12 +44,12 @@ func (a *App) ServeSiteObservations(w http.ResponseWriter, r *http.Request) {
 	}
 	after, err := strconv.ParseInt(r.URL.Query().Get("after"), 10, 64)
 	if err != nil || after < 0 {
-		http.Error(w, "invalid cursor", 400)
+		http.Error(w, "invalid cursor", http.StatusBadRequest)
 		return
 	}
 	d, err := a.store.SiteObservationDelta(a.nodeName(), r.URL.Query().Get("epoch"), after)
 	if err != nil {
-		http.Error(w, "observation storage unavailable", 503)
+		http.Error(w, "observation storage unavailable", http.StatusServiceUnavailable)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

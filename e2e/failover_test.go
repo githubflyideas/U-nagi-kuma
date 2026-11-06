@@ -175,8 +175,8 @@ func (s *server) monitors() []string {
 
 const soa = "@ IN SOA %s. admin.localhost. ( 2026102801 2s 1s 1s 1 )\n$SET engine.first-round-delay=0s cluster.standby-sync=30s cluster.standby-retry=5s\n"
 
-// The master is lost; its standby takes over with the master's users,
-// monitors and nodes, and the old master, once back, stands down.
+// The standby takes over shared configuration but retains its own users.
+// The former master rejoins under its original site name and keeps checking.
 func TestFailover(t *testing.T) {
 	a := start(t, "master", fmt.Sprintf(soa, "a"))
 	a.setup("admin", "master-pass-1")
@@ -223,7 +223,11 @@ func TestFailover(t *testing.T) {
 	if code := b.call("POST", "/api/v1/cluster/promote", map[string]any{}, nil); code != 200 {
 		t.Fatalf("promote: %d", code)
 	}
-	b.waitFor("the new master to accept the old master's admin", func() bool { return b.login("admin", "master-pass-1") })
+	b.waitFor("the standby to restart with configuration authority", func() bool {
+		var r struct{ Mode string }
+		return b.call("GET", "/api/v1/config", nil, &r) == 200 && r.Mode == "rw"
+	})
+	b.waitFor("the new master to retain its local admin", func() bool { return b.login("local", "standby-pass-1") })
 	b.waitFor("the master's monitor checked by the new master", func() bool {
 		for _, m := range b.monitors() {
 			if strings.HasPrefix(m, "self=") {
@@ -244,9 +248,12 @@ func TestFailover(t *testing.T) {
 	if !a.login("admin", "master-pass-1") {
 		t.Fatal("old master login")
 	}
-	a.waitFor("the old master to stand down", func() bool {
-		var r struct{ Superseded any }
-		a.call("GET", "/api/v1/overview", nil, &r)
-		return r.Superseded != nil
+	a.waitFor("the old master to rejoin under its original site name", func() bool {
+		var r struct {
+			Member *struct{ Node string }
+			Status *struct{ Connected bool }
+		}
+		a.call("GET", "/api/v1/cluster/agent", nil, &r)
+		return r.Member != nil && r.Member.Node == "a" && r.Status != nil && r.Status.Connected
 	})
 }

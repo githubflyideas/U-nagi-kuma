@@ -104,17 +104,17 @@ func (a *App) actLocalIncident(id int64, op IncidentAction, via string) error {
 func (a *App) ServeSiteIncidentAction(w http.ResponseWriter, r *http.Request) {
 	peer, ok := a.PeerRequester(r)
 	if !ok {
-		http.Error(w, "peer identity required", 401)
+		http.Error(w, "peer identity required", http.StatusUnauthorized)
 		return
 	}
 	var op IncidentAction
 	if json.NewDecoder(io.LimitReader(r.Body, 64<<10)).Decode(&op) != nil || !op.valid() {
-		http.Error(w, "invalid incident action", 400)
+		http.Error(w, "invalid incident action", http.StatusBadRequest)
 		return
 	}
 	id, err := a.store.LocalIncidentID(op.GlobalID)
 	if err != nil || id == 0 {
-		http.Error(w, "incident not found", 404)
+		http.Error(w, "incident not found", http.StatusNotFound)
 		return
 	}
 	if err = a.actLocalIncident(id, op, "peer:"+peer); err != nil {
