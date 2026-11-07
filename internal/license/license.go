@@ -65,11 +65,15 @@ const (
 	// FeatAudit opens the audit log of permission and configuration
 	// changes: who gave whom which rights in which section.
 	FeatAudit = "audit"
+	// FeatBranding lets a theme pack replace the product name and logo
+	// (white label) and leave out "Powered by" on status pages. Theme
+	// pack colours and layouts are free.
+	FeatBranding = "branding"
 )
 
 // Features is every feature this build switches on. The issuing tool
 // refuses names that are not here.
-var Features = []string{FeatAudit}
+var Features = []string{FeatAudit, FeatBranding}
 
 // File is license.json. A quota of 0 means no limit. Expires nil means it
 // never expires; UpdatesUntil then says how long new releases are covered.

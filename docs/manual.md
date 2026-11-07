@@ -334,6 +334,38 @@ The log cannot be changed quietly: each entry carries the hash of the one before
 
 Reading the audit log needs a registered installation; see [Registration and quotas](#registration-and-quotas).
 
+## Theme packs
+
+A theme pack changes how the console looks: its colours and, on a registered installation, the product name and logo (white label). Manage packs under **Settings › Appearance**: upload, use, export to share with another installation, delete. The pack in use becomes everyone's default look; each person can still choose another theme at the bottom of the sidebar.
+
+A pack is a zip file holding:
+
+- `theme.json` (required)
+- `logo.png` or `logo.jpg` (optional): sidebar and login page, at least 16 and at most 2048 pixels wide and high
+- `favicon.png` (optional): the browser tab icon
+
+A complete example is in [`docs/theme-pack-example`](theme-pack-example/); zip its three files to try it.
+
+```json
+{
+  "name": "Harbour Blue",
+  "author": "Example Co.",
+  "version": "1.0",
+  "base": "light",
+  "layout": "standard",
+  "brand": { "product": "Harbour Monitor", "short": "HM", "hide_powered": false },
+  "colors": { "bg": "#f2f6fa", "side": "#e3ebf3", "accent": "#0a5fc2" }
+}
+```
+
+- `name` (required, up to 60 characters); `author`, `version` are shown in the list.
+- `base` is `light` or `dark`: every colour the pack does not set comes from that look.
+- `colors` sets any of these, written `#rrggbb`: `bg` (page), `side` (sidebar), `panel` (cards and the top bar), `panel-2`, `border`, `border-strong`, `text`, `muted`, `faint`, `accent`, `accent-soft`, `accent-text`, `link`, `ok`, `ok-soft`, `degraded`, `degraded-soft`, `critical`, `critical-soft`, `unknown`, `unknown-soft`, `pending`, `pending-soft`, `maint`, `maint-soft`, `on-status` (text on status blocks), `on-degraded`, `empty`.
+- `layout` is `standard`, `duty`, `wall` or `exec`: the page layout the pack prefers.
+- `brand` needs a registration with the branding feature: `product` (up to 40 characters) replaces "Unagikuma" in the console, the browser title and every notification and report; `short` (up to 12) is a short form; `hide_powered` leaves "Powered by" out of status pages. Without the registration a pack's colours are still used and the console says what is held back.
+
+For safety a pack holds data only: no CSS, SVG or scripts, and images must be PNG or JPEG. Packs are kept in `<data>/themes/`, go into backups, and in a cluster every site takes the main server's packs (whether a site shows the product name and logo depends on that site's own registration). The program name on the command line stays `unagikuma`.
+
 ## Registration and quotas
 
 Without a licence everything works except reading the audit log, and nothing is ever limited. Install the `license.json` you received under **Settings › Registration**; a trial licence is issued for the installation number shown there.

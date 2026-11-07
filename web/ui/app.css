@@ -629,3 +629,12 @@ tr.risk-high td:first-child { box-shadow: inset 3px 0 0 var(--degraded); }
 .side .foot select { background: var(--panel); }
 .nav a.on { box-shadow: inset 3px 0 0 var(--accent); }
 [dir="rtl"] .nav a.on { box-shadow: inset -3px 0 0 var(--accent); }
+
+/* Settings › Appearance */
+.packs { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.pack.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.pack-logo { width: 40px; height: 40px; border-radius: 8px; object-fit: contain; background: var(--panel-2); flex: none; }
+.pack-logo.none { border: 1px dashed var(--border-strong); }
+.swatches { display: flex; gap: 4px; }
+.swatches span { width: 26px; height: 18px; border-radius: 4px; border: 1px solid var(--border); }
+.swatches span.unset { background: repeating-linear-gradient(45deg, var(--panel-2) 0 3px, var(--panel) 3px 6px) !important; }

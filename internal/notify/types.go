@@ -12,6 +12,8 @@ import (
 
 // Message is one notification.
 type Message struct {
+	// Brand replaces the product name in rendered messages (white label).
+	Brand            string                `json:"brand,omitempty"`
 	GlobalIncidentID string                `json:"incident_global_id,omitempty"`
 	Observations     *observation.Snapshot `json:"observations,omitempty"`
 	Kind             string                `json:"kind"`     // PROBLEM REPEAT REOPEN RECOVERY DRILL SYSTEM DIGEST TEST

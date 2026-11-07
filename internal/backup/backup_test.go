@@ -146,3 +146,35 @@ func TestLegacyEncryptedHeaderRestores(t *testing.T) {
 		t.Fatalf("legacy archive: %v", err)
 	}
 }
+
+// Theme packs travel with a backup; names outside the pack layout do not.
+func TestBackupKeepsThemePacks(t *testing.T) {
+	src := t.TempDir()
+	cfg := filepath.Join(src, "monitors.bind")
+	os.WriteFile(cfg, []byte("; empty\n"), 0o600)
+	os.MkdirAll(filepath.Join(src, "themes", "acme"), 0o755)
+	os.WriteFile(filepath.Join(src, "themes", "acme", "theme.json"), []byte(`{"name":"Acme"}`), 0o644)
+	os.WriteFile(filepath.Join(src, "themes", "acme", "logo"), []byte("png"), 0o644)
+	os.WriteFile(filepath.Join(src, "themes", "active"), []byte("acme\n"), 0o644)
+	os.WriteFile(filepath.Join(src, "themes", "acme", "notes.txt"), []byte("left out"), 0o644)
+	var buf bytes.Buffer
+	db := func(ctx context.Context, which string, w io.Writer) error {
+		_, err := w.Write([]byte("db"))
+		return err
+	}
+	if _, err := Write(context.Background(), &buf, db, Options{DataDir: src, ConfigPath: cfg, Now: time.Now()}); err != nil {
+		t.Fatal(err)
+	}
+	dst := t.TempDir()
+	if _, err := Restore(&buf, dst, filepath.Join(dst, "monitors.bind"), "", false); err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range []string{"themes/acme/theme.json", "themes/acme/logo", "themes/active"} {
+		if _, err := os.Stat(filepath.Join(dst, f)); err != nil {
+			t.Errorf("%s not restored", f)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(dst, "themes", "acme", "notes.txt")); err == nil {
+		t.Error("a file outside the pack layout was backed up")
+	}
+}

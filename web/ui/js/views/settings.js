@@ -3,6 +3,7 @@ import { html, useState, useEffect, useMemo } from '../lib.js';
 import { t, dur, fmtTime, currentLang, langList } from '../i18n.js';
 import { get, post, put, del, setCSRF, getCSRF, me } from '../api.js';
 import { Nodes } from './nodes.js';
+import { Appearance } from './appearance.js';
 import { useFetch, Loading, ErrorBox, Empty, Field, Card, Modal, Copy, Ago, bytes, toast, toastError, errText, confirmDialog, useDocTitle } from '../ui.js';
 
 const EXIT_KEY = 'localnet.exit-target';
@@ -593,7 +594,7 @@ function Audit() {
   </div>`;
 }
 
-const TABS = ['general', 'nodes', 'users', 'teams', 'audit', 'scripts', 'tunables', 'tokens', 'secrets', 'keywords', 'system', 'registration', 'account'];
+const TABS = ['general', 'appearance', 'nodes', 'users', 'teams', 'audit', 'scripts', 'tunables', 'tokens', 'secrets', 'keywords', 'system', 'registration', 'account'];
 
 export function Settings({ tab, user }) {
   useDocTitle(t('ui.nav.settings'));
@@ -602,6 +603,7 @@ export function Settings({ tab, user }) {
   const tabs = me.teams ? ['teams'] : TABS;
   let body;
   switch (tab) {
+    case 'appearance': body = html`<${Appearance} />`; break;
     case 'nodes': body = html`<${Nodes} embedded />`; break;
     case 'users': body = html`<${Users} />`; break;
     case 'teams': body = html`<${Teams} />`; break;

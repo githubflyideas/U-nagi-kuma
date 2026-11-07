@@ -4,6 +4,7 @@
 
 **Added**
 - Two more themes: Sky (light blue) and Violet (purple).
+- Theme packs (Settings › Appearance): upload a zip with your colours, and on a registered installation your own product name, logo and browser icon, used in the console, notifications and reports, with "Powered by" optionally left out of status pages. Packs can be exported, go into backups and are taken over by every site of a cluster. An example is in docs/theme-pack-example.
 
 **Changed**
 - The console's sidebar logo and the browser tab icon use the new logo.

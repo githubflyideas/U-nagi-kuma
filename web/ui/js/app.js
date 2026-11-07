@@ -14,6 +14,7 @@ import { ConfigView } from './views/config.js';
 import { Alerts } from './views/alerts.js';
 import { Notices } from './views/announce.js';
 import { OnCall } from './views/oncall.js';
+import { brand, product, logoURL, loadBrand, brandColors } from './brand.js';
 import { Settings } from './views/settings.js';
 import { Nodes } from './views/nodes.js';
 import { Expiry } from './views/expiry.js';
@@ -25,15 +26,21 @@ import { PaletteHost, openPalette } from './views/palette.js';
 // (purple); "auto" follows the device. The console
 // is ink (black) unless the user picks another. The old light/dark settings
 // map to paper/ink.
+// When an administrator has made a theme pack active, it is one more
+// choice ("brand") and the default for anyone who has not picked one.
 const TONES = ['paper', 'mist', 'slate', 'graphite', 'ink', 'sky', 'violet'];
 function toneOf(v) {
   if (v === 'light') return 'paper';
-  if (v === 'dark' || !v) return 'ink';
+  if (v === 'brand') return brand().id ? 'brand' : 'ink';
+  if (v === 'dark') return 'ink';
+  if (!v) return brand().id ? 'brand' : 'ink';
   return v === 'auto' || TONES.includes(v) ? v : 'ink';
 }
 function applyTheme(v) {
   v = toneOf(v);
-  if (v === 'auto') delete document.documentElement.dataset.theme;
+  brandColors(v === 'brand');
+  if (v === 'brand') document.documentElement.dataset.theme = brand().base === 'dark' ? 'ink' : 'paper';
+  else if (v === 'auto') delete document.documentElement.dataset.theme;
   else document.documentElement.dataset.theme = v;
 }
 
@@ -49,7 +56,7 @@ function localZone() {
   try { return Intl.DateTimeFormat('en').resolvedOptions().timeZone; } catch { return ''; }
 }
 
-function Logo() { return html`<img src="/logo.png" alt="" />`; }
+function Logo() { return html`<img src=${logoURL()} alt="" />`; }
 
 function LangSelect({ onChange }) {
   return html`<select aria-label=${t('ui.language')} value=${currentLang()} onChange=${(e) => onChange(e.target.value)}>
@@ -78,7 +85,7 @@ function Setup({ local, onDone, onLang }) {
   };
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   return html`<div class="auth"><div>
-    <div class="logo"><${Logo} /> Unagikuma</div>
+    <div class="logo"><${Logo} /> ${product()}</div>
     <form class="card" onSubmit=${submit}>
       <div class="hd"><h2>${t('ui.setup.title')}</h2><div class="spacer"></div><${LangSelect} onChange=${onLang} /></div>
       <div class="bd form">
@@ -109,7 +116,7 @@ function Login({ onDone, onLang }) {
     setBusy(false);
   };
   return html`<div class="auth"><div>
-    <div class="logo"><${Logo} /> Unagikuma</div>
+    <div class="logo"><${Logo} /> ${product()}</div>
     <form class="card" onSubmit=${submit}>
       <div class="hd"><h2>${t('ui.login.title')}</h2><div class="spacer"></div><${LangSelect} onChange=${onLang} /></div>
       <div class="bd form">
@@ -200,7 +207,7 @@ function Shell({ user, onLogout, onLang }) {
     && (!me.teams || TEAM_NAV.has(path) || (path === '/settings' && manages)));
   return html`<div class=${'shell' + (mini ? ' mini' : '')}>
     <aside class=${'side' + (open ? ' open' : '')}>
-      <a class="brand" href="#/"><${Logo} /><div>Unagikuma</div></a>
+      <a class="brand" href="#/"><${Logo} /><div>${product()}</div></a>
       <nav class="nav">
         ${nav.map(([path, key, ico]) => html`<a href=${href(path)} class=${first === path ? 'on' : ''}>
           <span class="ico" title=${mini ? t(key) : ''}>${ico}</span><span class="lbl">${t(key)}</span>
@@ -214,6 +221,7 @@ function Shell({ user, onLogout, onLang }) {
         <${LangSelect} onChange=${onLang} />
         <select aria-label=${t('ui.theme')} value=${theme} onChange=${(e) => changeTheme(e.target.value)}>
           <option value="auto">${t('ui.theme.auto')}</option>
+          ${brand().id && html`<option value="brand">${brand().name}</option>`}
           ${TONES.map((v) => html`<option value=${v}>${t('ui.theme.' + v)}</option>`)}
         </select>
         <div class="row"><span class="ellipsis">${user}</span><div class="spacer"></div><button class="btn sm ghost" onClick=${onLogout}>${t('ui.logout')}</button></div>
@@ -325,7 +333,7 @@ function Root() {
   };
   let body;
   switch (st.phase) {
-    case 'loading': body = html`<div class="boot">Unagikuma</div>`; break;
+    case 'loading': body = html`<div class="boot">${product()}</div>`; break;
     case 'setup': body = html`<${Setup} local=${st.local} onDone=${signedIn} onLang=${changeLang} />`; break;
     case 'login': body = html`<${Login} onDone=${signedIn} onLang=${changeLang} />`; break;
     case 'error': body = html`<div class="auth"><div class="banner error">${errText(st.error)} <button class="btn sm" onClick=${check}>${t('ui.retry')}</button></div></div>`; break;
@@ -335,6 +343,7 @@ function Root() {
 }
 
 (async () => {
+  await loadBrand();
   applyTheme(storage('unagikuma.theme'));
   await loadLanguages();
   await setLang(detectLang(), false);

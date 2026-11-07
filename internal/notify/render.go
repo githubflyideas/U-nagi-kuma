@@ -35,8 +35,20 @@ var kindIcons = map[string]string{
 	"DRILL": "🧪", "TEST": "🧪", "SYSTEM": "⚠️", "DIGEST": "📋", "REPORT": "📊", "CHANGE": "🛠",
 }
 
-// Render produces the default title and body of a message in m.Lang.
+// Render produces the default title and body of a message in m.Lang,
+// with the product name replaced by m.Brand when one is set.
 func Render(m *Message) (title, body string) {
+	title, body = render(m)
+	if b := sanitize(m.Brand, 40); b != "" && b != productName {
+		title = strings.ReplaceAll(title, productName, b)
+		body = strings.ReplaceAll(body, productName, b)
+	}
+	return title, body
+}
+
+const productName = "Unagikuma"
+
+func render(m *Message) (title, body string) {
 	lang := m.Lang
 	kind := i18n.T(lang, "msg.kind."+m.Kind)
 	icon := kindIcons[m.Kind]

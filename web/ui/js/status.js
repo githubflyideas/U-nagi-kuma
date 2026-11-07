@@ -109,7 +109,7 @@ function Page({ name, feed }) {
       <div class="bd"><ul class="past">${past.map(a => html`<${Notice} a=${a} />`)}</ul></div></section>`}
     ${err && html`<div class="banner warning">${t('ui.pub.stale')}</div>`}
     <div class="row subs">${d.subscribe && html`<${Subscribe} name=${name} />`}<div class="spacer"></div><a class="small" href=${feed}>${t('ui.pub.feed')}</a></div>
-    <footer>${d.footer && html`<div>${d.footer}</div>`}${t('ui.pub.updated', { time: fmtTime(d.updated_at) })} · ${t('ui.pub.powered')} <a href="https://github.com/githubflyideas/unagikuma">Unagikuma</a></footer>
+    <footer>${d.footer && html`<div>${d.footer}</div>`}${t('ui.pub.updated', { time: fmtTime(d.updated_at) })}${d.powered !== false && html` · ${t('ui.pub.powered')} <a href="https://github.com/githubflyideas/unagikuma">Unagikuma</a>`}</footer>
   </div>`;
 }
 

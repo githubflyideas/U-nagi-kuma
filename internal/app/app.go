@@ -18,6 +18,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/githubflyideas/unagikuma/internal/branding"
 	"github.com/githubflyideas/unagikuma/internal/cluster"
 	"github.com/githubflyideas/unagikuma/internal/config"
 	"github.com/githubflyideas/unagikuma/internal/directory"
@@ -60,6 +61,7 @@ type App struct {
 	store     *store.Store
 	secrets   *store.Secrets
 	license   *license.Checker
+	themes    *branding.Store
 	engine    *engine.Engine
 	sender    *notify.Sender
 	cfg       *configManager
@@ -132,6 +134,7 @@ func New(o Options) (*App, error) {
 	if o.LicenseRing != nil {
 		ring = *o.LicenseRing
 	}
+	a.themes = branding.NewStore(o.DataDir)
 	if a.license, err = license.OpenWith(o.DataDir, ring); err != nil {
 		st.Close()
 		return nil, err

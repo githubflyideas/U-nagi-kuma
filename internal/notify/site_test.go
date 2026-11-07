@@ -31,3 +31,16 @@ func TestDefaultSiteNameIsNotRepeated(t *testing.T) {
 		t.Fatalf("title %q", title)
 	}
 }
+
+// A white-label brand replaces the product name in subjects and bodies.
+func TestBrandReplacesProductName(t *testing.T) {
+	m := &Message{Kind: "SYSTEM", Title: "Unagikuma restarted", Body: "Unagikuma was down", Lang: "en", Brand: "Acme Monitor"}
+	title, body := Render(m)
+	if strings.Contains(title+body, "Unagikuma") || !strings.Contains(title, "[Acme Monitor]") || !strings.Contains(body, "Acme Monitor was down") {
+		t.Fatalf("%q / %q", title, body)
+	}
+	m = &Message{Kind: "PROBLEM", Monitor: "web", Status: "critical", Lang: "en", Brand: "Acme"}
+	if title, _ := Render(m); strings.Contains(title, "Unagikuma") || !strings.Contains(title, "[Acme]") {
+		t.Fatalf("%q", title)
+	}
+}
