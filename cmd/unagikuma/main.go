@@ -30,6 +30,7 @@ import (
 	"github.com/githubflyideas/unagikuma/internal/probe"
 	"github.com/githubflyideas/unagikuma/internal/server"
 	"github.com/githubflyideas/unagikuma/internal/store"
+	"github.com/githubflyideas/unagikuma/internal/tunables"
 	"github.com/githubflyideas/unagikuma/web"
 )
 
@@ -183,6 +184,7 @@ func runServer(args []string) error {
 	heartbeat := fs.String("heartbeat-url", "", "external heartbeat URL called every minute (dead man's switch)")
 	allowEnv := fs.String("allow-env", "", "comma-separated environment variables usable as ${env:NAME}")
 	proxies := fs.String("trusted-proxy", "", "comma-separated CIDRs of reverse proxies whose X-Forwarded-For is trusted")
+	auditRetention := fs.String("audit-retention", os.Getenv("UNAGIKUMA_AUDIT_RETENTION"), "keep the audit log at least this long, 30d to 3660d (default 730d); the web UI can only make it longer")
 	logLevel := fs.String("log-level", "info", "debug, info, warn or error")
 	logFile := fs.String("log-file", os.Getenv("UNAGIKUMA_LOG_FILE"), "append logs to this file instead of stderr (for services)")
 	scripts := fs.String("script-dir", os.Getenv("UNAGIKUMA_SCRIPT_DIR"), "comma-separated directories of check scripts for EXEC checks (default <data>/check-scripts)")
@@ -210,9 +212,13 @@ func runServer(args []string) error {
 	if *allowEnv != "" {
 		env = strings.Split(*allowEnv, ",")
 	}
+	auditKeep, err := parseAuditRetention(*auditRetention)
+	if err != nil {
+		return err
+	}
 	a, err := app.New(app.Options{
 		DataDir: *data, ConfigPath: *cfgPath, Instance: *instance, BaseURL: *baseURL, HeartbeatURL: *heartbeat,
-		AllowEnv: env, Log: log, Version: version, Listen: *listen,
+		AllowEnv: env, Log: log, Version: version, Listen: *listen, AuditRetention: auditKeep,
 	})
 	if err != nil {
 		var ie *app.InvalidError
@@ -366,6 +372,21 @@ func newLogger(file string, lvl slog.Level) (*slog.Logger, error) {
 		w = f
 	}
 	return slog.New(slog.NewTextHandler(w, &slog.HandlerOptions{Level: lvl})), nil
+}
+
+// parseAuditRetention reads --audit-retention: empty is the default.
+func parseAuditRetention(v string) (time.Duration, error) {
+	if v == "" {
+		return 0, nil
+	}
+	d, err := tunables.ParseDuration(v)
+	if err != nil {
+		return 0, fmt.Errorf("--audit-retention: %v", err)
+	}
+	if d < 30*24*time.Hour || d > 3660*24*time.Hour {
+		return 0, fmt.Errorf("--audit-retention: %s is outside 30d to 3660d", v)
+	}
+	return d, nil
 }
 
 func envOr(k, def string) string {

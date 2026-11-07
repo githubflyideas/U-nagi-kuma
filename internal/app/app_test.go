@@ -218,7 +218,7 @@ func TestConfigSaveWatchRollback(t *testing.T) {
 	os.WriteFile(path, []byte(edited), 0o600)
 	waitFor(t, "serial banner", 5*time.Second, func() bool { b := a.Banner(); return b != nil && b.Code == "serial_not_bumped" })
 	// The banner's button applies it with a bumped serial.
-	st2, err := a.BumpSerial("alice")
+	st2, err := a.BumpSerial("alice", nil)
 	if err != nil || st2.Serial <= st.Serial || a.Banner() != nil {
 		t.Fatalf("bump: %v %d", err, st2.Serial)
 	}
@@ -230,7 +230,7 @@ func TestConfigSaveWatchRollback(t *testing.T) {
 
 	// Rollback re-applies an old version under a new serial.
 	before := a.Config().Serial
-	st3, err := a.Rollback(cur.Serial, "alice")
+	st3, err := a.Rollback(cur.Serial, "alice", nil)
 	if err != nil || st3.Serial <= before {
 		t.Fatalf("rollback: %v %d", err, st3.Serial)
 	}
@@ -415,7 +415,7 @@ func TestMemberRefusesConfigEdits(t *testing.T) {
 	if _, err := a.SaveConfig([]byte(testConfig), "", "admin", ""); !errors.Is(err, ErrMember) {
 		t.Fatalf("save: %v", err)
 	}
-	if _, err := a.BumpSerial("admin"); !errors.Is(err, ErrMember) {
+	if _, err := a.BumpSerial("admin", nil); !errors.Is(err, ErrMember) {
 		t.Fatalf("bump: %v", err)
 	}
 }

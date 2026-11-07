@@ -181,7 +181,7 @@ func (s *Server) nodeAdd(w http.ResponseWriter, r *http.Request) (any, error) {
 	if msg == "" {
 		msg = "add node " + req.Name
 	}
-	st, err := s.app.EditConfig(authOf(r).user, msg, func(f *config.File) error { return f.UpsertRecord(spec) })
+	st, err := s.editConfig(r, msg, func(f *config.File) error { return f.UpsertRecord(spec) })
 	if err != nil {
 		return nil, s.configError(err)
 	}
@@ -219,7 +219,7 @@ func (s *Server) nodeDelete(w http.ResponseWriter, r *http.Request) (any, error)
 	if cfg.FindNode(name) == nil {
 		return nil, notFound("node")
 	}
-	st, err := s.app.EditConfig(authOf(r).user, "delete node "+name, ifMatch(r, name, func(f *config.File) error { return f.DeleteRecord(name) }))
+	st, err := s.editConfig(r, "delete node "+name, ifMatch(r, name, func(f *config.File) error { return f.DeleteRecord(name) }))
 	if err != nil {
 		return nil, s.configError(err)
 	}
@@ -277,7 +277,7 @@ func (s *Server) nodeUpdate(w http.ResponseWriter, r *http.Request) (any, error)
 	if msg == "" {
 		msg = "edit node " + name
 	}
-	st, err := s.app.EditConfig(authOf(r).user, msg, ifMatch(r, spec.Name, func(f *config.File) error { return f.UpsertRecord(spec) }))
+	st, err := s.editConfig(r, msg, ifMatch(r, spec.Name, func(f *config.File) error { return f.UpsertRecord(spec) }))
 	if err != nil {
 		return nil, s.configError(err)
 	}

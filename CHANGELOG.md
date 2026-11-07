@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+**Added**
+- Every audit entry made through the web UI or the API says which sign-in and which browser or program it came from: people who share one account, even behind one office address, can be told apart. Settings › Audit shows a sign-in tag and the browser for each entry; click a tag to list that sign-in's changes, or filter by it. The configuration change each action makes (`config.apply`) carries the same tag. The CSV export has two more columns at its end, `session` and `user_agent`; the API takes `session=`.
+- `--audit-retention` (or `UNAGIKUMA_AUDIT_RETENTION`), 30d to 3660d, default 730d: how long the audit log is kept at least.
+
+**Changed**
+- The audit retention can no longer be shortened from the web, so nobody can clear the log from there. Settings › Tunables shows `retention.audit` without letting anyone change it, the API refuses it, and a `retention.audit` in the configuration only ever makes the retention longer than the server's.
+
 ## v2.4.3 — 2026-11-07
 
 **Fixed**

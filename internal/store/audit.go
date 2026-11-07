@@ -31,6 +31,15 @@ type AuditEntry struct {
 	Site   string         `json:"site,omitempty"` // merged from another site of the cluster
 }
 
+// Client returns the sign-in tag and the browser or program an entry came
+// from (detail.client), where it was recorded.
+func (e AuditEntry) Client() (session, userAgent string) {
+	c, _ := e.Detail["client"].(map[string]any)
+	session, _ = c["session"].(string)
+	userAgent, _ = c["ua"].(string)
+	return session, userAgent
+}
+
 func unmarshalDetail(s string, v *map[string]any) error { return json.Unmarshal([]byte(s), v) }
 
 // highRisk lists actions (or their prefixes, ending in ".") that change
@@ -265,6 +274,7 @@ func (s *Store) AuditContains(hash string) bool {
 // AuditQuery filters the audit log; empty fields match everything.
 type AuditQuery struct {
 	Actor, Action, Target, Area, Addr string
+	Session                           string // a sign-in's tag (detail.client.session)
 	Risk                              string // "high": only high-risk actions
 	From, To                          time.Time
 	Before                            int64 // page: entries with a smaller id
@@ -291,6 +301,10 @@ func (s *Store) AuditLog(q AuditQuery) ([]AuditEntry, error) {
 	}
 	if q.Addr != "" {
 		where, args = append(where, "addr=?"), append(args, q.Addr)
+	}
+	if q.Session != "" {
+		esc := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(q.Session)
+		where, args = append(where, `detail LIKE ? ESCAPE '\'`), append(args, `%"session":"`+esc+`"%`)
 	}
 	if q.Risk != "" {
 		where, args = append(where, "risk=?"), append(args, q.Risk)
@@ -351,14 +365,15 @@ func WriteAudit(w io.Writer, format string, items []AuditEntry) error {
 		return enc.Encode(items)
 	case "csv":
 		cw := csv.NewWriter(w)
-		_ = cw.Write([]string{"id", "time", "actor", "address", "action", "object", "area", "risk", "detail", "hash"})
+		_ = cw.Write([]string{"id", "time", "actor", "address", "action", "object", "area", "risk", "detail", "hash", "session", "user_agent"})
 		for _, e := range items {
 			d := ""
 			if len(e.Detail) > 0 {
 				b, _ := json.Marshal(e.Detail)
 				d = string(b)
 			}
-			_ = cw.Write([]string{strconv.FormatInt(e.ID, 10), e.At.UTC().Format(time.RFC3339), e.Actor, e.Addr, e.Action, e.Target, e.Area, e.Risk, d, e.Hash})
+			session, ua := e.Client()
+			_ = cw.Write([]string{strconv.FormatInt(e.ID, 10), e.At.UTC().Format(time.RFC3339), e.Actor, e.Addr, e.Action, e.Target, e.Area, e.Risk, d, e.Hash, session, ua})
 		}
 		cw.Flush()
 		return cw.Error()

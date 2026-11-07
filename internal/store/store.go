@@ -36,6 +36,7 @@ type Store struct {
 
 	agg5mSince time.Time
 	ret        atomic.Pointer[Retention]
+	auditFloor atomic.Int64 // --audit-retention, ns (0: the default)
 
 	// Batch writer counters for /metrics.
 	flushes, flushMicros, flushedItems atomic.Int64

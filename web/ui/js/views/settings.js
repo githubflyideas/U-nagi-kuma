@@ -429,11 +429,26 @@ function auditDetail(d) {
   const parts = [];
   if (d.before || d.after) parts.push(who(d.before) + ' → ' + who(d.after));
   for (const [k, v] of Object.entries(d)) {
-    if (k === 'before' || k === 'after' || v === null) continue;
+    if (k === 'before' || k === 'after' || k === 'client' || v === null) continue;
     const val = Array.isArray(v) ? v.map(x => typeof x === 'object' ? (x.username || '') + (x.result ? ':' + x.result : '') : x).join(', ') : typeof v === 'object' ? JSON.stringify(v) : String(v);
     if (val !== '') parts.push(k + ': ' + val);
   }
   return parts.join(' · ');
+}
+
+// browserOf shortens a User-Agent to the browser or program and the
+// system, "Chrome 130 · macOS"; the whole string stays in its tooltip.
+function browserOf(ua) {
+  if (!ua) return '';
+  const m = (re) => (ua.match(re) || [])[1];
+  const name = m(/Edg\/(\d+)/) ? 'Edge ' + m(/Edg\/(\d+)/)
+    : m(/Firefox\/(\d+)/) ? 'Firefox ' + m(/Firefox\/(\d+)/)
+    : m(/Chrome\/(\d+)/) ? 'Chrome ' + m(/Chrome\/(\d+)/)
+    : m(/Version\/(\d+)[\d.]* .*Safari/) ? 'Safari ' + m(/Version\/(\d+)/)
+    : (ua.split(/[ ;(]/)[0] || ua);
+  const os = /Windows/.test(ua) ? 'Windows' : /iPhone|iPad/.test(ua) ? 'iOS' : /Mac OS X|Macintosh/.test(ua) ? 'macOS'
+    : /Android/.test(ua) ? 'Android' : /Linux/.test(ua) ? 'Linux' : '';
+  return os ? name + ' · ' + os : name;
 }
 
 const AUDIT_ACTIONS = ['user', 'token', 'secret', 'node', 'cluster', 'config', 'monitor', 'maintenance', 'channel', 'policy', 'incident', 'session', 'import', 'backup', 'settings', 'tunables', 'oncall', 'people', 'system', 'audit'];
@@ -519,7 +534,7 @@ function Registration() {
 }
 
 function Audit() {
-  const [f, setF] = useState({ actor: '', action: '', area: '', addr: '', range: '', risk: '', site: '' });
+  const [f, setF] = useState({ actor: '', action: '', area: '', addr: '', session: '', range: '', risk: '', site: '' });
   const [sites, setSites] = useState([]);
   const [items, setItems] = useState(null);
   const [more, setMore] = useState(false);
@@ -545,7 +560,7 @@ function Audit() {
       setErr(null);
     } catch (e) { setErr(e); }
   };
-  useEffect(() => { load(); setCheck(null); }, [f.action, f.range, f.risk, f.site]);
+  useEffect(() => { load(); setCheck(null); }, [f.action, f.range, f.risk, f.site, f.session]);
   if (err && err.code === 'registration_required') return html`<div class="card"><div class="bd col" style=${{ gap: '10px' }}>
     <b>${t('ui.audit.locked')}</b><p class="small muted" style=${{ margin: 0 }}>${t('ui.audit.locked_hint')}</p>
     <div><a class="btn primary" href="#/settings/registration">${t('ui.set.tab.registration')}</a></div></div></div>`;
@@ -560,6 +575,7 @@ function Audit() {
       </select>
       <input type="text" class="ltr" placeholder=${t('ui.audit.area')} value=${f.area} onInput=${set('area')} style=${{ maxWidth: '180px' }} />
       <input type="text" class="ltr" placeholder=${t('ui.audit.addr')} value=${f.addr} onInput=${set('addr')} style=${{ maxWidth: '160px' }} />
+      <input type="text" class="ltr" placeholder=${t('ui.audit.session')} title=${t('ui.audit.session_hint')} value=${f.session} onInput=${set('session')} style=${{ maxWidth: '120px' }} />
       <select value=${f.range} onChange=${set('range')} aria-label=${t('ui.audit.since')}>
         <option value="">${t('ui.audit.any_time')}</option>
         ${['24h', '7d', '30d', '90d'].map(r => html`<option value=${r}>${r}</option>`)}
@@ -579,7 +595,7 @@ function Audit() {
     ${err && html`<${ErrorBox} error=${err} />`}
     ${!items ? (!err && html`<${Loading} />`) : !items.length ? html`<${Empty} title=${t('ui.audit.empty')} />` : html`
     <div class="card"><div class="bd flush tbl-wrap"><table class="tbl dense">
-      <thead><tr><th>${t('ui.audit.time')}</th><th>${t('ui.audit.actor')}</th><th>${t('ui.audit.action')}</th><th>${t('ui.audit.target')}</th><th>${t('ui.audit.area')}</th><th>${t('ui.audit.detail')}</th><th>${t('ui.audit.addr')}</th></tr></thead>
+      <thead><tr><th>${t('ui.audit.time')}</th><th>${t('ui.audit.actor')}</th><th>${t('ui.audit.action')}</th><th>${t('ui.audit.target')}</th><th>${t('ui.audit.area')}</th><th>${t('ui.audit.detail')}</th><th>${t('ui.audit.addr')}</th><th title=${t('ui.audit.session_hint')}>${t('ui.audit.client')}</th></tr></thead>
       <tbody>${items.map(e => html`<tr class=${e.risk === 'high' ? 'risk-high' : ''}>
         <td class="nowrap small">${fmtTime(e.at)}</td>
         <td class="ltr">${e.actor}</td>
@@ -588,6 +604,9 @@ function Audit() {
         <td class="ltr small">${e.area || ''}</td>
         <td class="small ltr" style=${{ maxWidth: '420px', wordBreak: 'break-word' }}>${auditDetail(e.detail)}</td>
         <td class="ltr small muted">${e.addr || ''}</td>
+        <td class="ltr small muted nowrap">${e.detail && e.detail.client && html`${e.detail.client.session && html`<a href="#" class="mono" title=${t('ui.audit.session_hint')}
+          onClick=${(ev) => { ev.preventDefault(); setF({ ...f, session: e.detail.client.session }); }}>${e.detail.client.session}</a>`}
+          <div title=${e.detail.client.ua || ''}>${browserOf(e.detail.client.ua)}</div>`}</td>
       </tr>`)}</tbody>
     </table></div></div>
     ${more && html`<div><button class="btn" onClick=${() => load(items[items.length - 1].id)}>${t('ui.audit.more')}</button></div>`}`}

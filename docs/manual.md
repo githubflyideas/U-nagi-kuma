@@ -338,7 +338,11 @@ Notifications follow the teams too:
 - Whoever an escalation step told about a problem also gets its recovery notice (when the policy sends recoveries).
 - A team's managers see **Settings › Teams** and change their own team's people, title and description; creating and deleting teams and changing a team's policy stay with administrators.
 
-**Settings › Audit** lists every change to accounts, roles and sections (before and after), tokens, secrets (names only), nodes and the configuration, with the person or token, the section, and the source address; configuration edits made in the file on disk are listed too (each record as it was and as it is now), and so are sign-ins and failed logins, backups, restores, imports, password resets, and what the system did by itself (holds during a local outage and their release, restarts, crashes, clock jumps, upgrades). High-risk entries are highlighted and can be filtered by risk, person, source address and time. `GET /api/v1/audit?actor=&action=&area=` serves the same to administrators; entries are kept for `retention.audit` (two years).
+**Settings › Audit** lists every change to accounts, roles and sections (before and after), tokens, secrets (names only), nodes and the configuration, with the person or token, the section, and the source address; configuration edits made in the file on disk are listed too (each record as it was and as it is now), and so are sign-ins and failed logins, backups, restores, imports, password resets, and what the system did by itself (holds during a local outage and their release, restarts, crashes, clock jumps, upgrades). High-risk entries are highlighted and can be filtered by risk, person, source address, sign-in and time. `GET /api/v1/audit?actor=&action=&area=&session=` serves the same to administrators.
+
+Every entry made through the web UI or the API also says which sign-in and which browser or program it came from (`detail.client`: `session` and `ua`; the CSV export has them as its last two columns). The sign-in is a short tag, the same for every change made in one sign-in and different for every sign-in, so people who share one account, even behind one office address, can still be told apart; click a tag to list that sign-in's changes. An API token's tag is its prefix. Giving each person their own account under **Settings › Users** still says more than a tag can.
+
+Entries are kept for two years. Only the server's `--audit-retention` (or `UNAGIKUMA_AUDIT_RETENTION`), 30d to 3660d, can shorten that: `retention.audit` in the configuration, which the web UI can reach, only ever makes it longer, and the web UI shows it without letting anyone change it, so nobody can clear the log from the web.
 
 The log cannot be changed quietly: each entry carries the hash of the one before it. The page's **Check integrity** button and `unagikuma audit verify` say whether an entry was changed, inserted or removed, and which. `verify` prints the newest entry's hash; keep it elsewhere and pass it later with `--head HASH` to prove nothing was cut off the end. `unagikuma audit export --format csv|json [--since 30d] [--high]` (or the page's export buttons) writes the log out.
 
@@ -458,7 +462,7 @@ unagikuma report incident ID     write an incident's report (Markdown, HTML or J
 unagikuma version
 ```
 
-Main server flags: `--data DIR` (or `UNAGIKUMA_DATA`), `--listen ADDR` (or `UNAGIKUMA_LISTEN`, default `:8077`), `--tls-cert`/`--tls-key`, `--base-url` for links in notifications, `--heartbeat-url` for an external dead man's switch (for example healthchecks.io), `--trusted-proxy CIDR,...` when running behind a reverse proxy. The port answers plain HTTP and TLS; with `--tls-cert` the UI uses your certificate and plain requests are redirected to https.
+Main server flags: `--data DIR` (or `UNAGIKUMA_DATA`), `--listen ADDR` (or `UNAGIKUMA_LISTEN`, default `:8077`), `--tls-cert`/`--tls-key`, `--base-url` for links in notifications, `--heartbeat-url` for an external dead man's switch (for example healthchecks.io), `--trusted-proxy CIDR,...` when running behind a reverse proxy, `--audit-retention 730d` for how long the audit log is kept at least. The port answers plain HTTP and TLS; with `--tls-cert` the UI uses your certificate and plain requests are redirected to https.
 
 ## Data and backups
 

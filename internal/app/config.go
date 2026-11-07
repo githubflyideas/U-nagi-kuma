@@ -154,7 +154,7 @@ func (cm *configManager) current() ConfigState {
 }
 
 // apply installs a parsed configuration (lock held).
-func (cm *configManager) apply(text []byte, f *config.File, cfg *config.Config, source, author, message string, renames map[string]string) error {
+func (cm *configManager) apply(text []byte, f *config.File, cfg *config.Config, source, author, message string, renames map[string]string, client map[string]any) error {
 	old := cm.cur
 	if old.Config != nil {
 		cm.app.renameMonitors(old.Config, cfg, renames)
@@ -168,7 +168,7 @@ func (cm *configManager) apply(text []byte, f *config.File, cfg *config.Config, 
 	if old.Config != nil {
 		changes := config.Diff(old.Config, cfg)
 		summary = config.Summarize(changes)
-		cm.audit(old, cm.cur, changes, source, author, message)
+		cm.audit(old, cm.cur, changes, source, author, message, client)
 	}
 	cm.banner = nil
 	cm.app.emit("serial", map[string]any{"serial": cfg.Serial, "source": source, "message": message,
@@ -179,12 +179,14 @@ func (cm *configManager) apply(text []byte, f *config.File, cfg *config.Config, 
 
 // Save validates and applies new text written from the UI or API. The
 // serial is bumped automatically when the caller did not raise it.
-func (cm *configManager) save(text []byte, ifMatch, author, message string) (ConfigState, error) {
-	return cm.saveRenamed(text, ifMatch, author, message, nil)
+func (cm *configManager) save(text []byte, ifMatch, author, message string, client map[string]any) (ConfigState, error) {
+	return cm.saveRenamed(text, ifMatch, author, message, nil, client)
 }
 
 // saveRenamed is save for an edit that renamed monitors (old → new).
-func (cm *configManager) saveRenamed(text []byte, ifMatch, author, message string, renames map[string]string) (ConfigState, error) {
+// client is the sign-in and browser a change from the web or the API came
+// from (nil otherwise), for the audit log.
+func (cm *configManager) saveRenamed(text []byte, ifMatch, author, message string, renames map[string]string, client map[string]any) (ConfigState, error) {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 	if ifMatch != "" && ifMatch != cm.cur.ETag() {
@@ -221,21 +223,21 @@ func (cm *configManager) saveRenamed(text []byte, ifMatch, author, message strin
 		return cm.cur, err
 	}
 	cm.touchStamp()
-	return cm.cur, cm.apply(text, f, cfg, "web", author, message, renames)
+	return cm.cur, cm.apply(text, f, cfg, "web", author, message, renames, client)
 }
 
 // edit applies a structured change to the current file.
 // The change runs on the current text; if another save lands in between,
 // it runs again on the newer text, so two people editing different
 // records both succeed (a change can still refuse, e.g. a stale If-Match).
-func (cm *configManager) edit(author, message string, change func(f *config.File) error) (ConfigState, error) {
+func (cm *configManager) edit(author, message string, client map[string]any, change func(f *config.File) error) (ConfigState, error) {
 	for attempt := 0; ; attempt++ {
 		cur := cm.current()
 		f, _ := config.Parse(cm.path, []byte(cur.Text))
 		if err := change(f); err != nil {
 			return cur, err
 		}
-		st, err := cm.saveRenamed(f.Bytes(), cur.ETag(), author, message, f.Renamed)
+		st, err := cm.saveRenamed(f.Bytes(), cur.ETag(), author, message, f.Renamed, client)
 		if errors.Is(err, ErrConflict) && attempt < 3 {
 			continue
 		}
@@ -274,7 +276,7 @@ func (cm *configManager) check() {
 	case config.CheckSerial(cfg.Serial, cm.cur.Serial) != nil:
 		cm.setBanner(&Banner{Kind: "warning", Code: "serial_lower", Message: config.CheckSerial(cfg.Serial, cm.cur.Serial).Error(), Serial: cfg.Serial})
 	default:
-		_ = cm.apply(text, f, cfg, "file", "", "", nil)
+		_ = cm.apply(text, f, cfg, "file", "", "", nil, nil)
 	}
 }
 
@@ -285,21 +287,21 @@ func (cm *configManager) setBanner(b *Banner) {
 
 // bumpAndApply raises the serial of the file on disk and applies it (the
 // "serial not increased" banner's button).
-func (cm *configManager) bumpAndApply(author string) (ConfigState, error) {
+func (cm *configManager) bumpAndApply(author string, client map[string]any) (ConfigState, error) {
 	text, err := os.ReadFile(cm.path)
 	if err != nil {
 		return cm.current(), err
 	}
-	return cm.save(text, "", author, "serial bumped from the UI")
+	return cm.save(text, "", author, "serial bumped from the UI", client)
 }
 
 // rollback re-applies an older version as a new serial.
-func (cm *configManager) rollback(serial uint32, author string) (ConfigState, error) {
+func (cm *configManager) rollback(serial uint32, author string, client map[string]any) (ConfigState, error) {
 	sn, err := cm.app.store.SnapshotText(serial)
 	if err != nil {
 		return cm.current(), fmt.Errorf("version %d not found", serial)
 	}
-	return cm.save([]byte(sn.Text), "", author, "rollback to "+strconv.FormatUint(uint64(serial), 10))
+	return cm.save([]byte(sn.Text), "", author, "rollback to "+strconv.FormatUint(uint64(serial), 10), client)
 }
 
 // writeAtomic replaces the file through a temporary file in the same
@@ -340,7 +342,7 @@ func writeAtomic(path string, data []byte) error {
 
 // audit records what a configuration change did, by record and section,
 // whoever made it: the web, the API, or an edit of the file.
-func (cm *configManager) audit(oldState, newState ConfigState, changes []config.Change, source, author, message string) {
+func (cm *configManager) audit(oldState, newState ConfigState, changes []config.Change, source, author, message string, client map[string]any) {
 	if len(changes) == 0 {
 		return
 	}
@@ -398,6 +400,9 @@ func (cm *configManager) audit(oldState, newState ConfigState, changes []config.
 	}
 	if author == "" {
 		author = source // an edit of the file on disk
+	}
+	if client != nil {
+		detail["client"] = client
 	}
 	if err := cm.app.store.Audit(store.AuditEntry{Actor: author, Action: "config.apply", Target: "monitors.bind", Area: area, Detail: detail}); err != nil {
 		cm.app.log.Error("audit", "err", err)

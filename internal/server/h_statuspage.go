@@ -413,7 +413,7 @@ func (s *Server) statusPageCreate(w http.ResponseWriter, r *http.Request) (any, 
 		return nil, Errorf(http.StatusConflict, CodeConflict, "%s already exists", req.Name)
 	}
 	spec := config.RecordSpec{Name: req.Name, Type: "STATUSPAGE", Target: strings.TrimSpace(req.Title), Opts: []config.Opt{{Key: "select", Value: req.Select}}}
-	st, err := s.app.EditConfig(authOf(r).user, "add status page "+req.Name, func(f *config.File) error { return f.UpsertRecord(spec) })
+	st, err := s.editConfig(r, "add status page "+req.Name, func(f *config.File) error { return f.UpsertRecord(spec) })
 	if err != nil {
 		return nil, s.configError(err)
 	}

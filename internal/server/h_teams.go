@@ -132,7 +132,7 @@ func (s *Server) teamSave(w http.ResponseWriter, r *http.Request) (any, error) {
 	add("policy", req.Policy)
 	add("description", req.Description)
 	spec := config.RecordSpec{Name: req.Name, Type: "TEAM", Opts: opts}
-	st, err := s.app.EditConfig(authOf(r).user, req.Message, ifMatch(r, spec.Name, func(f *config.File) error { return f.UpsertRecord(spec) }))
+	st, err := s.editConfig(r, req.Message, ifMatch(r, spec.Name, func(f *config.File) error { return f.UpsertRecord(spec) }))
 	if err != nil {
 		return nil, s.configError(err)
 	}
@@ -154,7 +154,7 @@ func (s *Server) teamDelete(w http.ResponseWriter, r *http.Request) (any, error)
 	if n > 0 {
 		return nil, Errorf(http.StatusConflict, CodeConflict, "team %s still owns %d monitors: move them to another team or to the shared infrastructure first", name, n)
 	}
-	st, err := s.app.EditConfig(authOf(r).user, "delete team "+name, ifMatch(r, name, func(f *config.File) error { return f.DeleteRecord(name) }))
+	st, err := s.editConfig(r, "delete team "+name, ifMatch(r, name, func(f *config.File) error { return f.DeleteRecord(name) }))
 	if err != nil {
 		return nil, s.configError(err)
 	}

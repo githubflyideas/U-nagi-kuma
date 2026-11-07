@@ -128,7 +128,7 @@ func (s *Server) maintSave(w http.ResponseWriter, r *http.Request) (any, error) 
 	if msg == "" {
 		msg = "maintenance " + req.Name
 	}
-	st, err := s.app.EditConfig(authOf(r).user, msg, ifMatch(r, spec.Name, func(f *config.File) error { return f.UpsertRecord(spec) }))
+	st, err := s.editConfig(r, msg, ifMatch(r, spec.Name, func(f *config.File) error { return f.UpsertRecord(spec) }))
 	if err != nil {
 		return nil, s.configError(err)
 	}
@@ -149,7 +149,7 @@ func (s *Server) maintDelete(w http.ResponseWriter, r *http.Request) (any, error
 	if !found {
 		return nil, notFound("maintenance window")
 	}
-	st, err := s.app.EditConfig(authOf(r).user, "delete maintenance "+name, ifMatch(r, name, func(f *config.File) error { return f.DeleteRecord(name) }))
+	st, err := s.editConfig(r, "delete maintenance "+name, ifMatch(r, name, func(f *config.File) error { return f.DeleteRecord(name) }))
 	if err != nil {
 		return nil, s.configError(err)
 	}

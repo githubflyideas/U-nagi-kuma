@@ -77,8 +77,10 @@ type authInfo struct {
 	scopes  map[string]bool
 	session bool
 	token   string
-	role    string
-	areas   []string // $SCOPE sections a limited operator may change
+	// sessionTag names this sign-in (or token) in the audit log.
+	sessionTag string
+	role       string
+	areas      []string // $SCOPE sections a limited operator may change
 	// team is set for a member of one or more teams (not an administrator):
 	// it sees and changes only what its teams own.
 	team *teamScope
@@ -279,7 +281,7 @@ func (s *Server) authenticate(r *http.Request) (*authInfo, error) {
 		if err != nil {
 			return nil, errUnauthorized
 		}
-		ai := &authInfo{user: "token:" + tok.Name, userID: tok.UserID, scopes: map[string]bool{}, token: tok.Prefix}
+		ai := &authInfo{user: "token:" + tok.Name, userID: tok.UserID, scopes: map[string]bool{}, token: tok.Prefix, sessionTag: tok.Prefix}
 		for _, sc := range tok.Scopes {
 			ai.scopes[sc] = true
 		}
@@ -303,7 +305,7 @@ func (s *Server) authenticate(r *http.Request) (*authInfo, error) {
 	if err != nil {
 		return nil, errUnauthorized
 	}
-	ai := &authInfo{user: se.User.Username, userID: se.User.ID, csrf: se.CSRF, session: true,
+	ai := &authInfo{user: se.User.Username, userID: se.User.ID, csrf: se.CSRF, session: true, sessionTag: sessionTag(c.Value),
 		scopes: roleScopes(se.User.Role), role: se.User.Role, areas: se.User.Areas}
 	if se.User.Role != store.RoleAdmin {
 		if ts := teamScopeFor(s.app.EffectiveConfig(), se.User.Username); ts != nil {

@@ -3,8 +3,10 @@ package server
 import (
 	"context"
 	"fmt"
+	"maps"
 	"net/http"
 	"runtime"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -124,7 +126,7 @@ func (s *Server) channelSave(w http.ResponseWriter, r *http.Request) (any, error
 		}
 	}
 	spec := config.RecordSpec{Name: req.Name, Type: "CHANNEL", Target: kind, Opts: opts}
-	st, err := s.app.EditConfig(authOf(r).user, req.Message, ifMatch(r, spec.Name, func(f *config.File) error { return f.UpsertRecord(spec) }))
+	st, err := s.editConfig(r, req.Message, ifMatch(r, spec.Name, func(f *config.File) error { return f.UpsertRecord(spec) }))
 	if err != nil {
 		return nil, s.configError(err)
 	}
@@ -136,7 +138,7 @@ func (s *Server) channelDelete(w http.ResponseWriter, r *http.Request) (any, err
 	if s.app.EffectiveConfig().FindChannel(name) == nil {
 		return nil, notFound("channel")
 	}
-	st, err := s.app.EditConfig(authOf(r).user, "delete channel "+name, ifMatch(r, name, func(f *config.File) error { return f.DeleteRecord(name) }))
+	st, err := s.editConfig(r, "delete channel "+name, ifMatch(r, name, func(f *config.File) error { return f.DeleteRecord(name) }))
 	if err != nil {
 		return nil, s.configError(err)
 	}
@@ -248,7 +250,7 @@ func (s *Server) policySave(w http.ResponseWriter, r *http.Request) (any, error)
 		}
 	}
 	spec := config.RecordSpec{Name: req.Name, Type: "POLICY", Opts: opts}
-	st, err := s.app.EditConfig(authOf(r).user, req.Message, ifMatch(r, spec.Name, func(f *config.File) error { return f.UpsertRecord(spec) }))
+	st, err := s.editConfig(r, req.Message, ifMatch(r, spec.Name, func(f *config.File) error { return f.UpsertRecord(spec) }))
 	if err != nil {
 		return nil, s.configError(err)
 	}
@@ -320,9 +322,21 @@ func (s *Server) tunablesGet(w http.ResponseWriter, r *http.Request) (any, error
 	out := []tj{}
 	for _, d := range tunables.Defs() {
 		_, o := over[d.Key]
-		out = append(out, tj{d.Key, string(d.Kind), d.Default, ts.Raw(d.Key), o, d.Min, d.Max, d.Desc, d.DescZH, d.Override})
+		v := ts.Raw(d.Key)
+		if d.Key == "retention.audit" {
+			v = days(s.app.Store().AuditRetention(ts.Duration(d.Key))) // the one in effect
+		}
+		out = append(out, tj{d.Key, string(d.Kind), d.Default, v, o, d.Min, d.Max, d.Desc, d.DescZH, d.Override})
 	}
 	return out, nil
+}
+
+// days writes a duration as tunables do: whole days as "730d".
+func days(d time.Duration) string {
+	if d%(24*time.Hour) == 0 {
+		return strconv.Itoa(int(d/(24*time.Hour))) + "d"
+	}
+	return d.String()
 }
 
 func (s *Server) tunablesPut(w http.ResponseWriter, r *http.Request) (any, error) {
@@ -339,7 +353,13 @@ func (s *Server) tunablesPut(w http.ResponseWriter, r *http.Request) (any, error
 			return nil, Errorf(http.StatusBadRequest, CodeInvalid, "%v", err)
 		}
 	}
-	st, err := s.app.EditConfig(authOf(r).user, req.Message, func(f *config.File) error { return f.SetTunables(req.Set, req.Unset) })
+	for _, k := range append(slices.Collect(maps.Keys(req.Set)), req.Unset...) {
+		if k == "retention.audit" {
+			// Shortening it would clear the log from the web.
+			return nil, Errorf(http.StatusForbidden, CodeForbidden, "the audit retention is set when starting the server (--audit-retention)")
+		}
+	}
+	st, err := s.editConfig(r, req.Message, func(f *config.File) error { return f.SetTunables(req.Set, req.Unset) })
 	if err != nil {
 		return nil, s.configError(err)
 	}
@@ -514,12 +534,12 @@ func (s *Server) backup(w http.ResponseWriter, r *http.Request) (any, error) {
 	if err != nil {
 		s.log.Error("backup failed", "err", err)
 	}
-	actor := ""
-	if ai := authOf(r); ai != nil {
+	actor, ai := "", authOf(r)
+	if ai != nil {
 		actor = ai.user
 	}
 	_ = s.app.Store().Audit(store.AuditEntry{Actor: actor, Action: "backup.download", Addr: s.ip(r),
-		Detail: map[string]any{"encrypted": req.Passphrase != "", "history": req.History, "ok": err == nil}})
+		Detail: withClient(map[string]any{"encrypted": req.Passphrase != "", "history": req.History, "ok": err == nil}, s.client(r, ai))})
 	return nil, errHandled
 }
 

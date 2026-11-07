@@ -673,7 +673,7 @@ func (s *Server) monitorCreate(w http.ResponseWriter, r *http.Request) (any, err
 		}
 		spec.Opts = append(opts, config.Opt{Key: "disabled", Value: "yes"})
 	}
-	st, err := s.app.EditConfig(authOf(r).user, req.Message, s.guardExec(authOf(r), func(f *config.File) error { return f.UpsertRecord(spec) }))
+	st, err := s.editConfig(r, req.Message, s.guardExec(authOf(r), func(f *config.File) error { return f.UpsertRecord(spec) }))
 	if err != nil {
 		return nil, s.configError(err)
 	}
@@ -704,7 +704,7 @@ func (s *Server) monitorUpdate(w http.ResponseWriter, r *http.Request) (any, err
 	if err := teamOfNewRecord(authOf(r), &spec); err != nil {
 		return nil, err
 	}
-	st, err := s.app.EditConfig(authOf(r).user, req.Message, s.guardExec(authOf(r), ifMatch(r, name, func(f *config.File) error {
+	st, err := s.editConfig(r, req.Message, s.guardExec(authOf(r), ifMatch(r, name, func(f *config.File) error {
 		if spec.Name != name {
 			if err := f.RenameRecord(name, spec.Name); err != nil {
 				return err
@@ -726,7 +726,7 @@ func (s *Server) monitorDelete(w http.ResponseWriter, r *http.Request) (any, err
 	if !s.allowsMonitor(authOf(r), name) {
 		return nil, errOutsideAreas
 	}
-	st, err := s.app.EditConfig(authOf(r).user, "delete "+name, ifMatch(r, name, func(f *config.File) error { return f.DeleteRecord(name) }))
+	st, err := s.editConfig(r, "delete "+name, ifMatch(r, name, func(f *config.File) error { return f.DeleteRecord(name) }))
 	if err != nil {
 		return nil, s.configError(err)
 	}
@@ -759,7 +759,7 @@ func (s *Server) monitorBulkDelete(w http.ResponseWriter, r *http.Request) (any,
 	}
 	msg := "delete " + strings.Join(req.Names, ", ")
 	auditOf(r).target = strings.Join(req.Names, ", ")
-	st, err := s.app.EditConfig(authOf(r).user, msg, func(f *config.File) error {
+	st, err := s.editConfig(r, msg, func(f *config.File) error {
 		for _, name := range req.Names {
 			if want := req.ETags[name]; want != "" {
 				if cur := f.RecordETag(name); cur == "" || !etagListHas(want, cur) {
@@ -831,7 +831,7 @@ func (s *Server) monitorBulkPause(w http.ResponseWriter, r *http.Request) (any, 
 	}
 	auditOf(r).target = strings.Join(names, ", ")
 	changed := 0
-	st, err := s.app.EditConfig(authOf(r).user, verb+" "+strings.Join(names, ", "), func(f *config.File) error {
+	st, err := s.editConfig(r, verb+" "+strings.Join(names, ", "), func(f *config.File) error {
 		for _, name := range names {
 			if want := req.ETags[name]; want != "" {
 				if cur := f.RecordETag(name); cur == "" || !etagListHas(want, cur) {
@@ -896,7 +896,7 @@ func (s *Server) monitorPause(w http.ResponseWriter, r *http.Request) (any, erro
 			return nil, e
 		}
 	}
-	st, err := s.app.EditConfig(authOf(r).user, fmt.Sprintf("pause %s: %v", name, req.Paused), ifMatch(r, name, func(f *config.File) error {
+	st, err := s.editConfig(r, fmt.Sprintf("pause %s: %v", name, req.Paused), ifMatch(r, name, func(f *config.File) error {
 		rec, err := recordFromFile(f, name)
 		if err != nil {
 			return err

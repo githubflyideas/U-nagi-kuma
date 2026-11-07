@@ -44,6 +44,10 @@ type Options struct {
 	BaseURL      string
 	AllowEnv     []string
 	HeartbeatURL string // from the command line; the settings page can set one too
+	// AuditRetention is how long the audit log is kept at least
+	// (--audit-retention; 0: store.DefaultAuditRetention). The configuration
+	// can only make it longer.
+	AuditRetention time.Duration
 	// Listen is the address the server listens on; peers check it.
 	Listen   string
 	Location *time.Location
@@ -123,6 +127,7 @@ func New(o Options) (*App, error) {
 		return nil, err
 	}
 	a.store = st
+	st.SetAuditRetention(o.AuditRetention)
 	a.afterPromote()
 	kek, err := store.LoadOrCreateKey(o.DataDir)
 	if err != nil {
@@ -541,10 +546,16 @@ func (a *App) Banner() *Banner {
 
 // SaveConfig validates and applies a new text.
 func (a *App) SaveConfig(text []byte, ifMatch, author, message string) (ConfigState, error) {
+	return a.SaveConfigFrom(text, ifMatch, author, message, nil)
+}
+
+// SaveConfigFrom is SaveConfig for a change from the web UI or the API:
+// client (the sign-in and browser) goes into the audit log's entry.
+func (a *App) SaveConfigFrom(text []byte, ifMatch, author, message string, client map[string]any) (ConfigState, error) {
 	if err := a.editable(); err != nil {
 		return a.Config(), err
 	}
-	return a.cfg.save(text, ifMatch, author, message)
+	return a.cfg.save(text, ifMatch, author, message, client)
 }
 
 // ValidateConfig checks a text without applying it.
@@ -555,18 +566,24 @@ func (a *App) ValidateConfig(text []byte) (*config.Config, []config.Diagnostic) 
 
 // EditConfig applies a structured change (record upsert, delete, tunables).
 func (a *App) EditConfig(author, message string, change func(f *config.File) error) (ConfigState, error) {
+	return a.EditConfigFrom(author, message, nil, change)
+}
+
+// EditConfigFrom is EditConfig for a change from the web UI or the API,
+// with the client it came from (see SaveConfigFrom).
+func (a *App) EditConfigFrom(author, message string, client map[string]any, change func(f *config.File) error) (ConfigState, error) {
 	if err := a.editable(); err != nil {
 		return a.Config(), err
 	}
-	return a.cfg.edit(author, message, change)
+	return a.cfg.edit(author, message, client, change)
 }
 
 // BumpSerial applies the file on disk with an increased serial.
-func (a *App) BumpSerial(author string) (ConfigState, error) {
+func (a *App) BumpSerial(author string, client map[string]any) (ConfigState, error) {
 	if err := a.editable(); err != nil {
 		return a.Config(), err
 	}
-	return a.cfg.bumpAndApply(author)
+	return a.cfg.bumpAndApply(author, client)
 }
 
 // ErrMember refuses configuration changes on a node of a cluster: it runs
@@ -588,11 +605,11 @@ func (a *App) editable() error {
 }
 
 // Rollback re-applies a previous version.
-func (a *App) Rollback(serial uint32, author string) (ConfigState, error) {
+func (a *App) Rollback(serial uint32, author string, client map[string]any) (ConfigState, error) {
 	if err := a.editable(); err != nil {
 		return a.Config(), err
 	}
-	return a.cfg.rollback(serial, author)
+	return a.cfg.rollback(serial, author, client)
 }
 
 // Validators returns the validation hooks (for the CLI).

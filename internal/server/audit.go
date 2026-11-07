@@ -2,23 +2,28 @@ package server
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/githubflyideas/unagikuma/internal/app"
+	"github.com/githubflyideas/unagikuma/internal/config"
 	"github.com/githubflyideas/unagikuma/internal/store"
 )
 
 // auditRec collects what a handler wants recorded beyond the request
 // itself; the wrapper writes it once the change succeeded.
 type auditRec struct {
-	actor  string // when nobody is logged in yet (first setup)
-	target string
-	area   string
-	detail map[string]any
-	skip   bool
+	actor   string // when nobody is logged in yet (first setup)
+	session string // the sign-in the request itself started (first setup)
+	target  string
+	area    string
+	detail  map[string]any
+	skip    bool
 }
 
 type auditKey struct{}
@@ -100,6 +105,50 @@ func pathTarget(pattern string, r *http.Request) string {
 	return ""
 }
 
+// sessionTag names one sign-in in the audit log without revealing the
+// session's secret: under an account several people share, changes from
+// different browsers carry different tags.
+func sessionTag(sid string) string {
+	h := sha256.Sum256([]byte(sid))
+	return hex.EncodeToString(h[:4])
+}
+
+// client says which sign-in and which browser or program a request came
+// from, for the audit log: an address alone cannot tell apart the people
+// behind one office's NAT.
+func (s *Server) client(r *http.Request, ai *authInfo) map[string]any {
+	c := map[string]any{}
+	if ai != nil && ai.sessionTag != "" {
+		c["session"] = ai.sessionTag
+	}
+	if ua := []rune(r.UserAgent()); len(ua) > 0 {
+		c["ua"] = string(ua[:min(len(ua), 256)])
+	}
+	if len(c) == 0 {
+		return nil
+	}
+	return c
+}
+
+// editConfig applies a structured configuration change for this request;
+// its config.apply audit entry carries the request's client.
+func (s *Server) editConfig(r *http.Request, message string, change func(f *config.File) error) (app.ConfigState, error) {
+	ai := authOf(r)
+	return s.app.EditConfigFrom(ai.user, message, s.client(r, ai), change)
+}
+
+// withClient adds the client to an entry's detail.
+func withClient(d map[string]any, c map[string]any) map[string]any {
+	if c == nil {
+		return d
+	}
+	if d == nil {
+		d = map[string]any{}
+	}
+	d["client"] = c
+	return d
+}
+
 // writeAudit records a successful change.
 func (s *Server) writeAudit(pattern string, r *http.Request, ai *authInfo, a *auditRec, v any) {
 	if a.skip {
@@ -127,6 +176,11 @@ func (s *Server) writeAudit(pattern string, r *http.Request, ai *authInfo, a *au
 			e.Detail["serial"] = serial
 		}
 	}
+	who := ai
+	if who == nil && a.session != "" {
+		who = &authInfo{sessionTag: a.session}
+	}
+	e.Detail = withClient(e.Detail, s.client(r, who))
 	if err := s.app.Store().Audit(e); err != nil {
 		s.log.Error("audit", "err", err)
 	}
@@ -161,7 +215,7 @@ func (s *Server) auditLog(w http.ResponseWriter, r *http.Request) (any, error) {
 func (s *Server) auditQuery(r *http.Request) store.AuditQuery {
 	q := r.URL.Query()
 	aq := store.AuditQuery{Actor: q.Get("actor"), Action: q.Get("action"), Target: q.Get("target"), Area: q.Get("area"),
-		Addr: q.Get("addr"), Risk: q.Get("risk")}
+		Addr: q.Get("addr"), Session: q.Get("session"), Risk: q.Get("risk")}
 	aq.Before, _ = strconv.ParseInt(q.Get("before"), 10, 64)
 	aq.Limit, _ = strconv.Atoi(q.Get("limit"))
 	if _, d := rangeOf(r); q.Get("range") != "" {
@@ -193,11 +247,12 @@ func (s *Server) auditExport(w http.ResponseWriter, r *http.Request) (any, error
 	if format != "json" {
 		format = "csv"
 	}
-	actor := ""
-	if ai := authOf(r); ai != nil {
+	actor, ai := "", authOf(r)
+	if ai != nil {
 		actor = ai.user
 	}
-	_ = s.app.Store().Audit(store.AuditEntry{Actor: actor, Action: "audit.export", Addr: s.ip(r), Detail: map[string]any{"format": format, "entries": len(items)}})
+	_ = s.app.Store().Audit(store.AuditEntry{Actor: actor, Action: "audit.export", Addr: s.ip(r),
+		Detail: withClient(map[string]any{"format": format, "entries": len(items)}, s.client(r, ai))})
 	ct := map[string]string{"csv": "text/csv; charset=utf-8", "json": "application/json"}[format]
 	w.Header().Set("Content-Type", ct)
 	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="unagikuma-audit-%s.%s"`, s.now().Format("20060102-150405"), format))

@@ -357,7 +357,7 @@ func (s *Server) configPut(w http.ResponseWriter, r *http.Request) (any, error) 
 	if err := s.execAllowed(authOf(r), []byte(req.Text)); err != nil {
 		return nil, err
 	}
-	st, err := s.app.SaveConfig([]byte(req.Text), r.Header.Get("If-Match"), authOf(r).user, req.Message)
+	st, err := s.app.SaveConfigFrom([]byte(req.Text), r.Header.Get("If-Match"), authOf(r).user, req.Message, s.client(r, authOf(r)))
 	if err != nil {
 		return nil, s.configError(err)
 	}
@@ -433,7 +433,7 @@ func (s *Server) configRollback(w http.ResponseWriter, r *http.Request) (any, er
 			return nil, err
 		}
 	}
-	st, err := s.app.Rollback(req.Serial, authOf(r).user)
+	st, err := s.app.Rollback(req.Serial, authOf(r).user, s.client(r, authOf(r)))
 	if err != nil {
 		return nil, s.configError(err)
 	}
@@ -441,7 +441,7 @@ func (s *Server) configRollback(w http.ResponseWriter, r *http.Request) (any, er
 }
 
 func (s *Server) configReload(w http.ResponseWriter, r *http.Request) (any, error) {
-	st, err := s.app.BumpSerial(authOf(r).user)
+	st, err := s.app.BumpSerial(authOf(r).user, s.client(r, authOf(r)))
 	if err != nil {
 		return nil, s.configError(err)
 	}

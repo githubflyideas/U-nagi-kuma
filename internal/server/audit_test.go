@@ -132,3 +132,99 @@ func TestAuditActionNames(t *testing.T) {
 		}
 	}
 }
+
+// Two people share the admin account, each in their own browser: every
+// entry says which sign-in and which browser it came from, the sign-in's
+// changes can be listed on their own, and the chain still verifies.
+func TestAuditTellsSharedAccountApart(t *testing.T) {
+	a := newEnv(t, usersBind, nil)
+	a.setup()
+	b := a.loginAs("admin", "secret123")
+	const chrome = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
+	const firefox = "Mozilla/5.0 (X11; Linux x86_64; rv:132.0) Gecko/20100101 Firefox/132.0"
+	for _, x := range []struct {
+		e        *env
+		name, ua string
+	}{{a, "from-chrome", chrome}, {b, "from-firefox", firefox}} {
+		if c := x.e.do("POST", "/api/v1/monitors", map[string]any{"record": map[string]any{"name": x.name, "type": "PING", "target": "10.0.0.9"}}, nil, "User-Agent", x.ua); c != 200 {
+			t.Fatalf("%s: %d", x.name, c)
+		}
+	}
+	a.register(license.FeatAudit)
+	var log struct{ Items []auditItem }
+	a.do("GET", "/api/v1/audit", nil, &log)
+	client := func(target string) (session, ua string) {
+		for _, it := range log.Items {
+			if it.Action == "monitor.create" && it.Target == target {
+				c, _ := it.Detail["client"].(map[string]any)
+				session, _ = c["session"].(string)
+				ua, _ = c["ua"].(string)
+				return session, ua
+			}
+		}
+		t.Fatalf("no monitor.create %s in %+v", target, log.Items)
+		return
+	}
+	sa, ua := client("from-chrome")
+	sb, ub := client("from-firefox")
+	if sa == "" || sb == "" || sa == sb || ua != chrome || ub != firefox {
+		t.Fatalf("sessions %q %q, browsers %q %q", sa, sb, ua, ub)
+	}
+	// The configuration change each one made carries the same sign-in.
+	for rec, want := range map[string]string{"from-chrome": sa, "from-firefox": sb} {
+		found := false
+		for _, it := range log.Items {
+			diff, _ := it.Detail["diff"].([]any)
+			if it.Action != "config.apply" || len(diff) == 0 || diff[0].(map[string]any)["record"] != rec {
+				continue
+			}
+			c, _ := it.Detail["client"].(map[string]any)
+			if c["session"] != want {
+				t.Fatalf("config.apply of %s: %+v", rec, it)
+			}
+			found = true
+		}
+		if !found {
+			t.Fatalf("no config.apply for %s", rec)
+		}
+	}
+	var only struct{ Items []auditItem }
+	a.do("GET", "/api/v1/audit?session="+sb, nil, &only)
+	login := false
+	for _, it := range only.Items {
+		c, _ := it.Detail["client"].(map[string]any)
+		if c["session"] != sb {
+			t.Fatalf("filtered by %s: %+v", sb, it)
+		}
+		login = login || it.Action == "session.login"
+	}
+	if !login || len(only.Items) < 2 {
+		t.Fatalf("the second sign-in and its change: %+v", only.Items)
+	}
+	var check struct{ OK bool }
+	if a.do("GET", "/api/v1/audit/verify", nil, &check); !check.OK {
+		t.Fatal("chain")
+	}
+}
+
+// The audit retention cannot be changed from the web, so the log cannot
+// be cleared from there; the page shows the retention in effect.
+func TestAuditRetentionNotFromTheWeb(t *testing.T) {
+	e := newEnv(t, usersBind, nil)
+	e.setup()
+	for _, body := range []map[string]any{
+		{"set": map[string]string{"retention.audit": "30d"}},
+		{"unset": []string{"retention.audit"}},
+	} {
+		if c := e.do("PUT", "/api/v1/tunables", body, nil); c != 403 {
+			t.Fatalf("%v: %d", body, c)
+		}
+	}
+	var tun []struct{ Key, Value, Override string }
+	e.do("GET", "/api/v1/tunables", nil, &tun)
+	for _, x := range tun {
+		if x.Key == "retention.audit" && (x.Value != "730d" || x.Override == "") {
+			t.Fatalf("%+v", x)
+		}
+	}
+}

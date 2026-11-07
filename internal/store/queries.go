@@ -654,6 +654,26 @@ type Retention struct {
 	Raw, Agg5m, Agg1h, Events, Audit time.Duration
 }
 
+// DefaultAuditRetention is how long the audit log is kept unless the server
+// is started with another --audit-retention.
+const DefaultAuditRetention = 730 * 24 * time.Hour
+
+// SetAuditRetention sets how long the audit log is kept at least: the
+// server's --audit-retention. The configuration (retention.audit, which the
+// web UI's configuration editor can reach) may only make it longer, so
+// nobody can clear the log from the web.
+func (s *Store) SetAuditRetention(d time.Duration) { s.auditFloor.Store(int64(d)) }
+
+// AuditRetention is the audit retention in effect: the longer of the
+// server's and the configured one.
+func (s *Store) AuditRetention(configured time.Duration) time.Duration {
+	floor := time.Duration(s.auditFloor.Load())
+	if floor <= 0 {
+		floor = DefaultAuditRetention
+	}
+	return max(floor, configured)
+}
+
 // RetentionFrom reads the retention tunables.
 func RetentionFrom(ts tunables.Set) Retention {
 	return Retention{Raw: ts.Duration("retention.raw"), Agg5m: ts.Duration("retention.agg5m"), Agg1h: ts.Duration("retention.agg1h"),
@@ -705,12 +725,10 @@ func (s *Store) Prune(r Retention) error {
 		err3 = err
 	}
 	_, err7 := s.core.Exec(`DELETE FROM sessions WHERE expires_at<?`, ms(now))
-	var err8 error
-	if r.Audit > 0 {
-		err8 = s.pruneAudit(ms(now.Add(-r.Audit)))
-		if err8 == nil {
-			_, err8 = s.core.Exec(`DELETE FROM site_audit AS old WHERE origin_id<COALESCE((SELECT min(origin_id) FROM site_audit AS kept WHERE kept.site=old.site AND kept.at>=?),(SELECT max(origin_id) FROM site_audit AS tip WHERE tip.site=old.site))`, ms(now.Add(-r.Audit)))
-		}
+	audit := s.AuditRetention(r.Audit)
+	err8 := s.pruneAudit(ms(now.Add(-audit)))
+	if err8 == nil {
+		_, err8 = s.core.Exec(`DELETE FROM site_audit AS old WHERE origin_id<COALESCE((SELECT min(origin_id) FROM site_audit AS kept WHERE kept.site=old.site AND kept.at>=?),(SELECT max(origin_id) FROM site_audit AS tip WHERE tip.site=old.site))`, ms(now.Add(-audit)))
 	}
 	s.wmu.Unlock()
 	for _, err := range []error{err1, err2, err3, err4, err5, err6, err7, err8} {

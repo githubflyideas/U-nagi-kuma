@@ -153,7 +153,7 @@ var defs = []Def{
 	{Key: "retention.agg5m", Kind: Duration, Default: "7d", Min: "1d", Max: "3660d", Desc: "5-minute aggregates", DescZH: "5 分钟聚合保留期"},
 	{Key: "retention.agg1h", Kind: Duration, Default: "400d", Min: "7d", Max: "3660d", Desc: "1-hour aggregates", DescZH: "1 小时聚合保留期"},
 	{Key: "retention.events", Kind: Duration, Default: "180d", Min: "1d", Max: "3660d", Desc: "events and notification log", DescZH: "事件与通知日志保留期"},
-	{Key: "retention.audit", Kind: Duration, Default: "730d", Min: "30d", Max: "3660d", Desc: "audit log of permission and configuration changes", DescZH: "权限与配置变更审计日志保留期"},
+	{Key: "retention.audit", Kind: Duration, Default: "730d", Min: "30d", Max: "3660d", Desc: "audit log of permission and configuration changes: set when starting the server (--audit-retention); a value here only ever makes it longer, so the log cannot be cleared from the web", DescZH: "权限与配置变更审计日志保留期：在启动服务器时设置（--audit-retention）；此处的值只会让它变长，因此无法在网页上清除日志", Override: "--audit-retention"},
 	{Key: "retention.snapshots", Kind: Int, Default: "200", Min: "10", Max: "100000", Desc: "config snapshots kept", DescZH: "保留的配置快照数"},
 	{Key: "changes.reminders", Kind: String, Default: "24h,1h", Desc: "reminders before an announced change starts, comma separated (empty = none)", DescZH: "已发布的变更开始前提醒的时间点，逗号分隔（留空 = 不提醒）"},
 	{Key: "changes.policy", Kind: String, Default: "", Desc: "policy change notices go through when a change names neither a policy nor channels (empty = system policy)", DescZH: "变更未指定策略或通道时，变更通知使用的策略（留空 = 系统策略）"},
