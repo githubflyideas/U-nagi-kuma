@@ -117,10 +117,7 @@ function Wall() {
       <img src=${logoURL()} alt="" /><b class="prod">${product()}</b>
       <span class="overall">${overall === 'ok' ? '✓ ' + t('ui.wall.all_ok') : t('ui.wall.problems', { n: crit + warn })}</span>
       <span class="spacer"></span>
-      <span class="cnt critical">${crit}<small>${t('status.critical')}</small></span>
-      <span class="cnt degraded">${warn}<small>${t('status.degraded')}</small></span>
-      <span class="cnt unknown">${unk}<small>${t('status.unknown')}</small></span>
-      <span class="cnt ok">${count('ok')}<small>${t('status.ok')}</small></span>
+      ${[['critical', crit], ['degraded', warn], ['unknown', unk], ['ok', count('ok')]].map(([k, n]) => html`<span class=${'cnt ' + k + (n ? '' : ' zero')}>${n}<small>${t('status.' + k)}</small></span>`)}
       <${Clock} />
     </header>
     ${stale && html`<div class="wall-stale">${t('ui.wall.stale', { ago: ago(new Date(at).toISOString()) })}</div>`}

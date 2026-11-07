@@ -640,39 +640,69 @@ tr.risk-high td:first-child { box-shadow: inset 3px 0 0 var(--degraded); }
 .swatches span.unset { background: repeating-linear-gradient(45deg, var(--panel-2) 0 3px, var(--panel) 3px 6px) !important; }
 
 /* ---- Wall screen (/wall) ----
-   Read from across a room: large type, only problems in colour, and a
-   loud banner when the data stops arriving. */
-body.wallpage { overflow: hidden; }
-.wall { display: flex; flex-direction: column; height: 100vh; padding: 1.2vh 1.4vw; gap: 1.2vh; }
-.wall-top { display: flex; align-items: center; gap: 1.2vw; font-size: clamp(16px, 2.2vh, 30px); padding: .8vh 1vw; border-radius: 10px; background: var(--panel); border: 1px solid var(--border); }
+   Read from across a room. The console's status colours are tuned for
+   small text and labels; filling a whole tile with them is loud (the ink
+   theme's red turns pink), so the wall has its own palette: healthy tiles
+   recede, problems are deep, saturated blocks with white type. */
+body.wallpage {
+  overflow: hidden;
+  --w-bg: #07090c; --w-bar: #0f1318; --w-line: #1c232c; --w-text: #e8edf2; --w-muted: #7f8b99;
+  --w-ok: #13241d; --w-ok-edge: #1f3a2e; --w-ok-text: #b9d8c8; --w-ok-num: #3ecf8e;
+  --w-crit: #c62828; --w-crit-2: #8e1b1b; --w-crit-num: #f2645c;
+  --w-warn: #d99a06; --w-warn-2: #b37400; --w-warn-text: #1f1500; --w-warn-num: #f2b632;
+  --w-unk: #5b4bb7; --w-unk-2: #3f3290; --w-unk-num: #a594f9;
+  --w-maint: #173252; --w-maint-text: #a9c8ef;
+  --w-off: #14181d; --w-off-text: #66717e;
+  background: radial-gradient(1400px 700px at 50% -20%, #131a22 0%, var(--w-bg) 60%) fixed, var(--w-bg);
+  color: var(--w-text);
+}
+:root[data-theme="paper"] body.wallpage {
+  --w-bg: #eef1f4; --w-bar: #ffffff; --w-line: #d9dfe6; --w-text: #17202b; --w-muted: #5f6b7a;
+  --w-ok: #e2efe8; --w-ok-edge: #cfe2d7; --w-ok-text: #24513b; --w-ok-num: #1f8a55;
+  --w-crit-num: #c62828; --w-warn-num: #b37400; --w-unk-num: #5b4bb7;
+  --w-maint: #dce8f6; --w-maint-text: #1f4f86; --w-off: #e3e7ec; --w-off-text: #7a8592;
+  background: var(--w-bg);
+}
+.wall { display: flex; flex-direction: column; height: 100vh; padding: 1.4vh 1.6vw; gap: 1.4vh; }
+.wall-top { display: flex; align-items: center; gap: 1.4vw; font-size: clamp(16px, 2.2vh, 30px); padding: 1vh 1.4vw; border-radius: 14px;
+  background: var(--w-bar); border: 1px solid var(--w-line); }
 .wall-top img { height: 5vh; width: 5vh; object-fit: contain; }
-.wall-top .prod { font-weight: 750; }
-.wall-top .overall { font-weight: 800; padding: .3vh 1vw; border-radius: 8px; background: var(--ok); color: var(--on-status); }
-.wall-top.critical .overall { background: var(--critical); }
-.wall-top.degraded .overall { background: var(--degraded); color: var(--on-degraded); }
-.wall-top.unknown .overall { background: var(--unknown); }
-.wall-top .cnt { display: flex; flex-direction: column; align-items: center; font-weight: 800; font-size: 1.5em; line-height: 1; min-width: 3.2em; }
-.wall-top .cnt small { font-size: .38em; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: .3em; }
-.wall-top .cnt.critical { color: var(--critical); } .wall-top .cnt.degraded { color: var(--degraded); }
-.wall-top .cnt.unknown { color: var(--unknown); } .wall-top .cnt.ok { color: var(--ok); }
-.wall-top .clock { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 1.4em; margin-inline-start: 1vw; }
-.wall-stale { background: var(--critical); color: var(--on-status); font-weight: 800; text-align: center; padding: 1vh; border-radius: 8px; font-size: clamp(16px, 2.4vh, 32px); animation: wallblink 1.2s steps(2) infinite; }
+.wall-top .prod { font-weight: 700; letter-spacing: .01em; }
+.wall-top .overall { font-weight: 750; padding: .45vh 1.1vw; border-radius: 999px; font-size: .9em; letter-spacing: .02em;
+  background: color-mix(in srgb, var(--w-ok-num) 16%, transparent); color: var(--w-ok-num); border: 1px solid color-mix(in srgb, var(--w-ok-num) 40%, transparent); }
+.wall-top.critical .overall { background: var(--w-crit); color: #fff; border-color: transparent; }
+.wall-top.degraded .overall { background: var(--w-warn); color: var(--w-warn-text); border-color: transparent; }
+.wall-top.unknown .overall { background: var(--w-unk); color: #fff; border-color: transparent; }
+.wall-top .cnt { display: flex; flex-direction: column; align-items: center; font-weight: 750; font-size: 1.55em; line-height: 1; min-width: 3.4em;
+  font-variant-numeric: tabular-nums; padding-inline: .4em; border-inline-start: 1px solid var(--w-line); }
+.wall-top .cnt small { font-size: .34em; font-weight: 600; color: var(--w-muted); text-transform: uppercase; letter-spacing: .1em; margin-top: .45em; }
+.wall-top .cnt.critical { color: var(--w-crit-num); } .wall-top .cnt.degraded { color: var(--w-warn-num); }
+.wall-top .cnt.unknown { color: var(--w-unk-num); } .wall-top .cnt.ok { color: var(--w-ok-num); }
+.wall-top .cnt.zero { color: var(--w-muted); opacity: .55; }
+.wall-top .clock { font-variant-numeric: tabular-nums; font-weight: 650; font-size: 1.35em; padding-inline-start: 1.2vw; border-inline-start: 1px solid var(--w-line); }
+.wall-stale { background: var(--w-crit); color: #fff; font-weight: 750; text-align: center; padding: 1.1vh; border-radius: 12px; font-size: clamp(16px, 2.4vh, 32px); animation: wallblink 1.4s steps(2) infinite; }
 .wall-hive { position: relative; flex: 1; min-height: 0; }
 .wall-hex { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0;
-  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: var(--ok-soft); color: var(--text); line-height: 1.15; }
-.wall-hex .name { width: 100%; font-weight: 650; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-break: break-word; }
-.wall-hex .st { font-size: .7em; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; margin-top: .3em; }
-.wall-hex.critical { background: var(--critical); color: var(--on-status); animation: wallpulse 2s ease-in-out infinite; }
-.wall-hex.degraded { background: var(--degraded); color: var(--on-degraded); }
-.wall-hex.unknown { background: var(--unknown); color: var(--on-status); }
-.wall-hex.maintenance { background: var(--maint-soft); color: var(--maint); }
-.wall-hex.pending, .wall-hex.paused { background: var(--pending-soft); color: var(--muted); }
-.wall-hex.acked { animation: none; opacity: .8; }
-.wall-ticker { display: flex; gap: 2vw; flex-wrap: wrap; font-size: clamp(14px, 2vh, 26px); padding: .8vh 1vw; border-radius: 10px; background: var(--panel); border: 1px solid var(--border); }
-.wall-ticker span { white-space: nowrap; } .wall-ticker .critical b { color: var(--critical); } .wall-ticker .degraded b { color: var(--degraded); }
-.wall-msg { height: 100vh; display: grid; place-content: center; text-align: center; padding: 24px; color: var(--muted); }
-.wall-msg h1 { font-size: clamp(22px, 4vh, 44px); color: var(--text); }
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: linear-gradient(180deg, var(--w-ok-edge), var(--w-ok)); color: var(--w-ok-text); line-height: 1.15; }
+.wall-hex .name { width: 100%; font-weight: 600; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-break: break-word; }
+.wall-hex .st { font-size: .58em; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; margin-top: .55em; opacity: .85; }
+.wall-hex.critical { background: linear-gradient(180deg, var(--w-crit), var(--w-crit-2)); color: #fff; animation: wallpulse 2.4s ease-in-out infinite; }
+.wall-hex.critical .name, .wall-hex.degraded .name, .wall-hex.unknown .name { font-weight: 700; }
+.wall-hex.degraded { background: linear-gradient(180deg, var(--w-warn), var(--w-warn-2)); color: var(--w-warn-text); }
+.wall-hex.unknown { background: linear-gradient(180deg, var(--w-unk), var(--w-unk-2)); color: #fff; }
+.wall-hex.maintenance { background: var(--w-maint); color: var(--w-maint-text); }
+.wall-hex.pending, .wall-hex.paused { background: var(--w-off); color: var(--w-off-text); }
+.wall-hex.acked { animation: none; filter: saturate(.75); }
+.wall-ticker { display: flex; gap: 2.4vw; flex-wrap: wrap; align-items: center; font-size: clamp(14px, 2vh, 26px); padding: .9vh 1.4vw; border-radius: 14px;
+  background: var(--w-bar); border: 1px solid var(--w-line); color: var(--w-muted); }
+.wall-ticker span { white-space: nowrap; display: inline-flex; align-items: center; gap: .5em; }
+.wall-ticker span::before { content: ""; width: .6em; height: .6em; border-radius: 50%; background: var(--w-crit); }
+.wall-ticker .degraded::before { background: var(--w-warn); }
+.wall-ticker b { color: var(--w-text); font-weight: 650; }
+.wall-msg { height: 100vh; display: grid; place-content: center; text-align: center; padding: 24px; color: var(--w-muted); }
+.wall-msg h1 { font-size: clamp(22px, 4vh, 44px); color: var(--w-text); }
 .wall-msg p { font-size: clamp(15px, 2.2vh, 26px); max-width: 40em; }
-@keyframes wallpulse { 50% { filter: brightness(1.25); } }
-@keyframes wallblink { 50% { opacity: .55; } }
+@keyframes wallpulse { 50% { filter: brightness(1.18); } }
+@keyframes wallblink { 50% { opacity: .6; } }
 @media (prefers-reduced-motion: reduce) { .wall-hex.critical, .wall-stale { animation: none; } }
