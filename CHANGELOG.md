@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+**Fixed**
+- Targets that all fail at once are alerted on time when this host's network works. A machine watching only a few sites took their failing together for its own outage and held the alerts back for 10 to 15 minutes, and could report an outage of its own that never happened. Before an internet failure becomes an alert the host now also asks reference points on the internet (`localnet.references`, by default 223.5.5.5, 1.1.1.1 and 8.8.8.8 on TCP 443): if any answers, the failure is the target's.
+- A machine watching sites in fewer than three networks recognises its own uplink outage: the reference points that do not answer count as evidence too. It holds the alerts while the outage lasts and sends one summary when it is back, as machines watching more sites already did.
+
+**Changed**
+- The manual describes clusters as they work since 2.2: every machine checks and alerts on its own, and probe-only agents, `quorum=`, partial escalation and the emergency webhook are gone. The tunables that no longer do anything say so.
+- `localnet.exit-target` is only shown on the path view; the reference points replace it in the check before an alert.
+
 ## v2.4.0 — 2026-11-07
 
 **Added**

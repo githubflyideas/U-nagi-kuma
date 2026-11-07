@@ -180,6 +180,7 @@ func TestUplinkIgnoresTargetsAlreadyDead(t *testing.T) {
 
 func TestUplinkCannotJudgeWithFewDomains(t *testing.T) {
 	d, _ := defaultLocalNet(t)
+	d.cfg.References = nil
 	d.Observe(wanOK(t0, "4:a"))
 	d.Observe(wanOK(t0, "4:b"))
 	if h := d.Health(t0); h.Uplink != "cannot_judge" || h.CanJudgeUplink {
@@ -189,6 +190,70 @@ func TestUplinkCannotJudgeWithFewDomains(t *testing.T) {
 	d.Observe(wanFail(t0.Add(sec(2)), "4:b"))
 	if evs := d.Evaluate(t0.Add(sec(3))); len(evs) != 0 {
 		t.Fatalf("two domains only: no automatic judgement: %+v", evs)
+	}
+}
+
+func refFail(at time.Time, domain string) Observation {
+	o := wanFail(at, domain)
+	o.Reference = true
+	return o
+}
+
+func refOK(at time.Time, domain string) Observation {
+	o := wanOK(at, domain)
+	o.Reference = true
+	return o
+}
+
+// Two monitored networks are not enough evidence on their own; the
+// reference points the self-check asked make up the rest.
+func TestUplinkJudgedWithReferencePoints(t *testing.T) {
+	d, _ := defaultLocalNet(t)
+	if len(d.cfg.References) < 3 {
+		t.Fatalf("default reference points: %v", d.cfg.References)
+	}
+	d.Observe(wanOK(t0, "4:a"))
+	d.Observe(wanOK(t0, "4:b"))
+	if h := d.Health(t0); !h.CanJudgeUplink || h.Uplink != "ok" {
+		t.Fatalf("health with reference points: %+v", h)
+	}
+	d.Observe(wanFail(t0.Add(sec(1)), "4:a"))
+	d.Observe(wanFail(t0.Add(sec(2)), "4:b"))
+	if evs := d.Evaluate(t0.Add(sec(2))); len(evs) != 0 {
+		t.Fatalf("before the self-check: %+v", evs)
+	}
+	for _, r := range []string{"4:r1", "4:r2", "4:r3"} {
+		d.Observe(refFail(t0.Add(sec(3)), r))
+	}
+	if !enters(d.Evaluate(t0.Add(sec(4))), AnomalyUplink) {
+		t.Fatal("both targets and every reference point failing: the uplink is down")
+	}
+	// Back: the targets answer again. The reference points have not been
+	// asked since, which must not keep the outage open.
+	d.Observe(wanOK(t0.Add(sec(30)), "4:a"))
+	d.Observe(wanOK(t0.Add(sec(31)), "4:b"))
+	var evs []LocalNetEvent
+	for i := 31; i <= 31+2*60 && !exits(evs, AnomalyUplink); i++ {
+		evs = d.Evaluate(t0.Add(sec(i)))
+	}
+	if !exits(evs, AnomalyUplink) {
+		t.Fatal("the targets answer again: the outage must end")
+	}
+}
+
+// A reference point that answers proves the network works: targets failing
+// together are their own problem.
+func TestReferencePointAnswerVetoesUplink(t *testing.T) {
+	d, _ := defaultLocalNet(t)
+	d.Observe(wanOK(t0, "4:a"))
+	d.Observe(wanOK(t0, "4:b"))
+	d.Observe(wanFail(t0.Add(sec(1)), "4:a"))
+	d.Observe(wanFail(t0.Add(sec(2)), "4:b"))
+	d.Observe(refFail(t0.Add(sec(3)), "4:r1"))
+	d.Observe(refFail(t0.Add(sec(3)), "4:r2"))
+	d.Observe(refOK(t0.Add(sec(3)), "4:r3"))
+	if evs := d.Evaluate(t0.Add(sec(4))); len(evs) != 0 {
+		t.Fatalf("a reference point answered: %+v", evs)
 	}
 }
 

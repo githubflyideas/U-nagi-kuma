@@ -29,7 +29,8 @@ const (
 	TimeOfDay Kind = "time-of-day" // "HH:MM" local time
 	Rate      Kind = "rate"        // "N/s", "N/m", "N/h"
 	String    Kind = "string"
-	Address   Kind = "address" // an IP address, or "" for none
+	Address   Kind = "address"   // an IP address, or "" for none
+	Addresses Kind = "addresses" // comma-separated IP addresses, or "" for none
 )
 
 // Def describes one tunable.
@@ -101,7 +102,8 @@ var defs = []Def{
 	{Key: "localnet.anchor-recovers", Kind: Int, Default: "2", Min: "1", Max: "20", Desc: "consecutive anchor successes before the path is considered up again", DescZH: "锚点连续成功几次才判定恢复"},
 	{Key: "localnet.anchor-enable", Kind: Duration, Default: "2m", Min: "10s", Max: "1h", Desc: "a gateway that never answered within this time is not used as an anchor", DescZH: "启动后此时长内从未应答的路由器不作锚点"},
 	{Key: "engine.handler-timeout", Kind: Duration, Default: "30s", Min: "1s", Max: "10m", Desc: "how long an event handler may run before it is killed", DescZH: "事件处理脚本最长运行时间，超时即终止"},
-	{Key: "localnet.exit-target", Kind: Address, Default: "8.8.8.8", Desc: "internet address pinged, once an internet target fails, to show on the path view whether this host gets out to the internet; the self-check before an alert also tries it on TCP 443 when no other recently healthy internet target is left to re-check, and if it does not answer the failure is blamed on this host (empty = off)", DescZH: "外网网关探测地址：有外网目标失败时才 ping，在路径图上显示本机能否出外网；告警前的自检在没有其他近期正常的外网目标可复测时，也会连它的 TCP 443，连不上就把这次失败算作本机网络问题（留空 = 关闭）"},
+	{Key: "localnet.references", Kind: Addresses, Default: "223.5.5.5,1.1.1.1,8.8.8.8", Desc: "internet reference points, in different networks, asked on TCP 443 whenever an internet target fails: if any answers this host's network works and the failure is the target's; if none does, together with the targets they show this host's own uplink is down (empty = off)", DescZH: "互联网参照点（不同网络中的地址）：有外网目标失败时连它们的 TCP 443；任何一个能连上就说明本机网络正常、是目标自己的故障；全部连不上时，和失败的目标一起证明本机外网断了（留空 = 关闭）"},
+	{Key: "localnet.exit-target", Kind: Address, Default: "8.8.8.8", Desc: "internet address pinged, once an internet target fails, to show on the path view whether this host gets out to the internet; display only, it never holds alerts (empty = off)", DescZH: "外网网关探测地址：有外网目标失败时才 ping，在路径图上显示本机能否出外网；只用于显示，不参与告警抑制（留空 = 关闭）"},
 
 	// ---- single machine: suspend / stall / abnormal exit ----
 	{Key: "suspend.threshold", Kind: Duration, Default: "10s", Min: "2s", Max: "1h", Desc: "suspend time (boot clock minus monotonic clock) treated as a host sleep", DescZH: "挂起时长（含休眠时钟减不含休眠时钟）超过多少视为主机休眠"},
@@ -307,6 +309,13 @@ func (d *Def) check(v string) error {
 	case Address:
 		if v != "" && net.ParseIP(v) == nil {
 			return fmt.Errorf("want an IP address, got %q", v)
+		}
+		return nil
+	case Addresses:
+		for _, a := range strings.Split(v, ",") {
+			if a = strings.TrimSpace(a); a != "" && net.ParseIP(a) == nil {
+				return fmt.Errorf("want IP addresses separated by commas, got %q", a)
+			}
 		}
 		return nil
 	}

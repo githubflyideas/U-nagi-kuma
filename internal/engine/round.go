@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"net/netip"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -125,11 +126,10 @@ func (e *Engine) dispatchDue(ctx context.Context, wg *sync.WaitGroup) {
 		domain := rt.Domain
 		fam := rt.Family
 		gateN := e.cfg.Tunables.Int("localnet.gate-hosts")
-		var targets []string
-		var fallback string
+		var targets, refs []string
 		if hardIfFail && e.localnet.cfg.Enabled && !e.localnet.Released() && scope != netscope.LAN {
 			targets = e.localnet.GateTargets(famOr(fam), domain, gateN, now)
-			fallback = exitGateTarget(e.cfg.Tunables.Raw("localnet.exit-target"), famOr(fam))
+			refs = referenceTargets(e.localnet.cfg.References, famOr(fam))
 		}
 		gateTimeout := e.cfg.Tunables.Duration("localnet.gate-timeout")
 		gateTTL := e.cfg.Tunables.Duration("localnet.gate-cache")
@@ -148,8 +148,8 @@ func (e *Engine) dispatchDue(ctx context.Context, wg *sync.WaitGroup) {
 				cancel()
 			}
 			rr := roundResult{name: name, defHash: defHash, start: start, end: e.now(), due: due, res: res}
-			if res.Vote == probe.VoteFail && probe.NetworkClass(res.Reason) && (len(targets) > 0 || fallback != "") {
-				rr.gateLocal, rr.gateObs = e.runGate(ctx, targets, fallback, start, gateTimeout, gateTTL)
+			if res.Vote == probe.VoteFail && probe.NetworkClass(res.Reason) && (len(targets) > 0 || len(refs) > 0) {
+				rr.gateLocal, rr.gateObs = e.runGate(ctx, targets, refs, start, gateTimeout, gateTTL)
 			}
 			select {
 			case e.results <- rr:
@@ -178,12 +178,15 @@ func (s MonState) HardOnFail(attempts int) bool {
 	return attempts <= 1
 }
 
-// runGate re-probes recently healthy wan targets. It reports local=true only
-// when none of them answered and at least one failed at the network level.
+// runGate re-probes recently healthy wan targets together with the internet
+// reference points. It reports local=true only when none of them answered
+// and at least one failed at the network level: targets that fail together
+// (a shared provider, a CDN) are not taken for this host's own outage as
+// long as a reference point answers.
 // A finding that the network works counts only if it was made after the
 // failure began (failed at): one made before it says nothing about a cut
 // that happened since. Concurrent failures share one check.
-func (e *Engine) runGate(ctx context.Context, targets []string, fallback string, failedAt time.Time, timeout, ttl time.Duration) (bool, []Observation) {
+func (e *Engine) runGate(ctx context.Context, targets, refs []string, failedAt time.Time, timeout, ttl time.Duration) (bool, []Observation) {
 	now := e.now()
 	e.gate.mu.Lock()
 	if !e.gate.at.IsZero() && now.Sub(e.gate.at) < ttl && (e.gate.local || !e.gate.at.Before(failedAt)) {
@@ -204,11 +207,12 @@ func (e *Engine) runGate(ctx context.Context, targets []string, fallback string,
 	e.gate.inflight = r
 	e.gate.mu.Unlock()
 
-	reachable, failed, obs := e.probeGate(ctx, targets, timeout)
-	if reachable == 0 && failed == 0 && fallback != "" {
-		// No evidence either way (no recent targets, or ping not allowed
-		// here): ask the internet exit over TCP instead.
-		reachable, failed, obs = e.probeGate(ctx, []string{fallback}, timeout)
+	reachable, failed, obs := e.probeGate(ctx, targets, refs, timeout)
+	if reachable > 0 {
+		// The network works, so a reference point that did not answer is
+		// blocked from here, not evidence of an outage: answers arrive
+		// before timeouts and would no longer veto them.
+		obs = slices.DeleteFunc(obs, func(o Observation) bool { return o.Reference && !o.Reachable })
 	}
 	r.local, r.obs = reachable == 0 && failed > 0, obs
 	e.gate.mu.Lock()
@@ -221,14 +225,23 @@ func (e *Engine) runGate(ctx context.Context, targets []string, fallback string,
 	return r.local, obs
 }
 
-// probeGate re-probes targets at once and counts the answers.
-func (e *Engine) probeGate(ctx context.Context, targets []string, timeout time.Duration) (reachable, failed int, obs []Observation) {
+// probeGate re-probes targets and reference points at once and counts the
+// answers. A reference point that is also a target is asked once.
+func (e *Engine) probeGate(ctx context.Context, targets, refs []string, timeout time.Duration) (reachable, failed int, obs []Observation) {
 	type out struct {
 		obs Observation
 		ok  bool
 	}
-	ch := make(chan out, len(targets))
-	for _, t := range targets {
+	isRef := map[string]bool{}
+	all := append([]string(nil), targets...)
+	for _, r := range refs {
+		if !slices.Contains(all, r) {
+			all = append(all, r)
+			isRef[r] = true
+		}
+	}
+	ch := make(chan out, len(all))
+	for _, t := range all {
 		go func(t string) {
 			spec, ok := recheckSpec(t, timeout)
 			if !ok {
@@ -239,10 +252,11 @@ func (e *Engine) probeGate(ctx context.Context, targets []string, timeout time.D
 			r := e.deps.Probe(rctx, spec)
 			cancel()
 			o := observationFromResult(e.now(), spec, r, netscope.WAN)
+			o.Reference = isRef[t]
 			ch <- out{obs: o, ok: true}
 		}(t)
 	}
-	for range targets {
+	for range all {
 		o := <-ch
 		if !o.ok {
 			continue
@@ -258,14 +272,18 @@ func (e *Engine) probeGate(ctx context.Context, targets []string, timeout time.D
 	return reachable, failed, obs
 }
 
-// exitGateTarget is the internet exit (localnet.exit-target) as a TCP
-// recheck target: port 443 answers where ping is filtered or not allowed.
-func exitGateTarget(exit string, fam Family) string {
-	a, err := netip.ParseAddr(exit)
-	if err != nil || (fam == FamilyV6) != a.Is6() {
-		return ""
+// referenceTargets turns the reference points of one family into TCP
+// recheck targets: port 443 answers where ping is filtered or not allowed.
+func referenceTargets(refs []string, fam Family) []string {
+	var out []string
+	for _, r := range refs {
+		a, err := netip.ParseAddr(r)
+		if err != nil || (fam == FamilyV6) != a.Is6() {
+			continue
+		}
+		out = append(out, "tcp:"+netip.AddrPortFrom(a, 443).String())
 	}
-	return "tcp:" + netip.AddrPortFrom(a, 443).String()
+	return out
 }
 
 // recheckSpec turns a recheck target ("tcp:203.0.113.5:443",

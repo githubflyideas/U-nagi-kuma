@@ -73,6 +73,9 @@ type LocalNetConfig struct {
 	// MaxHold: a local outage that lasts longer than this stops holding
 	// the monitors back (fail open), in case the judgement is wrong. 0 = never.
 	MaxHold time.Duration
+	// References: internet reference points (IP addresses in different
+	// networks) the pre-HARD self-check asks besides the monitored targets.
+	References []string
 }
 
 // LocalNetConfigFrom reads the tunables.
@@ -90,7 +93,19 @@ func LocalNetConfigFrom(t tunables.Set) LocalNetConfig {
 		AnchorFails:    t.Int("localnet.anchor-fails"),
 		AnchorRecovers: t.Int("localnet.anchor-recovers"),
 		AnchorEnable:   t.Duration("localnet.anchor-enable"),
+		References:     referenceList(t.Raw("localnet.references")),
 	}
+}
+
+// referenceList parses localnet.references, skipping what is not an address.
+func referenceList(v string) []string {
+	var out []string
+	for _, a := range strings.Split(v, ",") {
+		if ip, err := netip.ParseAddr(strings.TrimSpace(a)); err == nil {
+			out = append(out, ip.Unmap().String())
+		}
+	}
+	return out
 }
 
 // Observation is one probe result as seen by the detector.
@@ -111,6 +126,9 @@ type Observation struct {
 	// Recheck is a cheap IP-level target (e.g. "tcp:203.0.113.5:443") the
 	// pre-HARD gate may re-probe.
 	Recheck string
+	// Reference: the result of asking an internet reference point
+	// (localnet.references), not of a monitored target.
+	Reference bool
 }
 
 // AnchorKind distinguishes anchors.
@@ -177,6 +195,7 @@ type domainState struct {
 	resolver      bool // last result was the resolver failing for the name (no address known)
 	lastReachable time.Time
 	recheck       string
+	reference     bool // only ever seen as an internet reference point
 }
 
 type famState struct {
@@ -284,6 +303,7 @@ func (d *LocalNet) Observe(o Observation) {
 		s.domains[o.Domain] = ds
 	}
 	seenBefore, wasReachable, lastOK := !ds.lastAt.IsZero(), ds.reachable, ds.lastReachable
+	ds.reference = o.Reference && (!seenBefore || ds.reference)
 	ds.lastAt = o.At
 	ds.reachable = o.Reachable
 	ds.networkFail = o.NetworkFail
@@ -571,6 +591,11 @@ func (d *LocalNet) evalUplink(fam Family, s *famState, now time.Time) []LocalNet
 		if s.preDead[k] || now.Sub(ds.lastAt) > d.cfg.DomainTTL {
 			continue
 		}
+		if ds.reference && !(ds.reachable && ds.lastAt.After(s.uplink.Since)) {
+			// Reference points are asked only when a target fails, so one
+			// that has not been asked since is no evidence either way.
+			continue
+		}
 		total++
 		if ds.reachable && ds.lastAt.After(s.uplink.Since) {
 			recovered++
@@ -807,7 +832,7 @@ func (d *LocalNet) Health(now time.Time) Health {
 	}
 	h.WANDomains = d.activeDomains(s, now)
 	h.WANAnchors = len(s.anchorsWAN)
-	h.CanJudgeUplink = h.WANDomains >= max(2, d.cfg.MinDomains) || h.WANAnchors > 0
+	h.CanJudgeUplink = h.WANDomains >= max(2, d.cfg.MinDomains) || h.WANAnchors > 0 || len(d.cfg.References) >= max(2, d.cfg.MinDomains)
 	switch {
 	case s.gateway != nil && s.gateway.Kind == AnomalyNoRoute:
 		h.Uplink, h.UplinkSince = "no_route", s.gateway.Since
