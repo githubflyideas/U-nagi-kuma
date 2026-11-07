@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v2.5.0 — 2026-11-07
 
 **Added**
 - Every audit entry made through the web UI or the API says which sign-in and which browser or program it came from: people who share one account, even behind one office address, can be told apart. Settings › Audit shows a sign-in tag and the browser for each entry; click a tag to list that sign-in's changes, or filter by it. The configuration change each action makes (`config.apply`) carries the same tag. The CSV export has two more columns at its end, `session` and `user_agent`; the API takes `session=`.
