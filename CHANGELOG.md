@@ -13,6 +13,9 @@
 - The console's sidebar logo and the browser tab icon use the new logo.
 - The sidebar has its own shade in every theme, a step apart from the page, and the current page is marked with an accent bar.
 
+
+**Fixed**
+- A team member's incident report could still label a kept configuration change with the whole file (monitors.bind); it is now labelled with the member's own monitor.
 ## v2.3.0 — 2026-11-06
 
 **Added**

@@ -258,6 +258,9 @@ func ownPart(a store.AuditEntry, monitor string) store.AuditEntry {
 		}
 	}
 	a.Detail = map[string]any{"diff": kept}
+	// The entry now describes this monitor only; a file-wide target such
+	// as monitors.bind would say the whole configuration was in view.
+	a.Target = monitor
 	return a
 }
 

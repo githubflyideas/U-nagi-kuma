@@ -62,6 +62,9 @@ func TestOwnChangesLeaveOutOtherRecordsOfTheSameChange(t *testing.T) {
 	if d, _ := rep.Changes[0].Detail["diff"].([]any); len(d) != 1 {
 		t.Errorf("diff of the kept entry should hold only web, got %v", rep.Changes[0].Detail["diff"])
 	}
+	if rep.Changes[0].Target != "web" {
+		t.Errorf("the kept change is labelled %q, not with the monitor", rep.Changes[0].Target)
+	}
 	if _, ok := rep.Changes[0].Detail["monitors"]; ok {
 		t.Errorf("other keys of the entry leak the full list of changed monitors")
 	}
