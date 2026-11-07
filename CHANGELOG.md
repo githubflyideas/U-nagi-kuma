@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.4.3 — 2026-11-07
+
+**Fixed**
+- A standby could fail to copy the master's state, and so take over with an old copy or none. Its copies and the nodes' connections were held to the login limit of five a minute per address even with a valid token, so a few sign-ins or configuration changes from the same address, or several nodes behind one NAT reconnecting together, got them refused. Only requests whose token fails count against the limit now.
+- Messages and the overview say "node" where they said "probe node" in every language, not only English and Chinese.
+
 ## v2.4.2 — 2026-11-07
 
 **Fixed**
