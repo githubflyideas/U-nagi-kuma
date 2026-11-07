@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+**Added**
+- Two more themes: Sky (light blue) and Violet (purple).
+
+**Changed**
+- The console's sidebar logo and the browser tab icon use the new logo.
+
 ## v2.3.0 — 2026-11-06
 
 **Added**

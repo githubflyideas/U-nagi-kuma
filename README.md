@@ -20,7 +20,7 @@ Friendly, self-hosted monitoring: know the moment your websites and servers go d
 - **Alerts where you already are.** Email, Telegram, Slack, Discord, Feishu, DingTalk, WeCom, webhooks and more.
 - **Status pages** to keep your users in the loop.
 - **Easy to switch.** Bring your monitors over from Uptime Kuma, Nagios, Checkmate or Gatus, in the web page or on the command line.
-- **Easy to switch.** Bring your monitors over from Uptime Kuma or Nagios.
+- **Seven themes.** Five tones from white to black (Paper, Mist, Slate, Graphite, Ink) plus Sky and Violet, with Nagios-style status colours that read at a glance.
 - **Speaks your language.** The interface comes in 15 languages.
 
 ## Quick start
