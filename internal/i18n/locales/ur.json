@@ -1515,5 +1515,7 @@
 "ui.theme.ink": "سیاہی (سیاہ)",
 "ui.import.src_checkmate": "monitors.json · HTTP",
 "ui.import.src_gatus": "config.yaml · HTTP",
-"ui.import.adapter_intro": "Checkmate monitors.json یا Gatus YAML فائل منتخب کریں (HTTP کا محدود حصہ، زیادہ سے زیادہ 1 MiB)۔ غیر معاون آئٹمز اطلاق روکتے ہیں۔ اکاؤنٹس، ٹیننٹس، انتباہات اور ماحول کے متغیرات درآمد نہیں ہوتے۔ تمام نوٹس دیکھیں۔"
+"ui.import.adapter_intro": "Checkmate monitors.json یا Gatus YAML فائل منتخب کریں (HTTP کا محدود حصہ، زیادہ سے زیادہ 1 MiB)۔ غیر معاون آئٹمز اطلاق روکتے ہیں۔ اکاؤنٹس، ٹیننٹس، انتباہات اور ماحول کے متغیرات درآمد نہیں ہوتے۔ تمام نوٹس دیکھیں۔",
+"ui.theme.sky": "آسمانی (ہلکا نیلا)",
+"ui.theme.violet": "بنفشی (جامنی)"
 }

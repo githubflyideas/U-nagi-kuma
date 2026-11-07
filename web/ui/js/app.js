@@ -21,10 +21,11 @@ import { IncidentReport } from './views/incident.js';
 import { DrawerHost } from './views/drawer.js';
 import { PaletteHost, openPalette } from './views/palette.js';
 
-// Five tones from white to black; "auto" follows the device. The console
+// Five tones from white to black, then Sky (light blue) and Violet
+// (purple); "auto" follows the device. The console
 // is ink (black) unless the user picks another. The old light/dark settings
 // map to paper/ink.
-const TONES = ['paper', 'mist', 'slate', 'graphite', 'ink'];
+const TONES = ['paper', 'mist', 'slate', 'graphite', 'ink', 'sky', 'violet'];
 function toneOf(v) {
   if (v === 'light') return 'paper';
   if (v === 'dark' || !v) return 'ink';

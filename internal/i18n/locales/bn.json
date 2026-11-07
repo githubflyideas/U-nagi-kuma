@@ -1507,5 +1507,7 @@
 "ui.theme.ink": "কালি (কালো)",
 "ui.import.src_checkmate": "monitors.json · HTTP",
 "ui.import.src_gatus": "config.yaml · HTTP",
-"ui.import.adapter_intro": "Checkmate monitors.json বা Gatus YAML ফাইল বেছে নিন (সীমিত HTTP, সর্বোচ্চ 1 MiB)। অসমর্থিত আইটেম থাকলে প্রয়োগ বন্ধ থাকবে। অ্যাকাউন্ট, টেন্যান্ট, সতর্কতা ও পরিবেশ ভেরিয়েবল আমদানি হয় না। সব নোট পর্যালোচনা করুন।"
+"ui.import.adapter_intro": "Checkmate monitors.json বা Gatus YAML ফাইল বেছে নিন (সীমিত HTTP, সর্বোচ্চ 1 MiB)। অসমর্থিত আইটেম থাকলে প্রয়োগ বন্ধ থাকবে। অ্যাকাউন্ট, টেন্যান্ট, সতর্কতা ও পরিবেশ ভেরিয়েবল আমদানি হয় না। সব নোট পর্যালোচনা করুন।",
+"ui.theme.sky": "আকাশি (হালকা নীল)",
+"ui.theme.violet": "বেগুনি"
 }

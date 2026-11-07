@@ -1516,5 +1516,7 @@
 "ui.theme.ink": "Tinte (schwarz)",
 "ui.import.src_checkmate": "monitors.json · HTTP",
 "ui.import.src_gatus": "config.yaml · HTTP",
-"ui.import.adapter_intro": "Wählen Sie einen Checkmate-Export monitors.json oder eine Gatus-YAML-Datei (HTTP-Teilmenge, maximal 1 MiB). Nicht unterstützte Einträge verhindern die Anwendung. Konten, Mandanten, Alarme und Umgebungsvariablen werden nicht importiert. Prüfen Sie alle Hinweise."
+"ui.import.adapter_intro": "Wählen Sie einen Checkmate-Export monitors.json oder eine Gatus-YAML-Datei (HTTP-Teilmenge, maximal 1 MiB). Nicht unterstützte Einträge verhindern die Anwendung. Konten, Mandanten, Alarme und Umgebungsvariablen werden nicht importiert. Prüfen Sie alle Hinweise.",
+"ui.theme.sky": "Himmel (hellblau)",
+"ui.theme.violet": "Violett (lila)"
 }
