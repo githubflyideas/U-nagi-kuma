@@ -137,3 +137,13 @@ func TestThemePackNeedsAdmin(t *testing.T) {
 		t.Fatalf("brand is public: %d", code)
 	}
 }
+
+// /wall serves the wall screen page without leaking its URL fragment
+// through the Referer header.
+func TestWallPage(t *testing.T) {
+	e := newEnv(t, testBind, fstest.MapFS{"index.html": {Data: []byte("<html>")}, "wall.html": {Data: []byte("<!doctype html>wall")}})
+	code, body, h := e.raw("GET", "/wall", nil, "")
+	if code != 200 || !strings.Contains(string(body), "wall") || h.Get("Referrer-Policy") != "no-referrer" {
+		t.Fatalf("/wall: %d %q %v", code, body, h)
+	}
+}

@@ -227,6 +227,16 @@ func (s *Server) routes() {
 			if (p == "logo.png" && s.brandImage(w, r, "logo")) || (p == "favicon.png" && s.brandImage(w, r, "favicon")) {
 				return
 			}
+			if p == "wall" || p == "wall/" {
+				// The wall screen; it reads the API with a token from the
+				// URL fragment, which never reaches this server.
+				r2 := r.Clone(r.Context())
+				r2.URL.Path = "/wall.html"
+				w.Header().Set("Cache-Control", "no-cache")
+				w.Header().Set("Referrer-Policy", "no-referrer")
+				files.ServeHTTP(w, r2)
+				return
+			}
 			if p == "" || p == "index.html" {
 				w.Header().Set("Cache-Control", "no-cache")
 			} else if _, err := fs.Stat(s.opts.Web, p); err != nil {

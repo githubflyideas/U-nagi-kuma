@@ -1530,5 +1530,20 @@
 "ui.look.in_use": "Dipakai",
 "ui.look.use": "Pakai",
 "ui.look.export": "Ekspor",
-"ui.look.delete": "Hapus"
+"ui.look.delete": "Hapus",
+"ui.wall.title": "Layar dinding",
+"ui.wall.all_ok": "Semua normal",
+"ui.wall.problems": "{n} masalah",
+"ui.wall.paused": "Dijeda",
+"ui.wall.stale": "Tidak ada data baru sejak {ago}: periksa koneksi ke server",
+"ui.wall.acked": "Sedang ditangani",
+"ui.wall.offline": "Tidak dapat menghubungi server",
+"ui.wall.need_link": "Layar dinding ini memerlukan tautan",
+"ui.wall.need_link_hint": "Administrator dapat membuatnya di Pengaturan › Tampilan › Layar dinding.",
+"ui.look.wall": "Layar dinding",
+"ui.look.wall_hint": "Setiap monitor sebagai heksagon besar, masalah di depan, untuk TV di ruang operasi. Hanya baca, diperbarui setiap 10 detik. Buka di sini, atau buat tautan untuk TV tanpa login: berisi token API hanya baca yang bisa dicabut di Pengaturan › Token API.",
+"ui.look.wall_open": "Buka layar dinding",
+"ui.look.wall_link": "Buat tautan untuk TV",
+"ui.look.wall_link_done": "Tautan dibuat. Buka di TV; siapa pun yang memilikinya dapat melihat nama dan status monitor.",
+"ui.look.wall_token": "Layar dinding {date}"
 }

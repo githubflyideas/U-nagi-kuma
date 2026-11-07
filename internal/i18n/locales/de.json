@@ -1539,5 +1539,20 @@
 "ui.look.in_use": "Aktiv",
 "ui.look.use": "Verwenden",
 "ui.look.export": "Exportieren",
-"ui.look.delete": "Löschen"
+"ui.look.delete": "Löschen",
+"ui.wall.title": "Wandbildschirm",
+"ui.wall.all_ok": "Alles in Ordnung",
+"ui.wall.problems": "{n} Probleme",
+"ui.wall.paused": "Pausiert",
+"ui.wall.stale": "Seit {ago} keine neuen Daten: Verbindung zum Server prüfen",
+"ui.wall.acked": "In Bearbeitung",
+"ui.wall.offline": "Server nicht erreichbar",
+"ui.wall.need_link": "Dieser Wandbildschirm braucht einen Link",
+"ui.wall.need_link_hint": "Eine Administratorin oder ein Administrator kann ihn unter Einstellungen › Darstellung › Wandbildschirm erstellen.",
+"ui.look.wall": "Wandbildschirm",
+"ui.look.wall_hint": "Jeder Monitor als großes Sechseck, Probleme zuerst, für einen Fernseher im Leitstand. Nur lesend, alle 10 Sekunden aktualisiert. Hier öffnen oder einen Link für einen Fernseher ohne Anmeldung erstellen: Er enthält ein lesendes API-Token, das unter Einstellungen › API-Tokens widerrufen werden kann.",
+"ui.look.wall_open": "Wandbildschirm öffnen",
+"ui.look.wall_link": "Link für einen Fernseher erstellen",
+"ui.look.wall_link_done": "Link erstellt. Auf dem Fernseher öffnen; wer ihn hat, sieht Monitornamen und Zustände.",
+"ui.look.wall_token": "Wandbildschirm {date}"
 }

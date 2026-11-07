@@ -6,6 +6,8 @@
 - Two more themes: Sky (light blue) and Violet (purple).
 - Theme packs (Settings › Appearance): upload a zip with your colours, and on a registered installation your own product name, logo and browser icon, used in the console, notifications and reports, with "Powered by" optionally left out of status pages. Packs can be exported, go into backups and are taken over by every site of a cluster. An example is in docs/theme-pack-example.
 
+- Wall screen (`/wall`) for a TV in the operations room: every monitor as a large hexagon, problems first, counts and a clock, a loud banner when data stops arriving. It opens signed in, or from a read-only link made under Settings › Appearance.
+
 **Changed**
 - The console's sidebar logo and the browser tab icon use the new logo.
 - The sidebar has its own shade in every theme, a step apart from the page, and the current page is marked with an accent bar.

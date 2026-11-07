@@ -1530,5 +1530,20 @@
 "ui.look.in_use": "使用中",
 "ui.look.use": "启用",
 "ui.look.export": "导出",
-"ui.look.delete": "删除"
+"ui.look.delete": "删除",
+"ui.wall.title": "大屏",
+"ui.wall.all_ok": "全部正常",
+"ui.wall.problems": "{n} 个问题",
+"ui.wall.paused": "已暂停",
+"ui.wall.stale": "自 {ago} 起没有新数据:请检查与服务器的连接",
+"ui.wall.acked": "处理中",
+"ui.wall.offline": "无法连接服务器",
+"ui.wall.need_link": "这个大屏需要一个链接",
+"ui.wall.need_link_hint": "管理员可以在 设置 › 外观 › 大屏 里生成。",
+"ui.look.wall": "大屏",
+"ui.look.wall_hint": "把每个监控项显示成大号蜂窝格,有问题的排最前,适合机房或办公室的电视。只读,每 10 秒刷新。可以在这里直接打开,也可以为不登录的电视生成一个链接:链接里带一个只读 API 令牌,随时可在 设置 › API 令牌 里吊销。",
+"ui.look.wall_open": "打开大屏",
+"ui.look.wall_link": "为电视生成链接",
+"ui.look.wall_link_done": "链接已生成。在电视上打开即可;拿到链接的人都能看到监控项名称和状态。",
+"ui.look.wall_token": "大屏 {date}"
 }

@@ -334,6 +334,15 @@ The log cannot be changed quietly: each entry carries the hash of the one before
 
 Reading the audit log needs a registered installation; see [Registration and quotas](#registration-and-quotas).
 
+## Wall screen
+
+For a TV in the operations room: every monitor as a large hexagon, problems first and lit (critical ones pulse until someone acknowledges them), with the counts, a clock and the latest problems along the bottom. It is read-only and refreshes every 10 seconds; if no new data arrives for a minute, a red banner says so, so a frozen screen is never mistaken for a quiet one.
+
+- Signed in, open `/wall` (or **Settings › Appearance › Open the wall screen**).
+- For a TV that should not sign in, use **Create a link for a TV**. The link looks like `https://monitor.example.com/wall#token=uka_…`: it carries a read-only API token after the `#`, which browsers do not send to the server or in the Referer header. Anyone with the link can see monitor names and states, so treat it like a password; revoke it under **Settings › API tokens**.
+
+The wall uses the active theme pack's colours (dark unless the pack is built on a light look).
+
 ## Theme packs
 
 A theme pack changes how the console looks: its colours and, on a registered installation, the product name and logo (white label). Manage packs under **Settings › Appearance**: upload, use, export to share with another installation, delete. The pack in use becomes everyone's default look; each person can still choose another theme at the bottom of the sidebar.

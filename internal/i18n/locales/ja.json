@@ -1530,5 +1530,20 @@
 "ui.look.in_use": "使用中",
 "ui.look.use": "使う",
 "ui.look.export": "書き出し",
-"ui.look.delete": "削除"
+"ui.look.delete": "削除",
+"ui.wall.title": "壁面ディスプレイ",
+"ui.wall.all_ok": "すべて正常",
+"ui.wall.problems": "{n} 件の問題",
+"ui.wall.paused": "一時停止中",
+"ui.wall.stale": "{ago}から新しいデータがありません。サーバーへの接続を確認してください",
+"ui.wall.acked": "対応中",
+"ui.wall.offline": "サーバーに接続できません",
+"ui.wall.need_link": "この壁面ディスプレイにはリンクが必要です",
+"ui.wall.need_link_hint": "管理者が 設定 › 外観 › 壁面ディスプレイ で作成できます。",
+"ui.look.wall": "壁面ディスプレイ",
+"ui.look.wall_hint": "すべての監視を大きな六角形で表示し、問題を先頭に並べます。運用室のテレビ向けです。読み取り専用で、10 秒ごとに更新します。ここで開くか、ログインしないテレビ用のリンクを作成できます。リンクには読み取り専用の API トークンが含まれ、設定 › API トークン でいつでも無効にできます。",
+"ui.look.wall_open": "壁面ディスプレイを開く",
+"ui.look.wall_link": "テレビ用のリンクを作成",
+"ui.look.wall_link_done": "リンクを作成しました。テレビで開いてください。リンクを知っている人は監視名と状態を見られます。",
+"ui.look.wall_token": "壁面ディスプレイ {date}"
 }

@@ -638,3 +638,41 @@ tr.risk-high td:first-child { box-shadow: inset 3px 0 0 var(--degraded); }
 .swatches { display: flex; gap: 4px; }
 .swatches span { width: 26px; height: 18px; border-radius: 4px; border: 1px solid var(--border); }
 .swatches span.unset { background: repeating-linear-gradient(45deg, var(--panel-2) 0 3px, var(--panel) 3px 6px) !important; }
+
+/* ---- Wall screen (/wall) ----
+   Read from across a room: large type, only problems in colour, and a
+   loud banner when the data stops arriving. */
+body.wallpage { overflow: hidden; }
+.wall { display: flex; flex-direction: column; height: 100vh; padding: 1.2vh 1.4vw; gap: 1.2vh; }
+.wall-top { display: flex; align-items: center; gap: 1.2vw; font-size: clamp(16px, 2.2vh, 30px); padding: .8vh 1vw; border-radius: 10px; background: var(--panel); border: 1px solid var(--border); }
+.wall-top img { height: 5vh; width: 5vh; object-fit: contain; }
+.wall-top .prod { font-weight: 750; }
+.wall-top .overall { font-weight: 800; padding: .3vh 1vw; border-radius: 8px; background: var(--ok); color: var(--on-status); }
+.wall-top.critical .overall { background: var(--critical); }
+.wall-top.degraded .overall { background: var(--degraded); color: var(--on-degraded); }
+.wall-top.unknown .overall { background: var(--unknown); }
+.wall-top .cnt { display: flex; flex-direction: column; align-items: center; font-weight: 800; font-size: 1.5em; line-height: 1; min-width: 3.2em; }
+.wall-top .cnt small { font-size: .38em; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: .3em; }
+.wall-top .cnt.critical { color: var(--critical); } .wall-top .cnt.degraded { color: var(--degraded); }
+.wall-top .cnt.unknown { color: var(--unknown); } .wall-top .cnt.ok { color: var(--ok); }
+.wall-top .clock { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 1.4em; margin-inline-start: 1vw; }
+.wall-stale { background: var(--critical); color: var(--on-status); font-weight: 800; text-align: center; padding: 1vh; border-radius: 8px; font-size: clamp(16px, 2.4vh, 32px); animation: wallblink 1.2s steps(2) infinite; }
+.wall-hive { position: relative; flex: 1; min-height: 0; }
+.wall-hex { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: var(--ok-soft); color: var(--text); line-height: 1.15; }
+.wall-hex .name { width: 100%; font-weight: 650; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-break: break-word; }
+.wall-hex .st { font-size: .7em; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; margin-top: .3em; }
+.wall-hex.critical { background: var(--critical); color: var(--on-status); animation: wallpulse 2s ease-in-out infinite; }
+.wall-hex.degraded { background: var(--degraded); color: var(--on-degraded); }
+.wall-hex.unknown { background: var(--unknown); color: var(--on-status); }
+.wall-hex.maintenance { background: var(--maint-soft); color: var(--maint); }
+.wall-hex.pending, .wall-hex.paused { background: var(--pending-soft); color: var(--muted); }
+.wall-hex.acked { animation: none; opacity: .8; }
+.wall-ticker { display: flex; gap: 2vw; flex-wrap: wrap; font-size: clamp(14px, 2vh, 26px); padding: .8vh 1vw; border-radius: 10px; background: var(--panel); border: 1px solid var(--border); }
+.wall-ticker span { white-space: nowrap; } .wall-ticker .critical b { color: var(--critical); } .wall-ticker .degraded b { color: var(--degraded); }
+.wall-msg { height: 100vh; display: grid; place-content: center; text-align: center; padding: 24px; color: var(--muted); }
+.wall-msg h1 { font-size: clamp(22px, 4vh, 44px); color: var(--text); }
+.wall-msg p { font-size: clamp(15px, 2.2vh, 26px); max-width: 40em; }
+@keyframes wallpulse { 50% { filter: brightness(1.25); } }
+@keyframes wallblink { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .wall-hex.critical, .wall-stale { animation: none; } }

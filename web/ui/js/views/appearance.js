@@ -2,14 +2,35 @@
 // installation the product name and logo).
 import { html, useState } from '../lib.js';
 import { t } from '../i18n.js';
-import { put, del, getCSRF, get } from '../api.js';
-import { useFetch, Loading, ErrorBox, Empty, toast, toastError, confirmDialog } from '../ui.js';
+import { put, del, getCSRF, get, post } from '../api.js';
+import { useFetch, Loading, ErrorBox, Empty, Copy, toast, toastError, confirmDialog } from '../ui.js';
 
 const SWATCH = ['bg', 'side', 'panel', 'accent', 'ok', 'critical'];
 
 function Swatches({ pack }) {
   const c = pack.colors || {};
   return html`<div class="swatches" aria-hidden="true">${SWATCH.map(k => html`<span title=${k} style=${{ background: c[k] || 'transparent' }} class=${c[k] ? '' : 'unset'}></span>`)}</div>`;
+}
+
+// WallLink opens the wall screen here, or makes a read-only link for a TV.
+function WallLink() {
+  const [link, setLink] = useState('');
+  const make = async () => {
+    try {
+      const day = new Date().toISOString().slice(0, 10);
+      const r = await post('/tokens', { name: t('ui.look.wall_token', { date: day }), scopes: ['read'] });
+      setLink(location.origin + '/wall#token=' + encodeURIComponent(r.token));
+    } catch (err) { toastError(err); }
+  };
+  return html`<div class="card"><div class="hd"><h2>${t('ui.look.wall')}</h2></div><div class="bd col" style=${{ gap: '10px' }}>
+    <p class="small muted" style=${{ margin: 0 }}>${t('ui.look.wall_hint')}</p>
+    <div class="row">
+      <a class="btn" href="/wall" target="_blank" rel="noopener">${t('ui.look.wall_open')}</a>
+      <button class="btn" onClick=${make}>${t('ui.look.wall_link')}</button>
+    </div>
+    ${link && html`<div class="banner ok"><div class="spacer col" style=${{ gap: '6px' }}>
+      <span>${t('ui.look.wall_link_done')}</span><code class="ltr small" style=${{ wordBreak: 'break-all' }}>${link}</code></div><${Copy} text=${link} /></div>`}
+  </div></div>`;
 }
 
 export function Appearance() {
@@ -42,6 +63,7 @@ export function Appearance() {
   };
   const branded = packs.some(p => p.brand && (p.brand.product || p.has_logo || p.brand.hide_powered));
   return html`<div class="col" style=${{ gap: '12px' }}>
+    <${WallLink} />
     <div class="card"><div class="bd col" style=${{ gap: '10px' }}>
       <p class="small muted" style=${{ margin: 0 }}>${t('ui.look.intro')}</p>
       <div class="row">

@@ -1530,5 +1530,20 @@
 "ui.look.in_use": "Đang dùng",
 "ui.look.use": "Dùng",
 "ui.look.export": "Xuất",
-"ui.look.delete": "Xóa"
+"ui.look.delete": "Xóa",
+"ui.wall.title": "Màn hình treo tường",
+"ui.wall.all_ok": "Tất cả bình thường",
+"ui.wall.problems": "{n} sự cố",
+"ui.wall.paused": "Tạm dừng",
+"ui.wall.stale": "Không có dữ liệu mới từ {ago}: hãy kiểm tra kết nối tới máy chủ",
+"ui.wall.acked": "Đang xử lý",
+"ui.wall.offline": "Không kết nối được máy chủ",
+"ui.wall.need_link": "Màn hình treo tường này cần một liên kết",
+"ui.wall.need_link_hint": "Quản trị viên có thể tạo trong Cài đặt › Giao diện › Màn hình treo tường.",
+"ui.look.wall": "Màn hình treo tường",
+"ui.look.wall_hint": "Mỗi mục giám sát là một ô lục giác lớn, sự cố xếp đầu, dành cho TV ở phòng vận hành. Chỉ đọc, làm mới mỗi 10 giây. Mở tại đây, hoặc tạo liên kết cho TV không đăng nhập: liên kết chứa mã API chỉ đọc, có thể thu hồi ở Cài đặt › Mã API.",
+"ui.look.wall_open": "Mở màn hình treo tường",
+"ui.look.wall_link": "Tạo liên kết cho TV",
+"ui.look.wall_link_done": "Đã tạo liên kết. Mở trên TV; ai có liên kết đều xem được tên và trạng thái các mục giám sát.",
+"ui.look.wall_token": "Màn hình treo tường {date}"
 }

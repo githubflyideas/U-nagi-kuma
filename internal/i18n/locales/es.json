@@ -1539,5 +1539,20 @@
 "ui.look.in_use": "En uso",
 "ui.look.use": "Usar",
 "ui.look.export": "Exportar",
-"ui.look.delete": "Eliminar"
+"ui.look.delete": "Eliminar",
+"ui.wall.title": "Pantalla de pared",
+"ui.wall.all_ok": "Todo funciona",
+"ui.wall.problems": "{n} problemas",
+"ui.wall.paused": "En pausa",
+"ui.wall.stale": "Sin datos nuevos desde {ago}: comprueba la conexión con el servidor",
+"ui.wall.acked": "En atención",
+"ui.wall.offline": "No se puede conectar con el servidor",
+"ui.wall.need_link": "Esta pantalla de pared necesita un enlace",
+"ui.wall.need_link_hint": "Un administrador puede crearlo en Ajustes › Apariencia › Pantalla de pared.",
+"ui.look.wall": "Pantalla de pared",
+"ui.look.wall_hint": "Cada monitor como un hexágono grande, los problemas primero, para un televisor en la sala de operaciones. Solo lectura, se actualiza cada 10 segundos. Ábrela aquí o crea un enlace para un televisor sin sesión: contiene un token de API de solo lectura que puedes revocar en Ajustes › Tokens de API.",
+"ui.look.wall_open": "Abrir la pantalla de pared",
+"ui.look.wall_link": "Crear un enlace para un televisor",
+"ui.look.wall_link_done": "Enlace creado. Ábrelo en el televisor; quien lo tenga ve los nombres y estados de los monitores.",
+"ui.look.wall_token": "Pantalla de pared {date}"
 }
