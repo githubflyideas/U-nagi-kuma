@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v2.4.0 — 2026-11-07
 
 **Added**
 - Two more themes: Sky (light blue) and Violet (purple).
