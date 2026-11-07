@@ -4,7 +4,7 @@
 
 **Encore un outil de surveillance de disponibilité : u(ptime) + nagi(os) + kuma(Uptime Kuma).**
 
-**Le beurre et l'argent du beurre :** un fichier sur une machine fonctionne tout de suite ; pour aller plus loin, joignez d'autres machines et cela devient un cluster. Même programme, rien à migrer.
+**Le meilleur des deux mondes :** un fichier sur une machine fonctionne tout de suite ; pour aller plus loin, joignez d'autres machines et cela devient un cluster. Même programme, rien à migrer.
 
 Une supervision auto-hébergée et simple : sachez dès qu’un site ou un serveur tombe, sans être noyé sous les alertes.
 

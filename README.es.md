@@ -4,7 +4,7 @@
 
 **Otra herramienta más para comprobar la disponibilidad: u(ptime) + nagi(os) + kuma(Uptime Kuma).**
 
-**Nadar y guardar la ropa:** un archivo en una máquina funciona al momento; cuando quieras más, une otras máquinas y se convierte en un clúster. El mismo programa, nada que migrar.
+**Lo mejor de ambos mundos:** un archivo en una máquina funciona al momento; cuando quieras más, une otras máquinas y se convierte en un clúster. El mismo programa, nada que migrar.
 
 Monitorización autoalojada y sencilla: entérate en cuanto tus webs o servidores caen, sin ruido.
 
