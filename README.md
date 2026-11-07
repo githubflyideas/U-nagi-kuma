@@ -4,7 +4,7 @@
 
 **Yet another uptime check tool: u(ptime) + nagi(os) + kuma(Uptime Kuma).**
 
-**Have your cake and eat it too:** one file on one machine works out of the box, and when you want more, join other machines and it becomes a cluster. Same program, nothing to migrate.
+**Best of both worlds:** one file on one machine works out of the box, and when you want more, join other machines and it becomes a cluster. Same program, nothing to migrate.
 
 Friendly, self-hosted monitoring: know the moment your websites and servers go down, without the noise.
 
