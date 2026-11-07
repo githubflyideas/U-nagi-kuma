@@ -12,24 +12,26 @@ function Swatches({ pack }) {
   return html`<div class="swatches" aria-hidden="true">${SWATCH.map(k => html`<span title=${k} style=${{ background: c[k] || 'transparent' }} class=${c[k] ? '' : 'unset'}></span>`)}</div>`;
 }
 
-// WallLink opens the wall screen here, or makes a read-only link for a TV.
-function WallLink() {
+// LinkCard opens a read-only page (the wall screen or the managers'
+// summary) here, or makes a link with a read-only token for someone or
+// something that does not sign in.
+function LinkCard({ page, k }) {
   const [link, setLink] = useState('');
   const make = async () => {
     try {
       const day = new Date().toISOString().slice(0, 10);
-      const r = await post('/tokens', { name: t('ui.look.wall_token', { date: day }), scopes: ['read'] });
-      setLink(location.origin + '/wall#token=' + encodeURIComponent(r.token));
+      const r = await post('/tokens', { name: t('ui.look.' + k + '_token', { date: day }), scopes: ['read'] });
+      setLink(location.origin + '/' + page + '#token=' + encodeURIComponent(r.token));
     } catch (err) { toastError(err); }
   };
-  return html`<div class="card"><div class="hd"><h2>${t('ui.look.wall')}</h2></div><div class="bd col" style=${{ gap: '10px' }}>
-    <p class="small muted" style=${{ margin: 0 }}>${t('ui.look.wall_hint')}</p>
+  return html`<div class="card"><div class="hd"><h2>${t('ui.look.' + k)}</h2></div><div class="bd col" style=${{ gap: '10px' }}>
+    <p class="small muted" style=${{ margin: 0 }}>${t('ui.look.' + k + '_hint')}</p>
     <div class="row">
-      <a class="btn" href="/wall" target="_blank" rel="noopener">${t('ui.look.wall_open')}</a>
-      <button class="btn" onClick=${make}>${t('ui.look.wall_link')}</button>
+      <a class="btn" href=${'/' + page} target="_blank" rel="noopener">${t('ui.look.' + k + '_open')}</a>
+      <button class="btn" onClick=${make}>${t('ui.look.' + k + '_link')}</button>
     </div>
     ${link && html`<div class="banner ok"><div class="spacer col" style=${{ gap: '6px' }}>
-      <span>${t('ui.look.wall_link_done')}</span><code class="ltr small" style=${{ wordBreak: 'break-all' }}>${link}</code></div><${Copy} text=${link} /></div>`}
+      <span>${t('ui.look.' + k + '_link_done')}</span><code class="ltr small" style=${{ wordBreak: 'break-all' }}>${link}</code></div><${Copy} text=${link} /></div>`}
   </div></div>`;
 }
 
@@ -63,7 +65,7 @@ export function Appearance() {
   };
   const branded = packs.some(p => p.brand && (p.brand.product || p.has_logo || p.brand.hide_powered));
   return html`<div class="col" style=${{ gap: '12px' }}>
-    <${WallLink} />
+    <div class="links2"><${LinkCard} page="wall" k="wall" /><${LinkCard} page="summary" k="sum" /></div>
     <div class="card"><div class="bd col" style=${{ gap: '10px' }}>
       <p class="small muted" style=${{ margin: 0 }}>${t('ui.look.intro')}</p>
       <div class="row">

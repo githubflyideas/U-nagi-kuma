@@ -343,6 +343,12 @@ For a TV in the operations room: every monitor as a large hexagon, problems firs
 
 The wall uses the active theme pack's colours (dark unless the pack is built on a light look).
 
+## Summary for managers
+
+`/summary` is one page for people who do not run the monitoring: whether everything is running right now, availability over 7, 30 or 90 days compared with the period before, the number of incidents, the average time to recover and the total downtime, daily availability as a chart, the services that need attention and the latest incidents. It is read-only, refreshes every minute and prints on A4.
+
+Open it signed in (**Settings › Appearance › Summary for managers**), or create a link there for someone who does not sign in; like the wall screen's, it carries a read-only API token after `#` and can be revoked under **Settings › API tokens**. Readers see only the monitors their account or token may see. The figures come from `GET /api/v1/reports/summary?range=7d|30d|90d`.
+
 ## Theme packs
 
 A theme pack changes how the console looks: its colours and, on a registered installation, the product name and logo (white label). Manage packs under **Settings › Appearance**: upload, use, export to share with another installation, delete. The pack in use becomes everyone's default look; each person can still choose another theme at the bottom of the sidebar.

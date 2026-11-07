@@ -105,6 +105,7 @@ func (s *Server) routes() {
 	s.handle("PUT /api/v1/preferences", "read", s.prefsPut)
 	s.handle("GET /api/v1/hosts", "read", s.hosts)
 	s.handle("GET /api/v1/reports/availability", "read", s.availability)
+	s.handle("GET /api/v1/reports/summary", "read", s.summary)
 	s.handle("GET /api/v1/expiry", "read", s.expiry)
 	s.handle("GET /api/v1/reports/daily", "read", s.dailyReport)
 	s.handle("POST /api/v1/reports/daily/send", "write", global(s.sendDailyReport))
@@ -227,11 +228,12 @@ func (s *Server) routes() {
 			if (p == "logo.png" && s.brandImage(w, r, "logo")) || (p == "favicon.png" && s.brandImage(w, r, "favicon")) {
 				return
 			}
-			if p == "wall" || p == "wall/" {
-				// The wall screen; it reads the API with a token from the
-				// URL fragment, which never reaches this server.
+			if p == "wall" || p == "wall/" || p == "summary" || p == "summary/" {
+				// The wall screen and the managers' summary; they read the
+				// API with a token from the URL fragment, which never
+				// reaches this server.
 				r2 := r.Clone(r.Context())
-				r2.URL.Path = "/wall.html"
+				r2.URL.Path = "/" + strings.Trim(p, "/") + ".html"
 				w.Header().Set("Cache-Control", "no-cache")
 				w.Header().Set("Referrer-Policy", "no-referrer")
 				files.ServeHTTP(w, r2)

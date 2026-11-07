@@ -147,3 +147,24 @@ func TestWallPage(t *testing.T) {
 		t.Fatalf("/wall: %d %q %v", code, body, h)
 	}
 }
+
+// The managers' summary: its page, and its API for a read-only token.
+func TestSummary(t *testing.T) {
+	e := newEnv(t, testBind, fstest.MapFS{"index.html": {Data: []byte("<html>")}, "summary.html": {Data: []byte("<!doctype html>summary")}})
+	e.setup()
+	if code, body, _ := e.raw("GET", "/summary", nil, ""); code != 200 || !strings.Contains(string(body), "summary") {
+		t.Fatalf("/summary: %d %q", code, body)
+	}
+	var sum summaryJSON
+	if code := e.do("GET", "/api/v1/reports/summary?range=7d", nil, &sum); code != 200 {
+		t.Fatalf("summary: %d", code)
+	}
+	if sum.Range != "7d" || len(sum.Days) != 7 || sum.Now.Total == 0 || sum.Attention == nil || sum.Recent == nil {
+		t.Fatalf("summary: %+v", sum)
+	}
+	// An unknown or too short range falls back to 30 days.
+	e.do("GET", "/api/v1/reports/summary?range=1h", nil, &sum)
+	if sum.Range != "30d" || len(sum.Days) != 30 {
+		t.Fatalf("fallback range: %s %d", sum.Range, len(sum.Days))
+	}
+}
