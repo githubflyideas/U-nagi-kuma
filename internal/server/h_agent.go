@@ -7,24 +7,37 @@ import (
 	"github.com/githubflyideas/unagikuma/internal/cluster"
 )
 
-// agentConnect upgrades a probe agent's connection. Attempts share the
-// login limiter: a token is a credential and must not be guessable at
-// network speed.
-func (s *Server) agentConnect(w http.ResponseWriter, r *http.Request) {
+// agentAllowed rate-limits a node's request by the login limiter, but only
+// when its token does not authenticate: a token is a credential and must
+// not be guessable at network speed, while a node using its own must not
+// share a budget of five a minute with the people signing in from the same
+// address — its connects and state copies would be refused, a standby's
+// copy right after a burst of configuration changes above all.
+func (s *Server) agentAllowed(w http.ResponseWriter, r *http.Request) bool {
+	if m := s.app.Cluster(); m != nil {
+		if _, err := m.AuthAgent(r); err == nil {
+			return true
+		}
+	}
 	if ok, wait := s.login.Allow(s.ip(r), s.now()); !ok {
 		writeError(w, rateLimited(wait))
-		return
+		return false
 	}
-	s.app.Cluster().ServeHTTP(w, r)
+	return true
+}
+
+// agentConnect upgrades a node's connection.
+func (s *Server) agentConnect(w http.ResponseWriter, r *http.Request) {
+	if s.agentAllowed(w, r) {
+		s.app.Cluster().ServeHTTP(w, r)
+	}
 }
 
 // agentState serves the master's state to a standby node.
 func (s *Server) agentState(w http.ResponseWriter, r *http.Request) {
-	if ok, wait := s.login.Allow(s.ip(r), s.now()); !ok {
-		writeError(w, rateLimited(wait))
-		return
+	if s.agentAllowed(w, r) {
+		s.app.Cluster().ServeState(w, r)
 	}
-	s.app.Cluster().ServeState(w, r)
 }
 
 // agentRetire takes the signed notice of the master that replaced this

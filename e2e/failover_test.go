@@ -81,7 +81,9 @@ func (s *server) run() {
 		s.t.Fatal(err)
 	}
 	jar, _ := cookiejar.New(nil)
-	s.c = &http.Client{Jar: jar, Timeout: 10 * time.Second}
+	// 30 s: a manual promote waits a random 1–10 s on purpose before it
+	// answers, and a 10 s timeout failed the test whenever it drew near 10.
+	s.c = &http.Client{Jar: jar, Timeout: 30 * time.Second}
 	s.waitFor("healthz", func() bool {
 		resp, err := s.c.Get(s.url("/healthz"))
 		if err == nil {

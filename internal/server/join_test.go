@@ -1,7 +1,9 @@
 package server
 
 import (
+	"crypto/tls"
 	"net"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -111,3 +113,39 @@ sw      IN PING 10.9.9.1
 }
 
 func (e *env) nodeViewsForTest() []nodeView { return e.srv.nodeViews() }
+
+// A node using its own token is not held to the login limiter, which the
+// people signing in from the same address share: only failed tokens count.
+func TestAgentRequestsCountOnlyFailedTokens(t *testing.T) {
+	master := tlsEnv(t, testBind)
+	var added struct {
+		Token string `json:"token"`
+	}
+	if c := master.do("POST", "/api/v1/nodes", map[string]any{"name": "bj"}, &added); c != 200 || added.Token == "" {
+		t.Fatalf("node: %d", c)
+	}
+	cl := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}, Timeout: 5 * time.Second}
+	get := func(token string) int {
+		req, _ := http.NewRequest("GET", strings.Replace(master.ts.URL, "http://", "https://", 1)+cluster.StatePath, nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		resp, err := cl.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		return resp.StatusCode
+	}
+	for i := range 10 {
+		// bj is no standby, so it is refused, but never for its rate.
+		if c := get(added.Token); c == http.StatusTooManyRequests {
+			t.Fatalf("request %d with a valid token rate-limited", i+1)
+		}
+	}
+	limited := false
+	for range 10 {
+		limited = limited || get("uka_wrong") == http.StatusTooManyRequests
+	}
+	if !limited {
+		t.Fatal("guessing tokens must be rate-limited")
+	}
+}
