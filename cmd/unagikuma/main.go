@@ -43,9 +43,7 @@ const usage = `unagikuma — self-hosted monitoring
 
 Usage:
   unagikuma [server] [flags]       run the monitor and its web UI (default)
-  unagikuma agent [flags]          run a probe node for a master
-  unagikuma node add|list|token|revoke
-                                  manage probe nodes and their tokens
+  unagikuma node list|revoke       list the machines of a cluster, or disconnect one
   unagikuma check [file]           validate a monitors.bind file (--json for tools)
   unagikuma fmt [--check] [file]   align and normalise monitors.bind (meaning unchanged)
   unagikuma serial [bump] [file]   print or increase the revision

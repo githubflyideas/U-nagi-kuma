@@ -77,7 +77,7 @@ var defs = []Def{
 	{Key: "engine.first-round-delay", Kind: Duration, Default: "3s", Min: "0s", Max: "1m", Desc: "first round after a monitor is created or redefined", DescZH: "新建或定义变更后，首轮检查的最长等待"},
 	{Key: "engine.round-grace", Kind: Duration, Default: "2s", Min: "0s", Max: "1m", Desc: "extra time after timeout before a round is closed", DescZH: "一轮在超时之外额外等待上报的时间"},
 	{Key: "engine.dependency-wait", Kind: Duration, Default: "30s", Min: "0s", Max: "10m", Desc: "how long a failed monitor waits for its parents to be re-checked before it notifies", DescZH: "监控项失败后，等待其父监控项复查的最长时间，超时后照常通知"},
-	{Key: "engine.partial-escalate", Kind: Duration, Default: "30m", Min: "0s", Max: "7d", Desc: "persistent partial failure becomes a low-priority regional incident (0 = off)", DescZH: "局部失败持续多久升级为低优先级区域性故障（0 = 关闭）", Override: "monitor partial-escalate="},
+	{Key: "engine.partial-escalate", Kind: Duration, Default: "30m", Min: "0s", Max: "7d", Desc: "no effect since 2.2: every site alerts on its own; kept so older settings load", DescZH: "自 2.2 起不再生效：每个站点各自告警；保留只为兼容旧设置", Override: "monitor partial-escalate="},
 	{Key: "engine.pending-warn", Kind: Int, Default: "50", Min: "1", Max: "100000", Desc: "warn when one change sends more monitors back to PENDING", DescZH: "一次变更导致多少个监控项进入 PENDING 时提示"},
 	{Key: "engine.degraded-attempts", Kind: Int, Default: "0", Min: "0", Max: "20", Desc: "consecutive slow rounds before DEGRADED (0 = use attempts)", DescZH: "连续几轮变慢判为 DEGRADED（0 = 与 attempts 相同）"},
 
@@ -101,7 +101,7 @@ var defs = []Def{
 	{Key: "localnet.anchor-recovers", Kind: Int, Default: "2", Min: "1", Max: "20", Desc: "consecutive anchor successes before the path is considered up again", DescZH: "锚点连续成功几次才判定恢复"},
 	{Key: "localnet.anchor-enable", Kind: Duration, Default: "2m", Min: "10s", Max: "1h", Desc: "a gateway that never answered within this time is not used as an anchor", DescZH: "启动后此时长内从未应答的路由器不作锚点"},
 	{Key: "engine.handler-timeout", Kind: Duration, Default: "30s", Min: "1s", Max: "10m", Desc: "how long an event handler may run before it is killed", DescZH: "事件处理脚本最长运行时间，超时即终止"},
-	{Key: "localnet.exit-target", Kind: Address, Default: "8.8.8.8", Desc: "internet address pinged, once an internet target fails, to show on the path view whether this host gets out to the internet; display only, it never holds alerts (empty = off)", DescZH: "外网网关探测地址：有外网目标失败时才 ping，在路径图上显示本机能否出外网；只用于显示，不参与告警抑制（留空 = 关闭）"},
+	{Key: "localnet.exit-target", Kind: Address, Default: "8.8.8.8", Desc: "internet address pinged, once an internet target fails, to show on the path view whether this host gets out to the internet; the self-check before an alert also tries it on TCP 443 when no other recently healthy internet target is left to re-check, and if it does not answer the failure is blamed on this host (empty = off)", DescZH: "外网网关探测地址：有外网目标失败时才 ping，在路径图上显示本机能否出外网；告警前的自检在没有其他近期正常的外网目标可复测时，也会连它的 TCP 443，连不上就把这次失败算作本机网络问题（留空 = 关闭）"},
 
 	// ---- single machine: suspend / stall / abnormal exit ----
 	{Key: "suspend.threshold", Kind: Duration, Default: "10s", Min: "2s", Max: "1h", Desc: "suspend time (boot clock minus monotonic clock) treated as a host sleep", DescZH: "挂起时长（含休眠时钟减不含休眠时钟）超过多少视为主机休眠"},
@@ -123,10 +123,10 @@ var defs = []Def{
 	{Key: "cluster.startup-grace", Kind: Duration, Default: "15s", Min: "0s", Max: "5m", Desc: "after start, hold minority and node-down notices this long while agents reconnect", DescZH: "启动后这段时间内暂缓少数派/节点离线告警，等待 Agent 重连"},
 	{Key: "cluster.standby-sync", Kind: Duration, Default: "5m", Min: "30s", Max: "24h", Desc: "how often standbys fetch a copy of the master's state (also after every configuration change)", DescZH: "备用节点拉取主节点状态副本的间隔（每次配置变更后也会拉取）"},
 	{Key: "cluster.standby-retry", Kind: Duration, Default: "30s", Min: "5s", Max: "10m", Desc: "wait before a standby tries again after a failed copy of the master's state (three times at most)", DescZH: "备用节点复制主节点状态失败后，再次尝试前的等待时间（最多三次）"},
-	{Key: "cluster.vote-grace", Kind: Duration, Default: "5s", Min: "0s", Max: "1m", Desc: "extra time agents get to answer a round, beyond the check timeout", DescZH: "一轮探测中，在检查超时之外再给 Agent 回票的余量"},
+	{Key: "cluster.vote-grace", Kind: Duration, Default: "5s", Min: "0s", Max: "1m", Desc: "no effect since 2.2: there are no agents to wait for; kept so older settings load", DescZH: "自 2.2 起不再生效：已没有 Agent；保留只为兼容旧设置"},
 	{Key: "cluster.peer-interval", Kind: Duration, Default: "10s", Min: "2s", Max: "5m", Desc: "how often every node checks that it can reach the other nodes (majority node status)", DescZH: "每个节点多久检查一次能否连接其他节点（多数派判断节点状态）"},
-	{Key: "cluster.replica-after", Kind: Duration, Default: "1m", Min: "10s", Max: "1h", Desc: "a replica that cannot reach the master this long checks and alerts on its own", DescZH: "副本联系不上主节点多久后开始独立检查和告警"},
-	{Key: "cluster.emergency-after", Kind: Duration, Default: "3m", Min: "30s", Max: "1h", Desc: "an agent that cannot reach the master this long sends its emergency notification", DescZH: "Agent 联系不上 master 多久后发送应急通知"},
+	{Key: "cluster.replica-after", Kind: Duration, Default: "1m", Min: "10s", Max: "1h", Desc: "no effect since 2.2: every site checks and alerts on its own at all times; kept so older settings load", DescZH: "自 2.2 起不再生效：每个站点始终独立检查和告警；保留只为兼容旧设置"},
+	{Key: "cluster.emergency-after", Kind: Duration, Default: "3m", Min: "30s", Max: "1h", Desc: "no effect since 2.2: there are no agents; a site that loses the master says so itself; kept so older settings load", DescZH: "自 2.2 起不再生效：已没有 Agent，站点联系不上主节点时会自己通知；保留只为兼容旧设置"},
 	{Key: "cluster.join-code-ttl", Kind: Duration, Default: "1h", Min: "5m", Max: "7d", Desc: "how long a join code can be used", DescZH: "加入码的有效期"},
 	{Key: "cluster.ping-interval", Kind: Duration, Default: "20s", Min: "100ms", Max: "5m", Desc: "how often the master pings each agent; three missed intervals end the session", DescZH: "Master 多久 ping 一次 Agent；连续三个周期没有响应则断开会话"},
 	{Key: "cluster.max-message", Kind: Int, Default: "8388608", Min: "65536", Max: "268435456", Desc: "largest agent protocol message in bytes", DescZH: "Agent 协议单条消息的最大字节数"},

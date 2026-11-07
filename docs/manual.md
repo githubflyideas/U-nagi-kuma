@@ -7,7 +7,7 @@ How to install, configure and run Unagikuma. The [README](../README.md) has the 
 - [monitors.bind](#monitorsbind)
 - [Alerting](#alerting)
 - [Status pages](#status-pages)
-- [Probe nodes](#probe-nodes)
+- [Two machines and clusters](#two-machines-and-clusters)
 - [Users](#users)
 - [Registration and quotas](#registration-and-quotas)
 - [Moving from Uptime Kuma or Nagios](#moving-from-uptime-kuma-or-nagios)
@@ -52,6 +52,23 @@ WantedBy=multi-user.target
 ```
 
 `CAP_NET_RAW` is only needed for ICMP ping on systems where unprivileged ping sockets are disabled (`net.ipv4.ping_group_range`). Without either (as on a stock Debian or Ubuntu), a ping check knocks on TCP ports 443, 80 and 22 instead: a host that accepts or refuses the connection is up, and the result says it was checked over TCP. If all three ports stay silent, the check reports that this host lacks the privilege rather than marking the target down. `fallback=off` turns the TCP knock off.
+
+### As a service (Windows)
+
+In an Administrator PowerShell, in the folder of `unagikuma.exe`:
+
+```powershell
+.\unagikuma.exe service install -- server --data C:\ProgramData\unagikuma --log-file C:\ProgramData\unagikuma\unagikuma.log
+.\unagikuma.exe service uninstall
+```
+
+The service starts automatically and is restarted if it stops.
+
+Windows is supported, with some checks possibly unsupported:
+
+- ICMP ping needs the service to run as Administrator (or LocalSystem); otherwise ping checks knock on TCP ports instead.
+- A weak UDP check (L1) may report that this platform cannot see a closed port, and stays UNKNOWN instead of OK or down.
+- A fixed source port (`src-port=`) held by another program may not be detected.
 
 ## monitors.bind
 
@@ -114,8 +131,8 @@ load-db1  IN EXEC check_load args="-w 5,4,3 -c 10,8,6" device=db1
 nrpe-web  IN EXEC "check_nrpe -H $HOSTADDRESS$ -c check_users" address=10.0.0.21
 ```
 
-- Scripts are looked up only in the check-scripts directory of the node that runs the check: `<data>/check-scripts` on a server, `/etc/unagikuma/check-scripts` (Windows: `%ProgramData%\unagikuma\check-scripts`) on an agent, or `--script-dir dir1,dir2`. The directory is created on first start with a README and an example (`check_example`). The configuration names a file there, never a path, and nothing goes through a shell.
-- Each node runs its own copy, so copy scripts to every node that runs the check (scp, Ansible…); Unagikuma does not upload them. New script checks start **paused**: enabling one checks that every node running it has the script, and refuses with the list of nodes that lack it. **Settings › Check scripts** shows each check's script on each node (present, missing, not executable, another version) and the sidebar shows a red count while an enabled script check cannot run somewhere.
+- Scripts are looked up only in the check-scripts directory of the machine that runs the check: `<data>/check-scripts`, or `--script-dir dir1,dir2`. The directory is created on first start with a README and an example (`check_example`). The configuration names a file there, never a path, and nothing goes through a shell.
+- In a cluster each machine runs its own copy, so copy scripts to every machine that runs the check (scp, Ansible…); Unagikuma does not upload them. New script checks start **paused**: enabling one checks that every node running it has the script, and refuses with the list of nodes that lack it. **Settings › Check scripts** shows each check's script on each node (present, missing, not executable, another version) and the sidebar shows a red count while an enabled script check cannot run somewhere.
 - Plugins get a minimal environment (`PATH`, `UNAGIKUMA_MONITOR`, `UNAGIKUMA_ADDRESS`, `UNAGIKUMA_TIMEOUT`), not the server's. `$HOSTADDRESS$`, `$SERVICEDESC$` and `$TIMEOUT$` are replaced in arguments. At the timeout the plugin and everything it started are killed and the check is CRITICAL.
 - Only administrators can add EXEC checks or change what they run. `probe.exec-concurrency` limits plugins running at once per node.
 
@@ -157,6 +174,8 @@ default   IN POLICY chain=team,night-sms mode=all repeat=30m max=3 escalate=30m:
 
   `network=netadmin` on a policy sends the network part to its own channels (the network team) and leaves the services to the chain.
 - **When this host loses its network** it cannot notify anyone, so nothing is sent while it lasts and nothing queued meanwhile is sent afterwards. Failures that began just before the outage was recognised (`localnet.backdate`) and that nobody was told about are taken back. When the network is back every monitor is re-checked, and one message says how long the host was blind and what is still failing; outages shorter than `localnet.notify-after` (5 minutes) are only recorded. A recovery is sent only for problems someone actually received. To be told *while* the host is offline, use an external heartbeat (`--heartbeat-url`) or a second node.
+
+  How the host recognises its own outage: its gateway stops answering; or internet targets in at least `localnet.min-domains` (3) different networks (an IPv4 /24, an IPv6 /48 or a registered domain) fail together while none of them answers; or every WAN anchor fails (**Settings › Nodes › Edit** on this machine, **Anchors** `wan:IP,IP`). With internet targets in fewer than three networks and no WAN anchor, it cannot tell a broken uplink behind a working gateway from all its targets failing at once (**Where it breaks** on the overview says there are not enough internet monitors to judge). It then holds back failures that hit all its internet targets together: a short outage of its own goes unreported, but when the targets really are down the alerts come 10 to 15 minutes late, and an outage of its own may be reported when there was none. Give such a machine two or three WAN anchors in different networks.
 - **SMS and voice calls.** `aliyun-sms`, `aliyun-voice`, `tencent-sms`, `tencent-voice`, `twilio-sms` and `twilio-voice` channels. Template parameters default to the monitor name and the status; `params="{{.Monitor}}|{{.StatusText}}"` changes them. Keys are stored as secrets when saved from the UI.
 - **Event handlers.** `handler="restart-web $SERVICESTATE$ $SERVICESTATETYPE$"` on a monitor runs a script from the check-scripts directory on each state change, Nagios style, with `UNAGIKUMA_MONITOR`, `UNAGIKUMA_STATE`, `UNAGIKUMA_STATE_TYPE`, `UNAGIKUMA_ATTEMPT`, `UNAGIKUMA_ADDRESS` and `UNAGIKUMA_REASON` in its environment. It runs on the master, one at a time per monitor, for at most `engine.handler-timeout`; the result is in the event log. Only administrators may set it.
 - **Contacts.** **Alerting › Contacts** lists everyone who may receive alerts, with their e-mail addresses and phone numbers. Channels are checked against it:
@@ -219,86 +238,77 @@ public IN STATUSPAGE "Example Inc. status" select="group:public" subscribe=maile
 - **Own host name.** With `domain=status.example.com`, requests for that name get the page at `/` (and `/feed.atom`); the console and its API are not reachable under it. Point the name at the server and put a TLS proxy in front, or give the server a certificate for it.
 - Badges: `/badge/MONITOR/status.svg`, `uptime.svg` and `latency.svg` for monitors on a public page.
 
-## Probe nodes
+## Two machines and clusters
 
-> Experimental: the agent protocol and the handover may still change in a later release. Update the master and its agents together.
+A single machine is a complete setup. Add a second machine, or more, when monitoring has to keep working while one machine or one site's network is down, or to see your targets from several places.
 
-A single machine is a complete setup. To check the same targets from more places, declare nodes and run agents there:
+**Every machine is a complete server that checks and alerts on its own.** The machines of a cluster share one configuration and show each other what they see, but they never vote on whether a target is down and never hold back each other's alerts. When two machines see a problem, you get two messages. This is deliberate: a problem is never missed because another machine was expected to report it.
 
-```sh
-unagikuma node add bj --title "Beijing office" --server https://master.example.com:8077
+### Joining a machine
+
+1. Install Unagikuma on the second machine and run it as usual, with its own data directory and admin account.
+2. On the first machine, the **master**, open **Settings › Nodes › Join code** and generate a code. It works once, for `cluster.join-code-ttl` (1 hour).
+3. On the second machine, open **Settings › Nodes › Join cluster** and paste the code. Its own monitors are deleted, or, if you choose, imported to the master paused, in a section named after it, to review and resume there.
+
+The joining machine connects out to the master's port (8077 by default) over TLS, so it can sit behind NAT. If something has to sit in between, use a TCP proxy, not an HTTP one.
+
+> Before 2.2 a node could also be a probe-only agent (`unagikuma agent`). Agents are gone: every member is a full server, and `unagikuma agent` only prints an error. To move an old agent over, see [upgrading a cluster to 2.2](per-site-upgrade.md).
+
+### What every machine does
+
+- **Checks** every monitor of the shared configuration, except monitors limited to other sites (below), with its own schedule, history and incidents.
+- **Alerts** through the shared channels and policies, on its own. Every message names the site that sent it (`[site]` in the title, `site` in webhook payloads) and lists the latest result of every site, for example `Observations: b ×, unagikuma ×, 0/2`; a result that is out of date is marked `~`. These results are context only: they never hold back or trigger an alert.
+- **Judges its own network.** Each machine recognises its own outage and holds its own alerts while it lasts, as described under [Alerting](#alerting). A machine whose network is down cannot send anything, which is what the other machines are for.
+- **Keeps its own acknowledgements and silences.** Acknowledging or silencing an alert affects the incident of the site that sent it. Maintenance windows in the shared configuration apply at every site.
+- **Sends its records to the master** every minute while connected, and everything it recorded on its own as soon as the link is back, tagged with the site that wrote it. The master's history and incident list show every site; each site keeps its own audit chain.
+
+What that looks like with two machines, the master `unagikuma` and `b`:
+
+| What happens | Messages |
+|---|---|
+| The shop is down for everyone | two: one from each machine, each listing both results |
+| The shop is unreachable from b's office only | one, from b |
+| The master is down | b says once that its peer is unreachable, and goes on checking and alerting alone |
+| The master comes back | the master says how long it was down; b says it is back online |
+
+### When the master is down
+
+The other machines keep checking and alerting with the last copy of the configuration they received. While the master is down the configuration cannot be changed: every other machine refuses edits with "configuration is read-only on this site". Edit again once the master is back, or move the master role to another machine (below).
+
+### Monitors for some sites only
+
+By default every machine checks every monitor. Targets that only exist at one site go in a section:
+
+```text
+bj  IN NODE "Beijing office" region=north
+$SCOPE region:north policy=bj-oncall   ; checked by north sites only, paged to bj-oncall
+bj-core IN PING 10.10.0.1
+$SCOPE *                               ; back to every site
 ```
 
-This adds `bj IN NODE "Beijing office"` to `monitors.bind`, issues a token for `bj` and prints the commands to start the agent (foreground, systemd or PowerShell). The web UI does the same under **Settings › Nodes**. On the node:
+Only the sites named check these monitors. `nodes=bj,sh` (or `nodes=region:north`) on a single monitor does the same and wins over the section.
 
-```sh
-unagikuma agent --server https://master.example.com:8077 --node bj \
-  --token-file /etc/unagikuma/agent.token --ca-fingerprint sha256:…
-```
+`quorum=` and `partial-escalate=` are still accepted so that older files load, but they no longer do anything: no site waits for the others before alerting.
 
-- Agents connect out to the master's port (8077 by default), so they can sit behind NAT. The connection is TLS; the agent pins the master's own CA by the fingerprint in the command. Put the master behind a TCP (not HTTP) proxy if you need one in between.
-- By default every monitor is checked from every node. Targets that only exist at one site go in a section:
+### Site-local configuration
 
-  ```text
-  bj  IN NODE "Beijing office" region=north
-  $SCOPE region:north policy=bj-oncall   ; checked by north nodes only, paged to bj-oncall
-  bj-core IN PING 10.10.0.1
-  $SCOPE *                               ; back to every node
-  ```
+Under **Nodes › Site-local configuration** (`<data>/site-local.bind`, same format as `monitors.bind`, with its own `$FILE` line) each machine can have monitors, channels and policies of its own — a router in that office, say. They are checked and alerted on there in every role, never sent to other machines, and never overwritten by the master's copy, a join or a promotion. A name the shared configuration already uses keeps the shared definition.
 
-  Other nodes never receive these monitors. `nodes=bj,sh` (or `nodes=region:north`) on a single monitor does the same and wins over the section. A round is decided by `quorum=` (majority by default); nodes that are offline lower the quorum instead of blocking the verdict.
-- A failure seen from some nodes only is shown as partial; if it lasts `partial-escalate` (30 minutes) it becomes one low-priority regional alert. A node that stays disconnected is reported under its `policy=`.
-- Or join from the web, without copying commands: on the master, **Settings › Nodes › Join code** gives a one-time code (valid for `cluster.join-code-ttl`, 1 hour); on the other server, **Settings › Nodes › Join cluster** takes it. That server then runs as a node of the master. Its own monitors are deleted, or, if you choose, imported to the master paused in a section named after it, to review and resume there.
-- A **server** that joined (not a bare `unagikuma agent`) is a **replica**, like a secondary DNS server: it keeps a copy of the master's configuration, secrets and data. When it cannot reach the master for `cluster.replica-after` (1 minute) it checks the master's monitors on its own, stores the results and sends its own alerts with the master's channels, until the master is back. Every message names the site that sent it (`[site]` in the title, `site` in webhook payloads); sites do not deduplicate each other.
-- **After a split, nothing is lost.** What a replica checked, recorded and sent on its own is merged into the master when the link is back: history, incidents, decisions and audit entries are tagged with the site and term that wrote them, each site keeps its own audit chain, and incidents show which site recorded them.
-- **Site-local configuration.** Under **Nodes › Site-local configuration** (`<data>/site-local.bind`, same format as `monitors.bind`, with its own `$FILE` line) each server can have monitors, channels and policies of its own — a router in that office, say. They are checked and alerted on there in every role, never sent to other nodes, and never overwritten by the master's sync, a join or a promotion. A name the shared configuration already uses keeps the shared definition.
-- **Node status is judged by majority.** Every node checks the others (every `cluster.peer-interval`, 10 seconds) and reports what it reaches, its own health and how its last notifications went out (shown under Nodes). A node is reported **down** only when more than half of the cluster cannot reach it, and only by a node that itself reaches more than half. A node in the minority says it cannot reach the others (status unknown) instead; in a two-node cluster each side only reports its peer as unreachable. With three nodes, one lost node is confirmed by the two others.
-- `--emergency-webhook URL` (or `feishu:URL`, `dingtalk:URL`, ...) on an agent sends one message when the master stays unreachable for `cluster.emergency-after` (3 minutes) and one when it is back: the master cannot report its own outage.
-- `unagikuma node list`, `node token NAME` (new token, the old one stops working) and `node revoke NAME` manage tokens; a revoked agent is disconnected within one ping interval.
+### Node status
+
+**Settings › Nodes** shows every machine. Each one checks the others every `cluster.peer-interval` (10 seconds) and reports what it reaches, its own health and how its last notifications went out. A machine is reported **down** only when more than half of the cluster cannot reach it, and only by a machine that itself reaches more than half; a machine in the minority says it cannot judge. With two machines neither side can confirm the other is down, so each only reports its peer as unreachable. With three, one lost machine is confirmed by the two others. This status is about the machines only; it does not change how targets are judged.
+
+`unagikuma node list` lists the machines and `unagikuma node revoke NAME` disconnects one within one ping interval. Add machines with a join code; `node add` and `node token` only issue tokens for the old agents.
 
 ### Moving the master role
 
-There is no election: which server is the master is your decision, and
-moving it is one click.
+There is no election: which machine is the master is your decision, and moving it is one click.
 
-1. Join the server that should be able to take over as a node, and give it
-   a **standby address** under Nodes › Edit (`bj IN NODE standby=https://10.0.0.2:8077`).
-   It now keeps a copy of the master's state — databases, `monitors.bind`,
-   the secret key and the cluster CA — refreshed every
-   `cluster.standby-sync` (5 minutes) and after each configuration change.
-   Every node learns the standby's address.
-2. **Planned** (maintenance, new hardware): Nodes › **Make master** on the
-   standby. It takes the current state and restarts as master; the old
-   master stops checking and refuses changes; nodes move over by
-   themselves. Users, tokens, secrets and the CA come along, so nothing has
-   to be joined again.
-3. **Master lost**: on the standby, Settings › Nodes › **Take over as
-   master** (or stop it and run `unagikuma promote`). Nodes move to it once
-   the old master is unreachable.
+1. Give the machine that should be able to take over a **standby address** under **Nodes › Edit** (`bj IN NODE standby=https://10.0.0.2:8077`). It then keeps a copy of the master's state — databases, `monitors.bind`, the secret key and the cluster CA — refreshed every `cluster.standby-sync` (5 minutes) and after each configuration change. Every machine learns the standby's address.
+2. **Planned** (maintenance, new hardware): **Nodes › Make master** on the standby. It takes the current state and restarts as master; the other machines move over by themselves. Users, tokens, secrets and the CA come along, so nothing has to be joined again.
+3. **Master lost**: on the standby, **Settings › Nodes › Take over as master** (or stop it and run `unagikuma promote`). The other machines move to it once the old master is unreachable.
 
-Every handover raises a **term**. Nodes follow the highest term they have
-seen, and a replaced master that comes back is told by the new one (with a
-notice signed by the cluster CA) or by the first node that reaches it,
-and stops checking — two masters never alert side by side. Taking over
-after a loss is always done by a person: without a quorum, an automatic
-takeover would split the cluster whenever the network splits.
-
-### As a Windows service
-
-In an Administrator PowerShell, in the folder of `unagikuma.exe`:
-
-```powershell
-.\unagikuma.exe service install -- server --data C:\ProgramData\unagikuma --log-file C:\ProgramData\unagikuma\unagikuma.log
-.\unagikuma.exe service uninstall
-```
-
-The service starts automatically and is restarted if it stops. Agents install the same way (the node's install command shows it).
-
-Windows is supported, with some checks possibly unsupported:
-
-- ICMP ping needs the service to run as Administrator (or LocalSystem); otherwise ping checks knock on TCP ports instead.
-- A weak UDP check (L1) may report that this platform cannot see a closed port, and stays UNKNOWN instead of OK or down.
-- A fixed source port (`src-port=`) held by another program may not be detected.
+Every handover raises a **term**. Machines follow the highest term they have seen. A replaced master that comes back is told so by the new one (with a notice signed by the cluster CA) or by the first machine that reaches it; it then rejoins as an ordinary member under its own site name and keeps checking, and only the new master accepts configuration changes. Taking over after a loss is always done by a person: without a quorum, an automatic takeover would split the cluster whenever the network splits.
 
 ## Users
 
@@ -434,9 +444,7 @@ Type the new password twice (it is not shown), or use `--generate` to get a rand
 
 ```text
 unagikuma [server] [flags]       run the monitor and its web UI (default)
-unagikuma agent [flags]          run a probe node for a master
-unagikuma node add|list|token|revoke
-                                manage probe nodes and their tokens
+unagikuma node list|revoke       list the machines of a cluster, or disconnect one
 unagikuma check [file]           validate a monitors.bind file
 unagikuma serial [bump] [file]   print or increase the revision
 unagikuma probe <target> [k=v]   run one check now, e.g. "udp 10.0.0.1:ntp"
@@ -454,7 +462,7 @@ Main server flags: `--data DIR` (or `UNAGIKUMA_DATA`), `--listen ADDR` (or `UNAG
 
 ## Data and backups
 
-The data directory holds `monitors.bind`, `core.db` (users, incidents, notification log, configuration history, encrypted secrets), `history.db` (check results and uptime) and `unagikuma.key`, the key that encrypts the secrets. `cluster-ca.*` and `cluster.*` are the certificate authority agents pin; keep them with the key so agents keep trusting a restored master. 
+The data directory holds `monitors.bind`, `core.db` (users, incidents, notification log, configuration history, encrypted secrets), `history.db` (check results and uptime) and `unagikuma.key`, the key that encrypts the secrets. `cluster-ca.*` and `cluster.*` are the certificate authority the other machines of a cluster pin; keep them with the key so they keep trusting a restored master.
 
 A backup is an archive made while the server runs, from **Settings › System** or the command line:
 
@@ -464,7 +472,7 @@ unagikuma backup --passphrase-file pass.txt        # encrypted, also the key and
 unagikuma restore --passphrase-file pass.txt unagikuma-20261101-0300.ukbackup
 ```
 
-With a passphrase the archive is encrypted (argon2id, AES-256-GCM) and a restored master keeps its secrets and its agents. Without one, keep `unagikuma.key` (or `UNAGIKUMA_SECRET_KEY`) separately. Restore into a stopped installation; `--force` replaces an existing one.
+With a passphrase the archive is encrypted (argon2id, AES-256-GCM) and a restored master keeps its secrets and its cluster. Without one, keep `unagikuma.key` (or `UNAGIKUMA_SECRET_KEY`) separately. Restore into a stopped installation; `--force` replaces an existing one.
 
 ## API
 
@@ -478,7 +486,7 @@ Everything the UI does goes through a REST API under `/api/v1`. Create a token u
 
 ## Troubleshooting
 
-- **Everything turned red at once.** Look at *Where it breaks* on the overview: if this host's gateway or uplink fails, the problem is on this side, and alerts for the targets are held until it is back. The Internet gateway under the internet targets (`localnet.exit-target`, 8.8.8.8) is pinged only once an internet target fails, to tell a broken site from a broken way out; while they all answer it shows as not checked. Change its address under **Settings › General** (empty turns it off).
+- **Everything turned red at once.** Look at *Where it breaks* on the overview: if this host's gateway or uplink fails, the problem is on this side, and alerts for the targets are held until it is back. The Internet gateway under the internet targets (`localnet.exit-target`, 8.8.8.8) is pinged only once an internet target fails, to tell a broken site from a broken way out; while they all answer it shows as not checked. The check before an alert also tries it on TCP 443 when no other recently healthy internet target is left to re-check; if it does not answer, the failure is blamed on this host and not alerted. Where 8.8.8.8 is not reachable, set an address that is under **Settings › General** (empty turns it off).
 - **A monitor is down but nobody was told.** Open it and read *Notifications* in the drawer; the event log shows each delivery with its error, and **Alerting › Channels › Test** sends a test message.
 - **Ping checks say "checked over TCP" or "privilege".** This host does not allow ping for Unagikuma. Allow unprivileged ping (`sudo sysctl -w net.ipv4.ping_group_range="0 2147483647"`) or give the binary `CAP_NET_RAW`; see Quick start.
 - **A script check stays paused.** Enabling it lists the nodes that lack the script; **Settings › Check scripts** shows each node's copy.
