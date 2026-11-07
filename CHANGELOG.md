@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v2.4.1 — 2026-11-07
 
 **Fixed**
 - Targets that all fail at once are alerted on time when this host's network works. A machine watching only a few sites took their failing together for its own outage and held the alerts back for 10 to 15 minutes, and could report an outage of its own that never happened. Before an internet failure becomes an alert the host now also asks reference points on the internet (`localnet.references`, by default 223.5.5.5, 1.1.1.1 and 8.8.8.8 on TCP 443): if any answers, the failure is the target's.
