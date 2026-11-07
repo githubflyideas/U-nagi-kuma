@@ -4,7 +4,7 @@
    status pages). Status colours are Nagios-style: solid blocks that read
    at a glance, tuned per tone so they stay calm on white and bright on black. */
 :root, :root[data-theme="paper"], :root[data-theme="light"] {
-  --bg: #f6f7f9; --panel: #ffffff; --panel-2: #f8fafb; --border: #e3e7ec; --border-strong: #c9d1da;
+  --bg: #f6f7f9; --side: #eceff3; --panel: #ffffff; --panel-2: #f8fafb; --border: #e3e7ec; --border-strong: #c9d1da;
   --text: #17202b; --muted: #5f6b7a; --faint: #98a3b0;
   --accent: #1f7a4d; --accent-soft: #e4f2ea; --accent-text: #ffffff; --link: #1d6b44;
   --ok: #1f9d55; --ok-soft: #e1f5e8; --degraded: #c98a12; --degraded-soft: #fdf2d6;
@@ -19,7 +19,7 @@
   color-scheme: light;
 }
 :root[data-theme="mist"] {
-  --bg: #e9edf1; --panel: #f6f8fa; --panel-2: #eef1f4; --border: #d3dae2; --border-strong: #b9c3ce;
+  --bg: #e9edf1; --side: #dce2e8; --panel: #f6f8fa; --panel-2: #eef1f4; --border: #d3dae2; --border-strong: #b9c3ce;
   --text: #1a2430; --muted: #556273; --faint: #8b97a5;
   --accent: #1d7350; --accent-soft: #dcece3; --accent-text: #ffffff; --link: #1a6646;
   --ok: #1c8f4e; --ok-soft: #d8eee0; --degraded: #b97d0e; --degraded-soft: #f5e9c9;
@@ -30,7 +30,7 @@
   --shadow: 0 1px 2px rgba(15, 23, 42, .06); color-scheme: light;
 }
 :root[data-theme="slate"] {
-  --bg: #29313b; --panel: #313a46; --panel-2: #38424f; --border: #434e5c; --border-strong: #566273;
+  --bg: #29313b; --side: #212830; --panel: #313a46; --panel-2: #38424f; --border: #434e5c; --border-strong: #566273;
   --text: #e8edf2; --muted: #a9b4c1; --faint: #7c8796;
   --accent: #46c69a; --accent-soft: #2c4a44; --accent-text: #10241d; --link: #7fdcbc;
   --ok: #45cc85; --ok-soft: #2d4a3d; --degraded: #f0bd4b; --degraded-soft: #4d4430;
@@ -41,7 +41,7 @@
   --shadow: 0 1px 2px rgba(0, 0, 0, .18); color-scheme: dark;
 }
 :root[data-theme="graphite"] {
-  --bg: #15181c; --panel: #1c2025; --panel-2: #22272d; --border: #2c3239; --border-strong: #3b434c;
+  --bg: #15181c; --side: #0e1013; --panel: #1c2025; --panel-2: #22272d; --border: #2c3239; --border-strong: #3b434c;
   --text: #e6e9ed; --muted: #959fab; --faint: #646e7a;
   --accent: #34d0a6; --accent-soft: #163029; --accent-text: #06231b; --link: #6fe0c0;
   --ok: #3ddc84; --ok-soft: #15301f; --degraded: #f6c343; --degraded-soft: #362c12;
@@ -52,7 +52,7 @@
   --shadow: none; color-scheme: dark;
 }
 :root[data-theme="ink"], :root[data-theme="dark"] {
-  --bg: #050608; --panel: #0b0d10; --panel-2: #111418; --border: #1b1f25; --border-strong: #2a3038;
+  --bg: #050608; --side: #0e1115; --panel: #0b0d10; --panel-2: #111418; --border: #1b1f25; --border-strong: #2a3038;
   --text: #e9edf1; --muted: #8a94a1; --faint: #565f6b;
   --accent: #2dd4bf; --accent-soft: #0e2a27; --accent-text: #04221d; --link: #5eead4;
   --ok: #2fe3a0; --ok-soft: #0c271d; --degraded: #ffb547; --degraded-soft: #2e230e; --critical: #ff4f6e; --critical-soft: #34131c;
@@ -65,7 +65,7 @@
 /* Two colour themes beside the tones: Sky, a light blue, and Violet, a
    deep purple. Status colours stay the same blocks as in the tones. */
 :root[data-theme="sky"] {
-  --bg: #eaf3fb; --panel: #f9fcff; --panel-2: #eef5fc; --border: #cfe0f0; --border-strong: #a9c4de;
+  --bg: #eaf3fb; --side: #dbe9f6; --panel: #f9fcff; --panel-2: #eef5fc; --border: #cfe0f0; --border-strong: #a9c4de;
   --text: #13263a; --muted: #4d6680; --faint: #8aa0b6;
   --accent: #2a78c8; --accent-soft: #dbeafa; --accent-text: #ffffff; --link: #1f67b0;
   --ok: #1f9d55; --ok-soft: #dff3e7; --degraded: #c98a12; --degraded-soft: #fbf0d4;
@@ -76,7 +76,7 @@
   --shadow: 0 1px 2px rgba(19, 38, 58, .06); --bg-image: none; color-scheme: light;
 }
 :root[data-theme="violet"] {
-  --bg: #1b1428; --panel: #241a35; --panel-2: #2c2040; --border: #3a2c52; --border-strong: #4f3d6e;
+  --bg: #1b1428; --side: #140e1f; --panel: #241a35; --panel-2: #2c2040; --border: #3a2c52; --border-strong: #4f3d6e;
   --text: #ece6f7; --muted: #b3a6cc; --faint: #7f7299;
   --accent: #b18cff; --accent-soft: #3a2a5c; --accent-text: #1b1028; --link: #c7aaff;
   --ok: #4fdc95; --ok-soft: #1c3a30; --degraded: #f6c96a; --degraded-soft: #3d321b;
@@ -89,7 +89,7 @@
 /* "System" follows the device: paper by day, ink at night. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-    --bg: #050608; --panel: #0b0d10; --panel-2: #111418; --border: #1b1f25; --border-strong: #2a3038;
+    --bg: #050608; --side: #0e1115; --panel: #0b0d10; --panel-2: #111418; --border: #1b1f25; --border-strong: #2a3038;
     --text: #e9edf1; --muted: #8a94a1; --faint: #565f6b;
     --accent: #2dd4bf; --accent-soft: #0e2a27; --accent-text: #04221d; --link: #5eead4;
     --ok: #2fe3a0; --ok-soft: #0c271d; --degraded: #ffb547; --degraded-soft: #2e230e; --critical: #ff4f6e; --critical-soft: #34131c;
@@ -618,3 +618,14 @@ tr.risk-high td:first-child { box-shadow: inset 3px 0 0 var(--degraded); }
 .tbl tbody tr:nth-child(even) td { background: var(--stripe); }
 .tbl tr.critical td { background: color-mix(in srgb, var(--critical) 6%, transparent); }
 .tbl tr.click:hover td { background: color-mix(in srgb, var(--link) 8%, transparent); }
+
+/* The sidebar is its own surface: a step darker than the page on light
+   themes and a step apart on dark ones, so navigation and content read as
+   two areas. Hover and the current page are tints of the text and accent,
+   which work on any of those shades. */
+.side { background: var(--side, var(--panel)); backdrop-filter: none; border-inline-end-color: var(--border); }
+.nav a:hover { background: color-mix(in srgb, var(--text) 6%, transparent); }
+.nav a.on { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--link); }
+.side .foot select { background: var(--panel); }
+.nav a.on { box-shadow: inset 3px 0 0 var(--accent); }
+[dir="rtl"] .nav a.on { box-shadow: inset -3px 0 0 var(--accent); }

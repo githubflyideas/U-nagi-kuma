@@ -7,6 +7,7 @@
 
 **Changed**
 - The console's sidebar logo and the browser tab icon use the new logo.
+- The sidebar has its own shade in every theme, a step apart from the page, and the current page is marked with an accent bar.
 
 ## v2.3.0 — 2026-11-06
 
