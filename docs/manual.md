@@ -257,7 +257,7 @@ The joining machine connects out to the master's port (8077 by default) over TLS
 ### What every machine does
 
 - **Checks** every monitor of the shared configuration, except monitors limited to other sites (below), with its own schedule, history and incidents.
-- **Alerts** through the shared channels and policies, on its own. Every message names the site that sent it (`[site]` in the title, `site` in webhook payloads) and lists the latest result of every site, for example `Observations: b ×, unagikuma ×, 0/2`; a result that is out of date is marked `~`. These results are context only: they never hold back or trigger an alert.
+- **Alerts** through the shared channels and policies, on its own. Every message names the site that sent it by its node name, the master's too (`[b]` in the title, `site` in webhook payloads) and lists the latest result of every site, for example `Observations: b ×, unagikuma ×, 0/2`; a result that is out of date is marked `~`. These results are context only: they never hold back or trigger an alert.
 - **Judges its own network.** Each machine recognises its own outage and holds its own alerts while it lasts, as described under [Alerting](#alerting). A machine whose network is down cannot send anything, which is what the other machines are for.
 - **Keeps its own acknowledgements and silences.** Acknowledging or silencing an alert affects the incident of the site that sent it. Maintenance windows in the shared configuration apply at every site.
 - **Sends its records to the master** every minute while connected, and everything it recorded on its own as soon as the link is back, tagged with the site that wrote it. The master's history and incident list show every site; each site keeps its own audit chain.
@@ -298,7 +298,7 @@ Under **Nodes › Site-local configuration** (`<data>/site-local.bind`, same for
 
 **Settings › Nodes** shows every machine. Each one checks the others every `cluster.peer-interval` (10 seconds) and reports what it reaches, its own health and how its last notifications went out. A machine is reported **down** only when more than half of the cluster cannot reach it, and only by a machine that itself reaches more than half; a machine in the minority says it cannot judge. With two machines neither side can confirm the other is down, so each only reports its peer as unreachable. With three, one lost machine is confirmed by the two others. This status is about the machines only; it does not change how targets are judged.
 
-`unagikuma node list` lists the machines and `unagikuma node revoke NAME` disconnects one within one ping interval. Add machines with a join code; `node add` and `node token` only issue tokens for the old agents.
+`unagikuma node list` lists the machines and `unagikuma node revoke NAME` disconnects one within one ping interval. Machines are added with a join code only; `node add` and `node token`, which served the old agents, now say so and stop.
 
 ### Moving the master role
 

@@ -12,7 +12,7 @@ import (
 func TestSystemRecoveryTitle(t *testing.T) {
 	e := New(Deps{})
 	for _, c := range []struct{ key, title, want string }{
-		{SystemNodeOffline + ":bj", "Probe node bj is offline", "Probe node bj is back online"},
+		{SystemNodeOffline + ":bj", "Node bj is offline", "Node bj is back online"},
 		{SystemAllFailed, "All notification channels failed", "Notification channels work again"},
 		{SystemLocalNetwork, "Local network outage", "This host's network is back"},
 	} {

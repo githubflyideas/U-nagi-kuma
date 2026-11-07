@@ -22,12 +22,16 @@ func TestSiteInMessages(t *testing.T) {
 	}
 }
 
-// A site that kept the product's own name would repeat it next to the
-// [Unagikuma] tag: "[unagikuma] [Unagikuma] Peer …".
-func TestDefaultSiteNameIsNotRepeated(t *testing.T) {
-	m := &Message{Kind: "SYSTEM", Title: "Peer N2 (n2) unreachable", Body: "y", Lang: "en", Site: "unagikuma"}
-	title, _ := Render(m)
-	if strings.Contains(strings.ToLower(title), "[unagikuma] [unagikuma]") || strings.Count(title, "[") != 1 {
+// In a cluster every message names its site, the master's too when it
+// kept the product's own name: otherwise its alerts are the only ones that
+// cannot be told apart.
+func TestDefaultSiteNameIsNamed(t *testing.T) {
+	m := &Message{Kind: "SYSTEM", Title: "Peer b unreachable", Body: "y", Lang: "en", Site: "unagikuma"}
+	if title, _ := Render(m); !strings.Contains(title, "[unagikuma]") {
+		t.Fatalf("title %q", title)
+	}
+	m = &Message{Kind: "PROBLEM", Monitor: "web", Status: "critical", Reason: "timeout", Lang: "en", Site: "unagikuma"}
+	if title, _ := Render(m); !strings.Contains(title, "[unagikuma]") {
 		t.Fatalf("title %q", title)
 	}
 }

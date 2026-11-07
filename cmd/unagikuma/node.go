@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,14 +17,17 @@ import (
 )
 
 const nodeUsage = `usage:
-  unagikuma node add NAME [--title T] [--region R] [--server URL]
-                                  declare a probe node and print its install commands
-  unagikuma node list              list the nodes and their tokens
-  unagikuma node token NAME [--server URL]
-                                  issue a new token (the old one stops working)
-  unagikuma node revoke NAME       revoke the node's token
+  unagikuma node list              list the machines of the cluster and their tokens
+  unagikuma node revoke NAME       disconnect a machine (revoke its token)
 
-Common flags: --data DIR, --config FILE.`
+Common flags: --data DIR, --config FILE.
+
+Add a machine with a join code: Settings › Nodes › Join code on the master,
+Settings › Nodes › Join cluster on the new machine.`
+
+// errNoAgents answers the commands that only served probe-only agents.
+var errNoAgents = errors.New("probe-only agents are gone since 2.2, and with them node add and node token: " +
+	"add a machine with a join code (Settings › Nodes › Join code on the master, Join cluster on the new machine)")
 
 func runNode(args []string, out io.Writer) error {
 	if len(args) == 0 {
@@ -35,9 +37,6 @@ func runNode(args []string, out io.Writer) error {
 	fs := flag.NewFlagSet("node "+sub, flag.ExitOnError)
 	data := fs.String("data", defaultDataDir(), "data directory")
 	cfgPath := fs.String("config", "", "path of monitors.bind (default <data>/monitors.bind)")
-	server := fs.String("server", "", "master URL the agent connects to (default https://<this host>:8077)")
-	title := fs.String("title", "", "description of the node")
-	region := fs.String("region", "", "region label of the node")
 	// The name may come before or after the flags.
 	name := ""
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
@@ -51,27 +50,15 @@ func runNode(args []string, out io.Writer) error {
 	if path == "" {
 		path = filepath.Join(*data, "monitors.bind")
 	}
-	if *server == "" {
-		host, _ := os.Hostname()
-		*server = "https://" + net.JoinHostPort(host, "8077")
+	if sub == "add" || sub == "token" {
+		return errNoAgents
 	}
 	if sub != "list" && name == "" {
 		return errors.New(strings.TrimSpace(nodeUsage))
 	}
 	switch sub {
-	case "add":
-		return nodeAdd(out, path, *data, name, *title, *region, *server)
 	case "list":
 		return nodeList(out, path, *data)
-	case "token":
-		cfg, err := loadConfig(path)
-		if err != nil {
-			return err
-		}
-		if cfg.FindNode(name) == nil || name == cfg.MName {
-			return fmt.Errorf("node %s is not declared in %s", name, path)
-		}
-		return nodeIssue(out, *data, name, *server)
 	case "revoke":
 		st, err := store.Open(*data, store.Options{Tool: true})
 		if err != nil {
@@ -100,79 +87,6 @@ func loadConfig(path string) (*config.Config, error) {
 		}
 	}
 	return cfg, nil
-}
-
-// nodeAdd writes the NODE record with a raised serial, so a running server
-// applies it, then issues the node's token.
-func nodeAdd(out io.Writer, path, data, name, title, region, server string) error {
-	src, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	f, cfg, diags := config.Load(path, src, config.Options{})
-	for _, d := range diags {
-		if d.Severity == config.SevError {
-			return fmt.Errorf("%s has errors, fix them first: %v", path, d)
-		}
-	}
-	switch {
-	case !config.ValidName(name):
-		return fmt.Errorf("invalid node name %q", name)
-	case name == cfg.MName || cfg.HasName(name):
-		return fmt.Errorf("%s is already used in %s", name, path)
-	}
-	spec := config.RecordSpec{Name: name, Type: "NODE", Target: title}
-	if region != "" {
-		spec.Opts = append(spec.Opts, config.Opt{Key: "region", Value: region})
-	}
-	if err := f.UpsertRecord(spec); err != nil {
-		return err
-	}
-	cur, err := f.Serial()
-	if err != nil {
-		return err
-	}
-	next, warn, err := config.NextSerial(cur, time.Now())
-	if err != nil {
-		return err
-	}
-	if warn != "" {
-		fmt.Fprintln(os.Stderr, "warning:", warn)
-	}
-	if err := f.SetSerial(next); err != nil {
-		return err
-	}
-	if _, _, diags := config.Load(path, f.Bytes(), config.Options{}); config.HasErrors(diags) {
-		return fmt.Errorf("the new record does not validate: %v", diags[0])
-	}
-	if err := replaceFile(path, f.Bytes()); err != nil {
-		return err
-	}
-	fmt.Fprintf(out, "Node %s added to %s (revision %d → %d); a running server applies it within seconds.\n", name, path, cur, next)
-	return nodeIssue(out, data, name, server)
-}
-
-// nodeIssue creates a token for name and prints the install commands.
-func nodeIssue(out io.Writer, data, name, server string) error {
-	st, err := store.Open(data, store.Options{Tool: true})
-	if err != nil {
-		return err
-	}
-	defer st.Close()
-	tok, err := st.CreateAgentToken(name)
-	if err != nil {
-		return err
-	}
-	cliAudit(st, "node.token", name, nil)
-	pki, err := cluster.LoadOrCreatePKI(data, time.Now())
-	if err != nil {
-		return err
-	}
-	inst := cluster.InstallCommands(server, name, tok, pki.Fingerprint())
-	fmt.Fprintf(out, "\nToken for %s (shown only now): %s\n", name, tok)
-	fmt.Fprintf(out, "Master: %s (adjust if agents reach it under another address; they need this port, not a proxy)\n", server)
-	fmt.Fprintf(out, "\nRun the agent on the node:\n\n%s\n\nOr install it as a systemd service:\n\n%s\n", indent(inst.Shell), indent(inst.Systemd))
-	return nil
 }
 
 func nodeList(out io.Writer, path, data string) error {
@@ -224,8 +138,6 @@ func selfProbes(cfg *config.Config) bool {
 	}
 	return true
 }
-
-func indent(s string) string { return "    " + strings.ReplaceAll(s, "\n", "\n    ") }
 
 // replaceFile writes b over path atomically, keeping its permissions.
 func replaceFile(path string, b []byte) error {

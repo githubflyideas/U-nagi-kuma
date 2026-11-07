@@ -1,16 +1,14 @@
-// Probe nodes: connection state, configuration sync, tokens and the
-// commands that start an agent.
+// Nodes: the machines of a cluster, their connection state, configuration
+// sync and tokens. Machines are added with a join code.
 import { html, useState } from '../lib.js';
 import { t, fmtTime } from '../i18n.js';
 import { get, post, put, del, ifMatch } from '../api.js';
-import { useFetch, useInterval, Loading, ErrorBox, Field, Modal, Copy, Ago, Seg, toast, toastError, confirmDialog, useDocTitle, Dot, msText } from '../ui.js';
+import { useFetch, useInterval, Loading, ErrorBox, Field, Modal, Copy, Ago, toast, toastError, confirmDialog, useDocTitle, Dot, msText } from '../ui.js';
 
 export function Nodes({ embedded }) {
   useDocTitle(t(embedded ? 'ui.nav.settings' : 'ui.nav.nodes'));
   const list = useFetch(() => get('/nodes'), []);
   useInterval(() => list.reload(), 10000);
-  const [form, setForm] = useState(null);
-  const [issued, setIssued] = useState(null);
   const [joinCode, setJoinCode] = useState(false);
   const [joining, setJoining] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -18,19 +16,6 @@ export function Nodes({ embedded }) {
   const d = list.data;
   if (d.agent && d.agent.member) return html`<${Membership} state=${d.agent} d=${d} reload=${list.reload} />`;
 
-  const add = async (e) => {
-    e.preventDefault();
-    try {
-      const r = await post('/nodes', { name: form.name.trim(), title: form.title.trim(), region: form.region.trim() });
-      setForm(null);
-      setIssued(r);
-      list.reload();
-    } catch (e2) { toastError(e2); }
-  };
-  const newToken = async (n) => {
-    if (n.token && !await confirmDialog(t('ui.node.new_token_confirm', { node: n.name }), { ok: t('ui.node.new_token') })) return;
-    try { setIssued(await post('/nodes/' + encodeURIComponent(n.name) + '/token')); list.reload(); } catch (e) { toastError(e); }
-  };
   const revoke = async (n) => {
     if (!await confirmDialog(t('ui.node.revoke_confirm', { node: n.name }), { danger: true, ok: t('ui.node.revoke') })) return;
     try { await del('/nodes/' + encodeURIComponent(n.name) + '/token'); list.reload(); } catch (e) { toastError(e); }
@@ -48,31 +33,18 @@ export function Nodes({ embedded }) {
     <div class="row">
       <p class="muted small spacer" style=${{ margin: 0 }}>${t(d.layout === 'single' ? 'ui.node.intro_single' : 'ui.node.intro')}</p>
       ${d.layout === 'single' && html`<button class="btn" onClick=${() => setJoining(true)}>${t('ui.join.join')}</button>`}
-      <button class="btn" onClick=${() => setJoinCode(true)}>${t('ui.join.code')}</button>
-      <button class="btn primary" onClick=${() => setForm({ name: '', title: '', region: '' })}>${t('ui.node.add')}</button>
+      <button class="btn primary" onClick=${() => setJoinCode(true)}>${t('ui.join.code')}</button>
     </div>
     <div class="card"><div class="bd flush tbl-wrap"><table class="tbl">
       <thead><tr>
         <th>${t('ui.name')}</th><th>${t('ui.status')}</th><th>${t('ui.node.config')}</th><th>${t('ui.node.rtt')}</th>
         <th>${t('ui.node.clock')}</th><th>${t('ui.node.version')}</th><th>${t('ui.node.token')}</th><th></th>
       </tr></thead>
-      <tbody>${d.nodes.map(n => html`<${NodeRow} n=${n} onToken=${newToken} onRevoke=${revoke} onRemove=${remove} onEdit=${setEditing} onHandover=${handover} />`)}</tbody>
+      <tbody>${d.nodes.map(n => html`<${NodeRow} n=${n} onRevoke=${revoke} onRemove=${remove} onEdit=${setEditing} onHandover=${handover} />`)}</tbody>
     </table></div></div>
     <p class="faint small ltr" style=${{ margin: 0 }}>${t('ui.node.fingerprint')}: <span class="mono">${d.fingerprint}</span></p>
     <${Diverged} />
     <${SiteLocal} />
-    ${form && html`<${Modal} title=${t('ui.node.add')} onClose=${() => setForm(null)}>
-      <form class="form" onSubmit=${add}>
-        <${Field} label=${t('ui.name')} hint=${t('ui.node.name_hint')}>
-          <input type="text" class="ltr" value=${form.name} pattern="[A-Za-z0-9][A-Za-z0-9_.\\-]{0,62}" required onInput=${(e) => setForm({ ...form, name: e.target.value })} /><//>
-        <div class="two">
-          <${Field} label=${t('ui.node.title')}><input type="text" value=${form.title} onInput=${(e) => setForm({ ...form, title: e.target.value })} /><//>
-          <${Field} label=${t('ui.node.region')}><input type="text" value=${form.region} onInput=${(e) => setForm({ ...form, region: e.target.value })} /><//>
-        </div>
-        <div class="row"><div class="spacer"></div><button class="btn primary">${t('ui.node.add')}</button></div>
-      </form>
-    <//>`}
-    ${issued && html`<${Install} issued=${issued} server=${d.server} onClose=${() => setIssued(null)} />`}
     ${editing && html`<${NodeEdit} n=${editing} onClose=${() => { setEditing(null); list.reload(); }} />`}
     ${joinCode && html`<${JoinCode} server=${d.server} onClose=${() => { setJoinCode(false); list.reload(); }} />`}
     ${joining && html`<${JoinForm} d=${d} onClose=${() => { setJoining(false); list.reload(); }} />`}
@@ -242,7 +214,7 @@ function SiteLocal() {
   </div></div>`;
 }
 
-function NodeRow({ n, onToken, onRevoke, onRemove, onEdit, onHandover }) {
+function NodeRow({ n, onRevoke, onRemove, onEdit, onHandover }) {
   const offline = !n.self && !n.online;
   return html`<tr>
     <td>
@@ -270,31 +242,9 @@ function NodeRow({ n, onToken, onRevoke, onRemove, onEdit, onHandover }) {
         : html`<span class="faint">${t('ui.node.no_token')}</span>`}
     </td>
     <td class="right nowrap">${n.standby && n.online && html`<button class="btn sm" onClick=${() => onHandover(n)}>${t('ui.ha.handover')}</button> `}<button class="btn sm" onClick=${() => onEdit(n)}>${t('ui.edit')}</button>${!n.self && html`
-      ${' '}<button class="btn sm" onClick=${() => onToken(n)}>${t('ui.node.new_token')}</button>
       ${n.token && html` <button class="btn sm" onClick=${() => onRevoke(n)}>${t('ui.node.revoke')}</button>`}
       ${' '}<button class="btn sm danger" onClick=${() => onRemove(n)}>${t('ui.delete')}</button>`}</td>
   </tr>`;
-}
-
-// Install shows the one-time token with commands for the node. The master
-// address can be edited: the browser may have reached this server through
-// a name or proxy the node cannot use.
-function Install({ issued, server, onClose }) {
-  const [kind, setKind] = useState('shell');
-  const [addr, setAddr] = useState(issued.install.server || server);
-  const cmd = (issued.install[kind] || '').split(issued.install.server).join(addr);
-  return html`<${Modal} wide title=${t('ui.node.install_title', { node: issued.node })} onClose=${onClose}>
-    <div class="col" style=${{ gap: '12px' }}>
-      <div class="banner warning"><div class="spacer">${t('ui.node.token_once')}</div></div>
-      <${Field} label=${t('ui.node.server')} hint=${t('ui.node.server_hint')}>
-        <input type="url" class="ltr" value=${addr} onInput=${(e) => setAddr(e.target.value.trim())} /><//>
-      <div class="row">
-        <${Seg} value=${kind} onChange=${setKind} options=${[['shell', t('ui.node.shell')], ['systemd', 'systemd'], ['windows', 'Windows']]} />
-        <div class="spacer"></div><${Copy} text=${cmd} />
-      </div>
-      <pre class="code">${cmd}</pre>
-    </div>
-  <//>`;
 }
 
 // Verdict is the majority judgement of a node that cannot be reached.

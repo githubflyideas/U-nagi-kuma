@@ -295,40 +295,26 @@ func (a *App) nodeName() string {
 	return ""
 }
 
-// site names this server in messages: the node's title, or its name. A
-// single machine has no site.
+// site names this server in messages by its node name, as the other sites'
+// results in every message do. A single machine has no site.
 func (a *App) site() string {
 	self := a.nodeName()
-	var cfg *config.Config
 	a.am.mu.Lock()
 	member := a.am.member != nil
 	a.am.mu.Unlock()
 	if member {
-		a.replica.mu.Lock()
-		cfg = a.replica.cfg
-		a.replica.mu.Unlock()
-		if cfg == nil {
-			return self
-		}
-	} else {
-		cfg = a.applied.Load()
-		if cfg == nil || len(cfg.Nodes) == 0 {
-			return ""
-		}
-		hasRemote := false
-		for _, n := range cfg.Nodes {
-			hasRemote = hasRemote || n.Name != cfg.MName
-		}
-		if !hasRemote {
-			return ""
-		}
+		return self
+	}
+	cfg := a.applied.Load()
+	if cfg == nil {
+		return ""
 	}
 	for _, n := range cfg.Nodes {
-		if n.Name == self && n.Description != "" {
-			return n.Description
+		if n.Name != cfg.MName {
+			return self // a cluster
 		}
 	}
-	return self
+	return ""
 }
 
 // runReplica runs the replica watch while ctx lives.

@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.4.2 — 2026-11-07
+
+**Fixed**
+- Settings › Nodes no longer offers **Add node** or **New token**: both printed commands for the probe-only agents that are gone since 2.2, which only failed. Machines are added with **Join code**, now the page's main button. `unagikuma node add` and `node token` say so instead of printing the agent commands.
+- Every message of a cluster names its site the same way, by node name: problems and system notices used the node name and the node title in turn ("[b]" and "[Site B]"), and the master's messages named no site at all when it kept the default name. A single machine still names none.
+- Messages and the overview say "node" where they said "probe node".
+
 ## v2.4.1 — 2026-11-07
 
 **Fixed**
